@@ -1,0 +1,7 @@
+{
+  "name": "EHS PRO - Gestão Modular de RH e Segurança",
+  "description": "Um sistema modular avançado para gestão de colaboradores, cargos, funções e controle de acesso granular para RH e Segurança do Trabalho.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
