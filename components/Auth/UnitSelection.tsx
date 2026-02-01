@@ -52,15 +52,8 @@ export const UnitSelection: React.FC<UnitSelectionProps> = ({ user, companies, b
         {/* Header */}
         <div className="flex items-center justify-between mb-8 px-2">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-green-600 rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-900/50 border border-white/10">
-              <span className="font-black text-white text-xl">E</span>
-            </div>
-            <div>
-              <h1 className="text-2xl font-black text-white tracking-tight">EHS PRO</h1>
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                <p className="text-xs font-bold text-emerald-400 uppercase tracking-widest">Portal Corporativo</p>
-              </div>
+            <div className="h-16 w-auto flex items-center justify-center">
+              <img src="/assets/logo-full.png" alt="EHS PRO Logo" className="h-full object-contain filter drop-shadow-[0_0_15px_rgba(16,185,129,0.5)]" />
             </div>
           </div>
 
@@ -118,39 +111,41 @@ export const UnitSelection: React.FC<UnitSelectionProps> = ({ user, companies, b
             </div>
           </div>
 
-          {/* Content Grid */}
+          {/* Content List */}
           <div className="p-8 overflow-y-auto custom-scrollbar flex-1">
 
-            {/* VIEW 1: COMPANIES */}
+            {/* VIEW 1: COMPANIES (List Mode) */}
             {!selectedCompanyId && (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in slide-in-from-right-8 duration-500">
+              <div className="space-y-4 animate-in fade-in slide-in-from-right-8 duration-500">
                 {filteredCompanies.length > 0 ? filteredCompanies.map(company => (
                   <button
                     key={company.id}
                     onClick={() => { setSelectedCompanyId(company.id); setSearchQuery(''); }}
-                    className="group relative flex flex-col items-start p-6 bg-gradient-to-br from-white/5 to-white/[0.02] border border-white/10 rounded-[2rem] hover:border-emerald-500/50 hover:from-emerald-900/20 hover:to-emerald-900/5 transition-all text-left overflow-hidden min-h-[180px]"
+                    className="w-full group flex items-center justify-between p-5 bg-gradient-to-r from-white/5 to-transparent border border-white/10 rounded-2xl hover:border-emerald-500/50 hover:from-emerald-900/40 hover:to-emerald-900/10 transition-all text-left overflow-hidden hover:shadow-lg hover:shadow-emerald-900/20"
                   >
-                    <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center text-emerald-400 mb-4 group-hover:scale-110 group-hover:bg-emerald-500 group-hover:text-white transition-all duration-300">
-                      <Building size={24} />
-                    </div>
+                    <div className="flex items-center gap-5">
+                      <div className="w-14 h-14 bg-white/5 rounded-xl flex items-center justify-center text-emerald-400 border border-white/5 group-hover:bg-emerald-500 group-hover:text-white group-hover:border-emerald-400 transition-all duration-300 shadow-inner">
+                        <Building size={24} />
+                      </div>
 
-                    <h3 className="text-lg font-bold text-white mb-1 line-clamp-2">{company.name}</h3>
-                    <p className="text-white/40 text-xs font-mono mb-4">{company.cnpj}</p>
-
-                    <div className="mt-auto flex items-center justify-between w-full border-t border-white/5 pt-4">
-                      <span className="text-[10px] font-black uppercase tracking-widest text-emerald-500/80">
-                        {allowedBranches.filter(b => b.companyId === company.id).length} Filiais
-                      </span>
-                      <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-white/30 group-hover:bg-emerald-500 group-hover:text-white transition-colors">
-                        <ChevronRight size={16} />
+                      <div>
+                        <h3 className="text-lg font-bold text-white mb-0.5 group-hover:text-emerald-300 transition-colors">{company.name}</h3>
+                        <div className="flex items-center gap-3">
+                          <p className="text-white/40 text-xs font-mono">{company.cnpj}</p>
+                          <span className="w-1 h-1 rounded-full bg-white/20"></span>
+                          <span className="text-[10px] font-black uppercase tracking-widest text-emerald-500/80">
+                            {allowedBranches.filter(b => b.companyId === company.id).length} Filiais
+                          </span>
+                        </div>
                       </div>
                     </div>
 
-                    {/* Glow effect */}
-                    <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-emerald-500/20 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <div className="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center text-white/20 group-hover:border-emerald-500 group-hover:text-emerald-400 transition-all">
+                      <ChevronRight size={20} />
+                    </div>
                   </button>
                 )) : (
-                  <div className="col-span-full py-20 text-center space-y-4">
+                  <div className="py-20 text-center space-y-4">
                     <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto text-white/20">
                       <Search size={32} />
                     </div>
@@ -160,33 +155,35 @@ export const UnitSelection: React.FC<UnitSelectionProps> = ({ user, companies, b
               </div>
             )}
 
-            {/* VIEW 2: BRANCHES */}
+            {/* VIEW 2: BRANCHES (List Mode) */}
             {selectedCompanyId && (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4 animate-in fade-in slide-in-from-right-8 duration-500">
+              <div className="space-y-4 animate-in fade-in slide-in-from-right-8 duration-500">
                 {filteredBranches.length > 0 ? filteredBranches.map(branch => (
                   <button
                     key={branch.id}
                     onClick={() => onSelect(branch.id)}
-                    className="group flex items-center gap-5 p-5 bg-white/5 border border-white/10 rounded-[2rem] hover:bg-emerald-900/20 hover:border-emerald-500/50 transition-all text-left"
+                    className="w-full group flex items-center justify-between p-5 bg-white/5 border border-white/10 rounded-2xl hover:bg-emerald-900/20 hover:border-emerald-500/50 transition-all text-left hover:shadow-lg hover:shadow-emerald-900/20"
                   >
-                    <div className="w-14 h-14 bg-emerald-500/10 rounded-2xl flex items-center justify-center text-emerald-400 group-hover:bg-emerald-500 group-hover:text-white transition-all shadow-inner border border-emerald-500/20 shrink-0">
-                      <MapPin size={24} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h4 className="text-lg font-bold text-white truncate group-hover:text-emerald-300 transition-colors">{branch.name}</h4>
-                      <p className="text-white/40 text-xs truncate mt-0.5">{branch.address}</p>
-                      <div className="flex items-center gap-2 mt-2">
-                        <span className="px-2 py-0.5 rounded-md bg-white/5 border border-white/5 text-[10px] font-mono text-white/30">
-                          {branch.cnpj}
-                        </span>
+                    <div className="flex items-center gap-5">
+                      <div className="w-14 h-14 bg-emerald-500/10 rounded-xl flex items-center justify-center text-emerald-400 group-hover:bg-emerald-500 group-hover:text-white transition-all shadow-inner border border-emerald-500/20 shrink-0">
+                        <MapPin size={24} />
+                      </div>
+                      <div>
+                        <h4 className="text-lg font-bold text-white group-hover:text-emerald-300 transition-colors">{branch.name}</h4>
+                        <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-3">
+                          <p className="text-white/40 text-xs mt-0.5">{branch.address}</p>
+                          <span className="hidden md:inline w-1 h-1 rounded-full bg-white/20"></span>
+                          <p className="text-white/30 text-xs font-mono">{branch.cnpj}</p>
+                        </div>
                       </div>
                     </div>
+
                     <div className="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center text-white/20 group-hover:border-emerald-500 group-hover:text-emerald-400 transition-all">
                       <ArrowRight size={18} />
                     </div>
                   </button>
                 )) : (
-                  <div className="col-span-full py-20 text-center space-y-4">
+                  <div className="py-20 text-center space-y-4">
                     <p className="text-white/40">Nenhuma filial disponível nesta empresa.</p>
                   </div>
                 )}
