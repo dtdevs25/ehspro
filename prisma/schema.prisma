@@ -12,27 +12,27 @@ datasource db {
 
 enum UserRole {
   MASTER
-  USER
+  USER   @map("USUARIO")
   @@map("tipo_usuario")
 }
 
 enum CollaboratorStatus {
-  ACTIVE
-  INACTIVE
+  ACTIVE   @map("ATIVO")
+  INACTIVE @map("INATIVO")
   @@map("status_colaborador")
 }
 
 enum WorkRegime {
-  EFFECTIVE
-  THIRD_PARTY
+  EFFECTIVE   @map("EFETIVO")
+  THIRD_PARTY @map("TERCEIRO")
   @@map("regime_trabalho")
 }
 
 enum MedicalCertificateType {
-  MEDICAL
-  ACCIDENT
-  FAMILY
-  OTHER
+  MEDICAL  @map("MEDICO")
+  ACCIDENT @map("ACIDENTE")
+  FAMILY   @map("FAMILIA")
+  OTHER    @map("OUTROS")
   @@map("tipo_atestado")
 }
 
@@ -52,23 +52,23 @@ enum CipaOrigin {
 }
 
 enum CipaStatus {
-  ACTIVE
-  FINISHED
-  ELECTION
+  ACTIVE   @map("ATIVO")
+  FINISHED @map("FINALIZADO")
+  ELECTION @map("ELEICAO")
   @@map("status_cipa")
 }
 
 enum MeetingType {
-  ORDINARY
-  EXTRAORDINARY
+  ORDINARY      @map("ORDINARIA")
+  EXTRAORDINARY @map("EXTRAORDINARIA")
   @@map("tipo_reuniao")
 }
 
 enum ActionPlanStatus {
-  PENDING
-  IN_PROGRESS
-  DONE
-  DELAYED
+  PENDING     @map("PENDENTE")
+  IN_PROGRESS @map("EM_ANDAMENTO")
+  DONE        @map("CONCLUIDO")
+  DELAYED     @map("ATRASADO")
   @@map("status_plano_acao")
 }
 

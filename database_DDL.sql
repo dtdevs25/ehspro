@@ -4,10 +4,10 @@ CREATE TABLE `usuarios` (
     `id` VARCHAR(191) NOT NULL,
     `nome` VARCHAR(191) NOT NULL,
     `email` VARCHAR(191) NOT NULL,
-    `funcao` ENUM('MASTER', 'USER') NOT NULL DEFAULT 'USER',
+    `funcao` ENUM('MASTER', 'USUARIO') NOT NULL DEFAULT 'USUARIO',
     `nome_cargo` VARCHAR(191),
     `permissoes` JSON NOT NULL,
-    `filiais_permitidas` JSON, -- Armazena strings, mas em MySQL/MariaDB Arrays são JSONs
+    `filiais_permitidas` JSON,
     `criado_em` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `atualizado_em` DATETIME(3) NOT NULL,
 
@@ -90,10 +90,10 @@ CREATE TABLE `colaboradores` (
     `filial_id` VARCHAR(191) NOT NULL,
     `data_admissao` DATETIME(3) NOT NULL,
     `data_demissao` DATETIME(3),
-    `status` ENUM('ACTIVE', 'INACTIVE') NOT NULL DEFAULT 'ACTIVE',
+    `status` ENUM('ATIVO', 'INATIVO') NOT NULL DEFAULT 'ATIVO',
     `desabilitado` BOOLEAN NOT NULL DEFAULT false,
     `tipo_deficiencia` VARCHAR(191),
-    `regime_trabalho` ENUM('EFFECTIVE', 'THIRD_PARTY') NOT NULL DEFAULT 'EFFECTIVE',
+    `regime_trabalho` ENUM('EFETIVO', 'TERCEIRO') NOT NULL DEFAULT 'EFETIVO',
     `empresa_terceira` VARCHAR(191),
     `codigo_esocial` VARCHAR(191),
     `criado_em` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
@@ -117,7 +117,7 @@ CREATE TABLE `atestados` (
     `dias` INTEGER NOT NULL,
     `cid` VARCHAR(191),
     `motivo` VARCHAR(191) NOT NULL,
-    `tipo` ENUM('MEDICAL', 'ACCIDENT', 'FAMILY', 'OTHER') NOT NULL,
+    `tipo` ENUM('MEDICO', 'ACIDENTE', 'FAMILIA', 'OUTROS') NOT NULL,
     `criado_em` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `atualizado_em` DATETIME(3) NOT NULL,
 
@@ -132,7 +132,7 @@ CREATE TABLE `cipa_mandatos` (
     `data_inicio` DATETIME(3) NOT NULL,
     `data_fim` DATETIME(3) NOT NULL,
     `filial_id` VARCHAR(191) NOT NULL,
-    `status` ENUM('ACTIVE', 'FINISHED', 'ELECTION') NOT NULL,
+    `status` ENUM('ATIVO', 'FINALIZADO', 'ELEICAO') NOT NULL,
 
     PRIMARY KEY (`id`),
     CONSTRAINT `cipa_mandatos_filial_id_fkey` FOREIGN KEY (`filial_id`) REFERENCES `filiais`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE
@@ -173,7 +173,7 @@ CREATE TABLE `cipa_reunioes` (
     `data_reuniao` DATETIME(3) NOT NULL,
     `titulo` VARCHAR(191) NOT NULL,
     `descricao` VARCHAR(191) NOT NULL,
-    `tipo` ENUM('ORDINARY', 'EXTRAORDINARY') NOT NULL,
+    `tipo` ENUM('ORDINARIA', 'EXTRAORDINARIA') NOT NULL,
 
     PRIMARY KEY (`id`),
     CONSTRAINT `cipa_reunioes_mandato_id_fkey` FOREIGN KEY (`mandato_id`) REFERENCES `cipa_mandatos`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE
@@ -186,7 +186,7 @@ CREATE TABLE `cipa_planos_acao` (
     `descricao` VARCHAR(191) NOT NULL,
     `prazo` DATETIME(3) NOT NULL,
     `responsavel_id` VARCHAR(191) NOT NULL,
-    `status` ENUM('PENDING', 'IN_PROGRESS', 'DONE', 'DELAYED') NOT NULL,
+    `status` ENUM('PENDENTE', 'EM_ANDAMENTO', 'CONCLUIDO', 'ATRASADO') NOT NULL,
 
     PRIMARY KEY (`id`),
     CONSTRAINT `cipa_planos_acao_reuniao_id_fkey` FOREIGN KEY (`reuniao_id`) REFERENCES `cipa_reunioes`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE
