@@ -58,7 +58,7 @@ app.get('/api/collaborators', async (req, res) => {
 
 // Serve static files from the React app (after build)
 // In production (Docker), we serve files from 'dist'
-const distPath = path.join(__dirname, '..', 'dist'); // Check if running from compiled server or ts-node
+const distPath = path.join(__dirname, '..', '..', 'dist'); // Go up to /app/dist
 // If running via ts-node in root, it might be different, but for Docker it will be:
 // /app/dist (frontend) and /app/server (backend)
 
