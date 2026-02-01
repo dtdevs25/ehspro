@@ -70,7 +70,7 @@ app.post('/api/auth/forgot-password', async (req, res) => {
     }
 
     const resetToken = Buffer.from(`${email}:${Date.now()}`).toString('base64');
-    const resetLink = `${process.env.APP_URL || 'http://localhost:3000'}/reset-password?token=${resetToken}`;
+    const resetLink = `${process.env.APP_URL || 'http://localhost:3000'}/?token=${resetToken}`;
 
     const mailOptions = {
       from: process.env.SMTP_FROM || '"EHS Pro Security" <no-reply@ehspro.com.br>',
@@ -111,6 +111,50 @@ app.post('/api/auth/forgot-password', async (req, res) => {
   }
 });
 
+app.post('/api/auth/reset-password', async (req, res) => {
+  const { token, newPassword } = req.body;
+
+  try {
+    if (!token || !newPassword) {
+      return res.status(400).json({ error: 'Dados incompletos.' });
+    }
+
+    // In a real app, verify the token signature/expiry (JWT) or DB lookup.
+    // For this simulated token "email:timestamp" base64, we decode it.
+    const decoded = Buffer.from(token, 'base64').toString();
+    const [email, timestamp] = decoded.split(':');
+
+    if (!email || !timestamp) {
+      return res.status(400).json({ error: 'Token inválido.' });
+    }
+
+    // Validate expiration (e.g., 1 hour)
+    const tokenTime = parseInt(timestamp);
+    if (Date.now() - tokenTime > 3600000) {
+      return res.status(400).json({ error: 'O link expirou. Solicite uma nova redefinição.' });
+    }
+
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      return res.status(404).json({ error: 'Usuário não encontrado.' });
+    }
+
+    // Hash new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { password: hashedPassword }
+    });
+
+    res.json({ success: true, message: 'Senha atualizada com sucesso!' });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Erro ao redefinir senha.' });
+  }
+});
+
 // Auth Routes: Login
 app.post('/api/auth/login', async (req, res) => {
   const { email, password } = req.body;
@@ -126,7 +170,6 @@ app.post('/api/auth/login', async (req, res) => {
     let isMatch = await bcrypt.compare(password, user.password);
 
     // 2. Lazy Migration: If bcrypt failed, check if it's the old plaintext password
-    // This allows existing users to login, but immediately upgrades them to hash
     if (!isMatch && password === user.password) {
       console.log(`[AUTH] Migrating user ${email} to secure hash...`);
       const newHash = await bcrypt.hash(password, 10);
