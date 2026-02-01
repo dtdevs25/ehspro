@@ -72,35 +72,51 @@ app.post('/api/auth/forgot-password', async (req, res) => {
     const resetToken = Buffer.from(`${email}:${Date.now()}`).toString('base64');
     const resetLink = `${process.env.APP_URL || 'http://localhost:3000'}/?token=${resetToken}`;
 
-    const mailOptions = {
-      from: process.env.SMTP_FROM || '"EHS Pro Security" <no-reply@ehspro.com.br>',
-      to: email,
-      subject: 'Redefinição de Senha | EHS Pro',
-      html: `
-        <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
-          <div style="background: linear-gradient(135deg, #059669 0%, #10b981 100%); padding: 30px; text-align: center;">
-            <h1 style="color: white; margin: 0; font-size: 24px; font-weight: 800;">EHS PRO</h1>
-            <p style="color: #ecfdf5; margin: 5px 0 0; font-size: 14px;">Gestão Inteligente & Segura</p>
-          </div>
-          
-          <div style="padding: 40px 30px; background-color: white;">
-            <h2 style="color: #1e293b; font-size: 20px; margin-top: 0;">Olá, ${user.name}</h2>
-            <p style="color: #475569; line-height: 1.6;">Recebemos uma solicitação de segurança para redefinir sua senha de acesso.</p>
-            <p style="color: #475569; line-height: 1.6;">Para continuar o processo e criar uma nova senha segura, clique no botão abaixo:</p>
-            
-            <div style="text-align: center; margin: 30px 0;">
-              <a href="${resetLink}" style="background-color: #059669; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; box-shadow: 0 4px 6px -1px rgba(5, 150, 105, 0.2);">Redefinir Minha Senha</a>
+    html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <style>
+            body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333333; margin: 0; padding: 0; }
+            .container { max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; }
+            .header { background-color: #047857; padding: 30px; text-align: center; } /* Darker green for contrast */
+            .header h1 { color: #ffffff !important; margin: 0; font-size: 24px; font-weight: 800; text-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+            .header p { color: #d1fae5 !important; margin: 5px 0 0; font-size: 14px; font-weight: 500; }
+            .content { padding: 40px 30px; background-color: #ffffff; }
+            .btn-container { text-align: center; margin: 30px 0; }
+            .btn { background-color: #059669; color: #ffffff !important; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block; font-size: 16px; }
+            .footer { background-color: #f8fafc; padding: 20px; text-align: center; color: #64748b; font-size: 12px; border-top: 1px solid #e2e8f0; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>EHS PRO</h1>
+              <p>Gestão Inteligente & Segura</p>
             </div>
+            
+            <div class="content">
+              <h2 style="color: #1e293b; margin-top: 0;">Olá, ${user.name}</h2>
+              <p>Recebemos uma solicitação de segurança para redefinir sua senha de acesso.</p>
+              <p>Para garantir a segurança da sua conta, clique no botão abaixo para criar uma nova senha:</p>
+              
+              <div class="btn-container">
+                <a href="${resetLink}" class="btn">Redefinir Minha Senha</a>
+              </div>
 
-            <p style="color: #94a3b8; font-size: 13px; margin-top: 30px; text-align: center;">Este link expira em 1 hora. Se você não solicitou, por favor ignore este email ou contate o suporte.</p>
+              <p style="color: #64748b; font-size: 14px;">Se o botão não funcionar, copie e cole o link abaixo no seu navegador:</p>
+              <p style="font-size: 12px; color: #94a3b8; word-break: break-all;">${resetLink}</p>
+            </div>
+            
+            <div class="footer">
+              &copy; ${new Date().getFullYear()} EHS Pro. Todos os direitos reservados.<br>
+              Este é um email automático de segurança. Não responda.
+            </div>
           </div>
-          
-          <div style="background-color: #f1f5f9; padding: 20px; text-align: center; color: #64748b; font-size: 12px;">
-            &copy; ${new Date().getFullYear()} EHS Pro. Todos os direitos reservados.
-          </div>
-        </div>
+        </body>
+        </html>
       `
-    };
 
     await transporter.sendMail(mailOptions);
     res.json({ success: true, message: 'E-mail enviado! Verifique sua caixa de entrada.' });
