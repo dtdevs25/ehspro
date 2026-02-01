@@ -247,6 +247,29 @@ app.post('/api/ai/suggest', async (req, res) => {
   res.json(result);
 });
 
+// Core Data Routes
+app.get('/api/companies', async (req, res) => {
+  try {
+    const companies = await prisma.company.findMany({
+      include: { branches: true }
+    });
+    res.json(companies);
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao buscar empresas' });
+  }
+});
+
+app.get('/api/branches', async (req, res) => {
+  try {
+    const branches = await prisma.branch.findMany({
+      include: { company: true }
+    });
+    res.json(branches);
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao buscar filiais' });
+  }
+});
+
 // Example: Get all collaborators
 app.get('/api/collaborators', async (req, res) => {
   try {

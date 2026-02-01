@@ -123,10 +123,36 @@ const App: React.FC = () => {
   const [collaborators, setCollaborators] = useState<Collaborator[]>(DEMO_COLLABORATORS);
   const [roles, setRoles] = useState<Role[]>(INITIAL_ROLES);
   const [functions, setFunctions] = useState<JobFunction[]>(INITIAL_FUNCTIONS);
-  const [companies, setCompanies] = useState<Company[]>(INITIAL_COMPANIES);
-  const [branches, setBranches] = useState<Branch[]>(INITIAL_BRANCHES);
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [branches, setBranches] = useState<Branch[]>([]);
   const [certificates, setCertificates] = useState<MedicalCertificate[]>([]);
   const [allUsers, setAllUsers] = useState<User[]>([MASTER_USER]);
+
+  // Fetch initial data
+  React.useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [companiesRes, branchesRes] = await Promise.all([
+          fetch('/api/companies'),
+          fetch('/api/branches')
+        ]);
+
+        if (companiesRes.ok && branchesRes.ok) {
+          const companiesData = await companiesRes.json();
+          const branchesData = await branchesRes.json();
+          setCompanies(companiesData);
+          setBranches(branchesData);
+        }
+      } catch (error) {
+        console.error("Failed to load initial data", error);
+      }
+    };
+
+    // Always fetch data if user is logged in, or purely on mount if public data is safe (here restricted to logged in logic usually, but fetched globally for now)
+    if (currentUser) {
+      fetchData();
+    }
+  }, [currentUser]);
 
   // View Filtering Logic
   const activeBranch = useMemo(() => branches.find(b => b.id === activeBranchId), [activeBranchId, branches]);
