@@ -1,0 +1,295 @@
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Enums (Mapped to Portuguese in DB, but English in Code if needed, or keeping English keys for TS compatibility)
+
+enum UserRole {
+  MASTER
+  USER
+  @@map("tipo_usuario")
+}
+
+enum CollaboratorStatus {
+  ACTIVE
+  INACTIVE
+  @@map("status_colaborador")
+}
+
+enum WorkRegime {
+  EFFECTIVE
+  THIRD_PARTY
+  @@map("regime_trabalho")
+}
+
+enum MedicalCertificateType {
+  MEDICAL
+  ACCIDENT
+  FAMILY
+  OTHER
+  @@map("tipo_atestado")
+}
+
+enum CipaRole {
+  PRESIDENTE
+  VICE_PRESIDENTE
+  SECRETARIO
+  TITULAR
+  SUPLENTE
+  @@map("cargo_cipa")
+}
+
+enum CipaOrigin {
+  EMPREGADOR
+  EMPREGADO
+  @@map("origem_cipa")
+}
+
+enum CipaStatus {
+  ACTIVE
+  FINISHED
+  ELECTION
+  @@map("status_cipa")
+}
+
+enum MeetingType {
+  ORDINARY
+  EXTRAORDINARY
+  @@map("tipo_reuniao")
+}
+
+enum ActionPlanStatus {
+  PENDING
+  IN_PROGRESS
+  DONE
+  DELAYED
+  @@map("status_plano_acao")
+}
+
+enum ModuleType {
+  DASHBOARD
+  RH
+  SAFETY
+  MEDICINE
+  ADMIN
+  REGISTRATIONS
+  @@map("tipo_modulo")
+}
+
+// Models
+
+model User {
+  id              String   @id @default(uuid())
+  name            String   @map("nome")
+  email           String   @unique @map("email")
+  role            UserRole @default(USER) @map("funcao")
+  functionName    String?  @map("nome_cargo")
+  permissions     Json     @map("permissoes") // Stores Permission[]
+  allowedBranches String[] @map("filiais_permitidas") // Stores branch IDs
+
+  createdAt       DateTime @default(now()) @map("criado_em")
+  updatedAt       DateTime @updatedAt @map("atualizado_em")
+
+  @@map("usuarios")
+}
+
+model Company {
+  id        String   @id @default(uuid())
+  name      String   @map("nome")
+  cnpj      String   @unique @map("cnpj")
+  cnae      String   @map("cnae")
+  address   String   @map("endereco")
+  
+  branches  Branch[]
+  collaborators Collaborator[]
+
+  @@map("empresas")
+}
+
+model Branch {
+  id        String   @id @default(uuid())
+  companyId String   @map("empresa_id")
+  name      String   @map("nome")
+  cnpj      String   @unique @map("cnpj")
+  cnae      String   @map("cnae")
+  address   String   @map("endereco")
+
+  company   Company  @relation(fields: [companyId], references: [id])
+  collaborators Collaborator[]
+  cipaTerms     CipaTerm[]
+
+  @@map("filiais")
+}
+
+model JobFunction {
+  id           String   @id @default(uuid())
+  registration String   @map("matricula")
+  name         String   @map("nome")
+  cbo          String   @map("cbo")
+  description  String   @map("descricao")
+
+  collaborators Collaborator[]
+  roles         Role[] // A JobFunction can be linked to multiple internal roles?
+
+  @@map("funcoes")
+}
+
+model Role {
+  id           String   @id @default(uuid())
+  registration String   @map("matricula")
+  name         String   @map("nome")
+  functionId   String   @map("funcao_id")
+  description  String   @map("descricao")
+
+  jobFunction  JobFunction @relation(fields: [functionId], references: [id])
+  collaborators Collaborator[]
+
+  @@map("cargos")
+}
+
+model Collaborator {
+  id            String   @id @default(uuid())
+  registration  String   @unique @map("matricula")
+  name          String   @map("nome")
+  cpf           String   @unique @map("cpf")
+  rg            String   @map("rg")
+  motherName    String   @map("nome_mae")
+  fatherName    String   @map("nome_pai")
+  birthDate     DateTime @map("data_nascimento")
+  birthPlace    String   @map("naturalidade")
+  birthState    String   @map("uf_nascimento")
+  nationality   String   @map("nacionalidade")
+  education     String   @map("escolaridade")
+  maritalStatus String   @map("estado_civil")
+  gender        String   @map("genero")
+  race          String   @map("raca")
+  address       String   @map("endereco")
+  phone         String   @map("telefone")
+  email         String   @map("email")
+  
+  roleId        String   @map("cargo_id")
+  functionId    String   @map("funcao_id")
+  companyId     String   @map("empresa_id")
+  branchId      String   @map("filial_id")
+  
+  admissionDate DateTime @map("data_admissao")
+  terminationDate DateTime? @map("data_demissao")
+  status        CollaboratorStatus @default(ACTIVE) @map("status")
+  isDisabled    Boolean  @default(false) @map("desabilitado")
+  disabilityType String? @map("tipo_deficiencia")
+  
+  workRegime    WorkRegime @default(EFFECTIVE) @map("regime_trabalho")
+  thirdPartyCompanyName String? @map("empresa_terceira")
+  eSocialCode   String?  @map("codigo_esocial")
+
+  role          Role     @relation(fields: [roleId], references: [id])
+  jobFunction   JobFunction @relation(fields: [functionId], references: [id])
+  company       Company  @relation(fields: [companyId], references: [id])
+  branch        Branch   @relation(fields: [branchId], references: [id])
+
+  medicalCertificates MedicalCertificate[]
+  cipeiros            Cipeiro[]
+
+  createdAt     DateTime @default(now()) @map("criado_em")
+  updatedAt     DateTime @updatedAt @map("atualizado_em")
+
+  @@map("colaboradores")
+}
+
+model MedicalCertificate {
+  id             String   @id @default(uuid())
+  collaboratorId String   @map("colaborador_id")
+  startDate      DateTime @map("data_inicio")
+  endDate        DateTime @map("data_fim")
+  days           Int      @map("dias")
+  cid            String?  @map("cid")
+  reason         String   @map("motivo")
+  type           MedicalCertificateType @map("tipo")
+
+  collaborator   Collaborator @relation(fields: [collaboratorId], references: [id])
+
+  createdAt      DateTime @default(now()) @map("criado_em")
+  updatedAt      DateTime @updatedAt @map("atualizado_em")
+
+  @@map("atestados")
+}
+
+// CIPA Modules
+
+model CipaTerm {
+  id        String     @id @default(uuid())
+  year      String     @map("ano_vigencia")
+  startDate DateTime   @map("data_inicio")
+  endDate   DateTime   @map("data_fim")
+  branchId  String     @map("filial_id")
+  status    CipaStatus @map("status")
+
+  branch    Branch     @relation(fields: [branchId], references: [id])
+  elections CipaElection[]
+  cipeiros  Cipeiro[]
+  meetings  CipaMeeting[]
+
+  @@map("cipa_mandatos")
+}
+
+model CipaElection {
+  id                 String   @id @default(uuid())
+  termId             String   @map("mandato_id")
+  currentTermEndDate DateTime @map("fim_mandato_atual")
+  riskDegree         Int      @map("grau_risco") // 1-4
+  employeeCount      Int      @map("num_empregados")
+  
+  dimensioning       Json     @map("dimensionamento") // { efetivos: int, suplentes: int }
+  calendar           Json     @map("calendario") // { convocacao: date, etc }
+
+  term               CipaTerm @relation(fields: [termId], references: [id])
+
+  @@map("cipa_eleicoes")
+}
+
+model Cipeiro {
+  id             String     @id @default(uuid())
+  termId         String     @map("mandato_id")
+  collaboratorId String     @map("colaborador_id")
+  cipaRole       CipaRole   @map("cargo_cipa")
+  origin         CipaOrigin @map("origem")
+  votes          Int?       @map("votos")
+
+  term           CipaTerm     @relation(fields: [termId], references: [id])
+  collaborator   Collaborator @relation(fields: [collaboratorId], references: [id])
+
+  @@map("cipa_membros")
+}
+
+model CipaMeeting {
+  id          String      @id @default(uuid())
+  termId      String      @map("mandato_id")
+  date        DateTime    @map("data_reuniao")
+  title       String      @map("titulo")
+  description String      @map("descricao")
+  type        MeetingType @map("tipo")
+
+  term        CipaTerm         @relation(fields: [termId], references: [id])
+  actionPlans CipaActionPlan[]
+
+  @@map("cipa_reunioes")
+}
+
+model CipaActionPlan {
+  id            String           @id @default(uuid())
+  meetingId     String           @map("reuniao_id")
+  description   String           @map("descricao")
+  deadline      DateTime         @map("prazo")
+  responsibleId String           @map("responsavel_id") // Could be ID of a user or collaborator
+  status        ActionPlanStatus @map("status")
+
+  meeting       CipaMeeting @relation(fields: [meetingId], references: [id])
+
+  @@map("cipa_planos_acao")
+}
