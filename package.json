@@ -8,10 +8,12 @@
     "build": "vite build",
     "build:server": "tsc -p tsconfig.server.json",
     "start": "node dist-server/server/index.js",
+    "cache-clean": "echo 'cache busted v1'",
     "preview": "vite preview"
   },
   "dependencies": {
     "@google/genai": "^1.39.0",
+    "@prisma/client": "5.22.0",
     "docx": "^8.5.0",
     "dotenv": "^17.2.3",
     "lucide-react": "^0.562.0",
@@ -21,7 +23,7 @@
   "devDependencies": {
     "@types/node": "^22.14.0",
     "@vitejs/plugin-react": "^5.0.0",
-    "prisma": "^7.3.0",
+    "prisma": "5.22.0",
     "typescript": "~5.8.2",
     "vite": "^6.2.0"
   }
