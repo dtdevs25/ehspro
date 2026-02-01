@@ -5,15 +5,16 @@ import { CollaboratorForm } from './components/Modules/RH/CollaboratorForm';
 import { BulkImportModal } from './components/Modules/RH/BulkImportModal';
 import { UserPermissions } from './components/Modules/Admin/UserPermissions';
 import { Login } from './components/Auth/Login';
+import { ResetPassword } from './components/Auth/ResetPassword';
 import { DashboardOverview } from './components/Modules/Dashboard/DashboardOverview';
 import { RegistrationModule } from './components/Modules/Registrations/RegistrationModule';
 import { AbsenteeismModule } from './components/Modules/RH/AbsenteeismModule';
 import { SimpleCRUDModule } from './components/Modules/RH/SimpleCRUDModule';
 import { CipaModule } from './components/Modules/Safety/CipaModule';
 import { UnitSelection } from './components/Auth/UnitSelection';
-import { 
-  MASTER_USER, 
-  INITIAL_ROLES, 
+import {
+  MASTER_USER,
+  INITIAL_ROLES,
   INITIAL_FUNCTIONS,
   INITIAL_COMPANIES,
   INITIAL_BRANCHES,
@@ -23,20 +24,20 @@ import {
   GENDERS,
   RACES
 } from './constants';
-import { 
-  User, 
-  Collaborator, 
-  Role, 
-  JobFunction, 
+import {
+  User,
+  Collaborator,
+  Role,
+  JobFunction,
   Company,
   Branch,
   MedicalCertificate
 } from './types';
-import { 
-  Plus, 
-  Search, 
-  LogOut, 
-  Edit3, 
+import {
+  Plus,
+  Search,
+  LogOut,
+  Edit3,
   Briefcase,
   Wrench,
   Eye,
@@ -117,7 +118,7 @@ const App: React.FC = () => {
   const [activeModule, setActiveModule] = useState<string>('dashboard');
   const [activeSubItem, setActiveSubItem] = useState<string>('overview');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  
+
   // Data State
   const [collaborators, setCollaborators] = useState<Collaborator[]>(DEMO_COLLABORATORS);
   const [roles, setRoles] = useState<Role[]>(INITIAL_ROLES);
@@ -131,16 +132,16 @@ const App: React.FC = () => {
   const activeBranch = useMemo(() => branches.find(b => b.id === activeBranchId), [activeBranchId, branches]);
   const activeCompany = useMemo(() => companies.find(c => c.id === activeBranch?.companyId), [activeBranch, companies]);
 
-  const filteredCollaboratorsByUnit = useMemo(() => 
-    collaborators.filter(c => c.branchId === activeBranchId), 
-  [collaborators, activeBranchId]);
+  const filteredCollaboratorsByUnit = useMemo(() =>
+    collaborators.filter(c => c.branchId === activeBranchId),
+    [collaborators, activeBranchId]);
 
-  const filteredCertificatesByUnit = useMemo(() => 
+  const filteredCertificatesByUnit = useMemo(() =>
     certificates.filter(cert => {
       const collab = collaborators.find(col => col.id === cert.collaboratorId);
       return collab?.branchId === activeBranchId;
-    }), 
-  [certificates, collaborators, activeBranchId]);
+    }),
+    [certificates, collaborators, activeBranchId]);
 
   // UI Handlers
   const [isCollaboratorFormOpen, setIsCollaboratorFormOpen] = useState(false);
@@ -168,19 +169,19 @@ const App: React.FC = () => {
   // CRUD Handlers
   const saveCollaborator = (data: Partial<Collaborator>) => {
     if (editingCollaborator) {
-        setCollaborators(collaborators.map(c => c.id === editingCollaborator.id ? { ...c, ...data } as Collaborator : c));
+      setCollaborators(collaborators.map(c => c.id === editingCollaborator.id ? { ...c, ...data } as Collaborator : c));
     } else {
-        const nextReg = (collaborators.length > 0 
-          ? Math.max(...collaborators.map(c => parseInt(c.registration) || 0)) + 1 
-          : 1).toString();
+      const nextReg = (collaborators.length > 0
+        ? Math.max(...collaborators.map(c => parseInt(c.registration) || 0)) + 1
+        : 1).toString();
 
-        const newCollaborator = {
-            ...data,
-            id: Math.random().toString(36).substr(2, 9),
-            registration: nextReg,
-            branchId: activeBranchId 
-        } as Collaborator;
-        setCollaborators([...collaborators, newCollaborator]);
+      const newCollaborator = {
+        ...data,
+        id: Math.random().toString(36).substr(2, 9),
+        registration: nextReg,
+        branchId: activeBranchId
+      } as Collaborator;
+      setCollaborators([...collaborators, newCollaborator]);
     }
     setIsCollaboratorFormOpen(false);
     setEditingCollaborator(null);
@@ -247,8 +248,8 @@ const App: React.FC = () => {
       const newPerms = [...u.permissions];
       const existing = newPerms.find(p => p.moduleId === moduleId);
       if (existing) {
-        existing.subModules = existing.subModules.includes(subId) 
-          ? existing.subModules.filter(s => s !== subId) 
+        existing.subModules = existing.subModules.includes(subId)
+          ? existing.subModules.filter(s => s !== subId)
           : [...existing.subModules, subId];
       } else {
         newPerms.push({ moduleId, subModules: [subId] });
@@ -258,14 +259,26 @@ const App: React.FC = () => {
   };
 
   // Main Render Logic
+  // Check for Reset Password Token
+  const queryParams = new URLSearchParams(window.location.search);
+  const resetToken = queryParams.get('token');
+
+  if (resetToken) {
+    return <ResetPassword token={resetToken} onSuccess={() => {
+      // Clear query param and reload/rerender to show Login
+      window.history.replaceState({}, document.title, "/");
+      window.location.reload();
+    }} />;
+  }
+
   if (!currentUser) return <Login onLogin={handleLogin} />;
-  
+
   if (!activeBranchId) return (
-    <UnitSelection 
-      user={currentUser} 
-      companies={companies} 
-      branches={branches} 
-      onSelect={(branchId) => setActiveBranchId(branchId)} 
+    <UnitSelection
+      user={currentUser}
+      companies={companies}
+      branches={branches}
+      onSelect={(branchId) => setActiveBranchId(branchId)}
       onLogout={handleLogout}
     />
   );
@@ -273,16 +286,16 @@ const App: React.FC = () => {
   const activeSubItemLabel = MENU_CONFIG.find(m => m.id === activeModule)?.subItems.find(s => s.id === activeSubItem)?.label || '';
 
   const searchedCollaborators = filteredCollaboratorsByUnit
-    .filter(c => 
-      c.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-      c.cpf.includes(searchQuery) || 
+    .filter(c =>
+      c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      c.cpf.includes(searchQuery) ||
       c.registration.includes(searchQuery)
     );
 
   return (
     <div className="flex h-screen overflow-hidden bg-emerald-50/20">
-      <Sidebar 
-        user={currentUser} 
+      <Sidebar
+        user={currentUser}
         activeModule={activeModule}
         activeSubItem={activeSubItem}
         onNavigate={handleNavigate}
@@ -294,21 +307,21 @@ const App: React.FC = () => {
         <header className="bg-white border-b border-emerald-100 h-16 flex items-center justify-between px-8 flex-shrink-0 z-40 shadow-sm shadow-emerald-100/10">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2 bg-emerald-50 px-4 py-2 rounded-xl border border-emerald-100">
-               <Building2 size={16} className="text-emerald-600" />
-               <span className="text-xs font-black text-emerald-950 uppercase truncate max-w-[150px]">{activeCompany?.name}</span>
-               <ChevronRight size={14} className="text-emerald-300" />
-               <MapPin size={16} className="text-emerald-500" />
-               <span className="text-xs font-black text-emerald-700 uppercase">{activeBranch?.name}</span>
-               
-               <button 
-                  onClick={() => setActiveBranchId(null)}
-                  className="ml-2 p-1.5 hover:bg-emerald-200 rounded-lg text-emerald-400 hover:text-emerald-700 transition-all"
-                  title="Trocar Unidade"
-               >
-                  <ArrowLeftRight size={14} />
-               </button>
+              <Building2 size={16} className="text-emerald-600" />
+              <span className="text-xs font-black text-emerald-950 uppercase truncate max-w-[150px]">{activeCompany?.name}</span>
+              <ChevronRight size={14} className="text-emerald-300" />
+              <MapPin size={16} className="text-emerald-500" />
+              <span className="text-xs font-black text-emerald-700 uppercase">{activeBranch?.name}</span>
+
+              <button
+                onClick={() => setActiveBranchId(null)}
+                className="ml-2 p-1.5 hover:bg-emerald-200 rounded-lg text-emerald-400 hover:text-emerald-700 transition-all"
+                title="Trocar Unidade"
+              >
+                <ArrowLeftRight size={14} />
+              </button>
             </div>
-            
+
             <div className="h-6 w-px bg-emerald-100" />
             <span className="text-emerald-900 font-black text-sm tracking-tight uppercase">{activeSubItemLabel}</span>
           </div>
@@ -323,15 +336,15 @@ const App: React.FC = () => {
         <main className="flex-1 overflow-y-auto p-4 md:p-8">
           <div className="max-w-7xl mx-auto space-y-8 pb-10">
             {activeModule === 'dashboard' && <DashboardOverview collaborators={filteredCollaboratorsByUnit} certificates={filteredCertificatesByUnit} />}
-            
+
             {activeModule === 'registrations' && (
-              <RegistrationModule 
-                type={activeSubItem as any} 
-                companies={companies} 
-                branches={branches} 
-                onSaveCompany={saveCompany} 
+              <RegistrationModule
+                type={activeSubItem as any}
+                companies={companies}
+                branches={branches}
+                onSaveCompany={saveCompany}
                 onSaveBranch={saveBranch}
-                onDeleteCompany={deleteCompany} 
+                onDeleteCompany={deleteCompany}
                 onDeleteBranch={deleteBranch}
               />
             )}
@@ -352,61 +365,61 @@ const App: React.FC = () => {
                   <input type="text" placeholder="Buscar na unidade..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full bg-white border border-emerald-100 p-4 pl-12 rounded-2xl shadow-sm" />
                 </div>
                 <div className="bg-white rounded-[2.5rem] border border-emerald-100 overflow-hidden shadow-2xl">
-                   <table className="w-full">
-                      <thead>
-                         <tr className="bg-emerald-50/50 text-left text-xs text-emerald-400 font-black uppercase border-b border-emerald-100">
-                            <th className="px-8 py-6">Matrícula</th>
-                            <th className="px-8 py-6">Colaborador</th>
-                            <th className="px-8 py-6">Status</th>
-                            <th className="px-8 py-6 text-right">Ações</th>
-                         </tr>
-                      </thead>
-                      <tbody className="divide-y divide-emerald-50">
-                        {searchedCollaborators.map(c => (
-                          <tr key={c.id} className="hover:bg-emerald-50/30 transition-colors group">
-                            <td className="px-8 py-5 font-black text-xs text-emerald-600">{c.registration}</td>
-                            <td className="px-8 py-5 font-black text-emerald-950">{c.name}</td>
-                            <td className="px-8 py-5"><span className="bg-emerald-100 text-emerald-700 text-[10px] font-black px-3 py-1 rounded-full uppercase">{c.status}</span></td>
-                            <td className="px-8 py-5 text-right opacity-0 group-hover:opacity-100">
-                               <button onClick={() => setViewingCollaborator(c)} className="p-2 text-emerald-600" title="Visualizar"><Eye size={18}/></button>
-                               <button onClick={() => { setEditingCollaborator(c); setIsCollaboratorFormOpen(true); }} className="p-2 text-emerald-400" title="Editar"><Edit3 size={18}/></button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                   </table>
+                  <table className="w-full">
+                    <thead>
+                      <tr className="bg-emerald-50/50 text-left text-xs text-emerald-400 font-black uppercase border-b border-emerald-100">
+                        <th className="px-8 py-6">Matrícula</th>
+                        <th className="px-8 py-6">Colaborador</th>
+                        <th className="px-8 py-6">Status</th>
+                        <th className="px-8 py-6 text-right">Ações</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-emerald-50">
+                      {searchedCollaborators.map(c => (
+                        <tr key={c.id} className="hover:bg-emerald-50/30 transition-colors group">
+                          <td className="px-8 py-5 font-black text-xs text-emerald-600">{c.registration}</td>
+                          <td className="px-8 py-5 font-black text-emerald-950">{c.name}</td>
+                          <td className="px-8 py-5"><span className="bg-emerald-100 text-emerald-700 text-[10px] font-black px-3 py-1 rounded-full uppercase">{c.status}</span></td>
+                          <td className="px-8 py-5 text-right opacity-0 group-hover:opacity-100">
+                            <button onClick={() => setViewingCollaborator(c)} className="p-2 text-emerald-600" title="Visualizar"><Eye size={18} /></button>
+                            <button onClick={() => { setEditingCollaborator(c); setIsCollaboratorFormOpen(true); }} className="p-2 text-emerald-400" title="Editar"><Edit3 size={18} /></button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             )}
 
-            {activeModule === 'rh' && activeSubItem === 'roles' && <SimpleCRUDModule items={roles} onSave={saveRole} onDelete={() => {}} title="Cargos" icon={Briefcase} availableFunctions={functions} />}
-            {activeModule === 'rh' && activeSubItem === 'functions' && <SimpleCRUDModule items={functions} onSave={saveFunction} onDelete={() => {}} title="Funções" icon={Wrench} />}
+            {activeModule === 'rh' && activeSubItem === 'roles' && <SimpleCRUDModule items={roles} onSave={saveRole} onDelete={() => { }} title="Cargos" icon={Briefcase} availableFunctions={functions} />}
+            {activeModule === 'rh' && activeSubItem === 'functions' && <SimpleCRUDModule items={functions} onSave={saveFunction} onDelete={() => { }} title="Funções" icon={Wrench} />}
             {activeModule === 'rh' && activeSubItem === 'absenteeism' && <AbsenteeismModule collaborators={filteredCollaboratorsByUnit} certificates={filteredCertificatesByUnit} onSaveCertificate={saveCertificate} />}
-            
+
             {activeModule === 'safety' && activeSubItem === 'cipa' && activeBranch && activeCompany && (
-              <CipaModule 
-                collaborators={filteredCollaboratorsByUnit} 
+              <CipaModule
+                collaborators={filteredCollaboratorsByUnit}
                 activeBranch={activeBranch}
                 activeCompany={activeCompany}
               />
             )}
-            
+
             {activeModule === 'admin' && activeSubItem === 'users' && <UserPermissions users={allUsers} onUpdatePermissions={updatePermissions} />}
           </div>
         </main>
       </div>
 
       {isCollaboratorFormOpen && (
-        <CollaboratorForm 
-          onSave={saveCollaborator} 
-          onCancel={() => { setIsCollaboratorFormOpen(false); setEditingCollaborator(null); }} 
-          roles={roles} 
-          functions={functions} 
-          companies={companies} 
-          branches={branches} 
+        <CollaboratorForm
+          onSave={saveCollaborator}
+          onCancel={() => { setIsCollaboratorFormOpen(false); setEditingCollaborator(null); }}
+          roles={roles}
+          functions={functions}
+          companies={companies}
+          branches={branches}
           initialData={editingCollaborator}
-          nextRegistration={(collaborators.length > 0 
-            ? Math.max(...collaborators.map(c => parseInt(c.registration) || 0)) + 1 
+          nextRegistration={(collaborators.length > 0
+            ? Math.max(...collaborators.map(c => parseInt(c.registration) || 0)) + 1
             : 1).toString()}
         />
       )}
