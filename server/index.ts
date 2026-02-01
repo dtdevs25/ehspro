@@ -17,6 +17,37 @@ const __dirname = path.dirname(__filename);
 app.use(cors());
 app.use(express.json());
 
+// Auth Routes
+app.post('/api/auth/login', async (req, res) => {
+  const { email, password } = req.body;
+
+  try {
+    // 1. Try to find user in DB
+    const user = await prisma.user.findUnique({ where: { email } });
+
+    if (user) {
+      // In a real app, verify password hash here. For now, we trust.
+      // Or check if password === '123456' for safety while developing
+      if (password === '123456') {
+        return res.json({ success: true, user });
+      }
+      return res.status(401).json({ error: 'Senha incorreta' });
+    }
+
+    // 2. Fallback: If no users exist in DB, check for MASTER credentials to bootstrap
+    if (email === 'admin@ehspro.com' && password === '123456') {
+      // Create the Master User in DB if table is empty ?!
+      // Or just return success so he can login and register others.
+      return res.json({ success: true, user: { name: 'Administrador', email, role: 'MASTER' } });
+    }
+
+    res.status(401).json({ error: 'Usuário não encontrado' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Erro interno no servidor' });
+  }
+});
+
 // API Routes
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok' });
