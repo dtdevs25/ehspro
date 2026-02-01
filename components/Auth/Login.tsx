@@ -44,6 +44,13 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
       const data = await res.json();
 
       if (res.ok) {
+        // Save or remove email based on Remember Me preference
+        if (rememberMe) {
+          localStorage.setItem('ehs_remember_email', email);
+        } else {
+          localStorage.removeItem('ehs_remember_email');
+        }
+
         onLogin(email);
       } else {
         setError(data.error || 'Falha no login');
