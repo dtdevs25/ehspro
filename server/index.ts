@@ -8,12 +8,38 @@ const app = express();
 const prisma = new PrismaClient();
 const PORT = process.env.PORT || 3000;
 
+import { generateProfessionalSummary, generateRoleDescription, getCidDescription, suggestRolesAndFunctions } from './aiController';
+
 app.use(cors());
 app.use(express.json());
 
 // API Routes
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok' });
+});
+
+// AI Routes
+app.post('/api/ai/summary', async (req, res) => {
+  const result = await generateProfessionalSummary(req.body);
+  res.json({ text: result });
+});
+
+app.post('/api/ai/role-description', async (req, res) => {
+  const { roleName, cbo } = req.body;
+  const result = await generateRoleDescription(roleName, cbo);
+  res.json({ text: result });
+});
+
+app.post('/api/ai/cid', async (req, res) => {
+  const { cid } = req.body;
+  const result = await getCidDescription(cid);
+  res.json({ text: result });
+});
+
+app.post('/api/ai/suggest', async (req, res) => {
+  const { industry } = req.body;
+  const result = await suggestRolesAndFunctions(industry);
+  res.json(result);
 });
 
 // Example: Get all collaborators

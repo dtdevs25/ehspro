@@ -1,72 +1,64 @@
 
-import { GoogleGenAI, Type } from "@google/genai";
+// Client-side service that calls the backend API
+// This replaces the direct Usage of @google/genai in the browser
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+const API_BASE = '/api'; // In production, this is relative. In dev with proxy, it works.
 
 export const generateProfessionalSummary = async (data: any) => {
   try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents: `Gere um breve perfil profissional em português para um colaborador com os seguintes dados: ${JSON.stringify(data)}. Seja formal e use no máximo 3 frases.`,
+    const response = await fetch(`${API_BASE}/ai/summary`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
     });
-    return response.text;
+    const result = await response.json();
+    return result.text;
   } catch (error) {
-    console.error("Gemini Error:", error);
-    return "Não foi possível gerar o resumo profissional.";
+    console.error("AI Service Error:", error);
+    return "Não foi possível gerar o resumo profissional com a IA.";
   }
 };
 
 export const generateRoleDescription = async (roleName: string, cbo: string) => {
   try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-preview',
-      contents: `Como um especialista em RH e EHS, descreva as principais responsabilidades e requisitos para o cargo de "${roleName}" que possui o CBO "${cbo}". Seja técnico e objetivo. Use no máximo 4 parágrafos.`,
+    const response = await fetch(`${API_BASE}/ai/role-description`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ roleName, cbo })
     });
-    return response.text;
+    const result = await response.json();
+    return result.text;
   } catch (error) {
-    console.error("Gemini Error:", error);
-    return "Não foi possível gerar a descrição automática.";
+    console.error("AI Service Error:", error);
+    return "Erro ao gerar descrição.";
   }
 };
 
 export const getCidDescription = async (cidCode: string) => {
   try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents: `Você é um médico do trabalho. Forneça uma descrição curta e técnica (máximo 150 caracteres) para o CID-10 "${cidCode}". Foque apenas no nome da patologia e se há recomendação padrão de repouso. Não use introduções.`,
+    const response = await fetch(`${API_BASE}/ai/cid`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cid: cidCode })
     });
-    return response.text;
+    const result = await response.json();
+    return result.text;
   } catch (error) {
-    console.error("Gemini Error:", error);
-    return "Descrição técnica do CID indisponível.";
+    console.error("AI Service Error:", error);
+    return "Erro ao buscar CID.";
   }
 };
 
 export const suggestRolesAndFunctions = async (industry: string) => {
   try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents: `Sugira 5 cargos e 5 funções comuns no setor de ${industry} para um sistema de RH. Retorne apenas JSON.`,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            roles: {
-              type: Type.ARRAY,
-              items: { type: Type.STRING }
-            },
-            functions: {
-              type: Type.ARRAY,
-              items: { type: Type.STRING }
-            }
-          }
-        }
-      }
+    const response = await fetch(`${API_BASE}/ai/suggest`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ industry })
     });
-    return JSON.parse(response.text || '{}');
+    return await response.json();
   } catch (error) {
-    console.error("Gemini Error:", error);
+    console.error("AI Service Error:", error);
     return { roles: [], functions: [] };
   }
 };
