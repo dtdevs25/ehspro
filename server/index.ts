@@ -72,7 +72,11 @@ app.post('/api/auth/forgot-password', async (req, res) => {
     const resetToken = Buffer.from(`${email}:${Date.now()}`).toString('base64');
     const resetLink = `${process.env.APP_URL || 'http://localhost:3000'}/?token=${resetToken}`;
 
-    html: `
+    const mailOptions = {
+      from: process.env.SMTP_FROM || '"EHS Pro Security" <no-reply@ehspro.com.br>',
+      to: email,
+      subject: 'Redefinição de Senha | EHS Pro',
+      html: `
         <!DOCTYPE html>
         <html>
         <head>
@@ -80,7 +84,7 @@ app.post('/api/auth/forgot-password', async (req, res) => {
           <style>
             body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333333; margin: 0; padding: 0; }
             .container { max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; }
-            .header { background-color: #047857; padding: 30px; text-align: center; } /* Darker green for contrast */
+            .header { background-color: #047857; padding: 30px; text-align: center; }
             .header h1 { color: #ffffff !important; margin: 0; font-size: 24px; font-weight: 800; text-shadow: 0 1px 2px rgba(0,0,0,0.1); }
             .header p { color: #d1fae5 !important; margin: 5px 0 0; font-size: 14px; font-weight: 500; }
             .content { padding: 40px 30px; background-color: #ffffff; }
@@ -117,6 +121,7 @@ app.post('/api/auth/forgot-password', async (req, res) => {
         </body>
         </html>
       `
+    };
 
     await transporter.sendMail(mailOptions);
     res.json({ success: true, message: 'E-mail enviado! Verifique sua caixa de entrada.' });
@@ -127,6 +132,7 @@ app.post('/api/auth/forgot-password', async (req, res) => {
   }
 });
 
+// Auth Routes: Reset Password
 app.post('/api/auth/reset-password', async (req, res) => {
   const { token, newPassword } = req.body;
 
@@ -135,8 +141,6 @@ app.post('/api/auth/reset-password', async (req, res) => {
       return res.status(400).json({ error: 'Dados incompletos.' });
     }
 
-    // In a real app, verify the token signature/expiry (JWT) or DB lookup.
-    // For this simulated token "email:timestamp" base64, we decode it.
     const decoded = Buffer.from(token, 'base64').toString();
     const [email, timestamp] = decoded.split(':');
 
@@ -144,7 +148,6 @@ app.post('/api/auth/reset-password', async (req, res) => {
       return res.status(400).json({ error: 'Token inválido.' });
     }
 
-    // Validate expiration (e.g., 1 hour)
     const tokenTime = parseInt(timestamp);
     if (Date.now() - tokenTime > 3600000) {
       return res.status(400).json({ error: 'O link expirou. Solicite uma nova redefinição.' });
@@ -155,7 +158,6 @@ app.post('/api/auth/reset-password', async (req, res) => {
       return res.status(404).json({ error: 'Usuário não encontrado.' });
     }
 
-    // Hash new password
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
     await prisma.user.update({
@@ -207,7 +209,6 @@ app.post('/api/auth/login', async (req, res) => {
       { expiresIn: '8h' }
     );
 
-    // Return user info (excluding password)
     const { password: _, ...userWithoutPassword } = user;
     return res.json({ success: true, token, user: userWithoutPassword });
 
