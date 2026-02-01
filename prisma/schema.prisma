@@ -1,6 +1,7 @@
 
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
 }
 
 datasource db {
@@ -88,9 +89,11 @@ model User {
   id              String   @id @default(uuid())
   name            String   @map("nome")
   email           String   @unique @map("email")
+  password        String   @default("123456") @map("senha")
   role            UserRole @default(USER) @map("funcao")
+  status          String   @default("ACTIVE") @map("status")
   functionName    String?  @map("nome_cargo")
-  permissions     Json     @map("permissoes") // Stores Permission[]
+  permissions     Json     @default("[]") @map("permissoes") // Stores Permission[]
   allowedBranches String[] @map("filiais_permitidas") // Stores branch IDs
 
   createdAt       DateTime @default(now()) @map("criado_em")
