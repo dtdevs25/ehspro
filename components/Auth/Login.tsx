@@ -14,6 +14,12 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  // Forgot Password State
+  const [showForgotModal, setShowForgotModal] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [forgotStatus, setForgotStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -29,7 +35,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
       const data = await res.json();
 
       if (res.ok) {
-        onLogin(email); // In a real app, we would pass the User object here
+        onLogin(email);
       } else {
         setError(data.error || 'Falha no login');
       }
@@ -37,6 +43,33 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
       setError('Erro de conexão. Tente novamente.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setForgotLoading(true);
+    setForgotStatus(null);
+
+    try {
+      const res = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: forgotEmail })
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        setForgotStatus({ type: 'success', message: 'E-mail enviado! Verifique sua caixa de entrada.' });
+        setForgotEmail('');
+      } else {
+        setForgotStatus({ type: 'error', message: data.error || 'Erro ao enviar e-mail.' });
+      }
+    } catch (err) {
+      setForgotStatus({ type: 'error', message: 'Erro de conexão.' });
+    } finally {
+      setForgotLoading(false);
     }
   };
 
@@ -118,6 +151,13 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
                 </div>
                 <span className="text-[10px] font-semibold text-emerald-100/70 group-hover:text-white transition-colors">Lembrar</span>
               </label>
+              <button
+                type="button"
+                onClick={() => setShowForgotModal(true)}
+                className="text-xs font-bold text-emerald-400 hover:text-emerald-300 transition-all hover:underline"
+              >
+                Esqueci a senha
+              </button>
             </div>
 
             <button
@@ -141,6 +181,57 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
           </div>
         </div>
       </div>
+
+      {/* Forgot Password Modal */}
+      {showForgotModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-300">
+          <div className="w-full max-w-sm bg-slate-900 border border-emerald-500/30 rounded-2xl shadow-2xl p-6 relative animate-in zoom-in-95 duration-300">
+            <button
+              onClick={() => setShowForgotModal(false)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors"
+            >
+              ✕
+            </button>
+
+            <div className="text-center mb-6">
+              <div className="inline-flex items-center justify-center w-12 h-12 bg-emerald-500/10 rounded-xl mb-3 text-emerald-400">
+                <Lock size={24} />
+              </div>
+              <h3 className="text-xl font-bold text-white">Recuperar Senha</h3>
+              <p className="text-slate-400 text-sm mt-1">Digite seu e-mail para receber as instruções.</p>
+            </div>
+
+            <form onSubmit={handleForgotPassword} className="space-y-4">
+              {forgotStatus && (
+                <div className={`p-3 rounded-lg text-xs font-medium text-center ${forgotStatus.type === 'success' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-red-500/20 text-red-300 border border-red-500/30'}`}>
+                  {forgotStatus.message}
+                </div>
+              )}
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Seu E-mail Cadastrado</label>
+                <input
+                  type="email"
+                  value={forgotEmail}
+                  onChange={(e) => setForgotEmail(e.target.value)}
+                  className="w-full bg-slate-800 border border-slate-700 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 rounded-lg p-3 text-white placeholder:text-slate-600 outline-none transition-all"
+                  placeholder="ex: daniel-ehs@outlook.com"
+                  required
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={forgotLoading}
+                className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-lg transition-all shadow-lg shadow-emerald-900/50 disabled:opacity-50"
+              >
+                {forgotLoading ? 'Enviando...' : 'Enviar Link de Recuperação'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };
