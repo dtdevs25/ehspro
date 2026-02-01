@@ -1,11 +1,11 @@
 
 import React, { useState } from 'react';
-import { 
-  ChevronLeft, 
-  ChevronRight, 
-  LayoutDashboard, 
-  Users, 
-  ShieldCheck, 
+import {
+  ChevronLeft,
+  ChevronRight,
+  LayoutDashboard,
+  Users,
+  ShieldCheck,
   Lock,
   ChevronDown,
   Archive,
@@ -37,13 +37,13 @@ const IconMap: Record<string, any> = {
   Stethoscope
 };
 
-export const Sidebar: React.FC<SidebarProps> = ({ 
-  user, 
-  activeModule, 
-  activeSubItem, 
+export const Sidebar: React.FC<SidebarProps> = ({
+  user,
+  activeModule,
+  activeSubItem,
   onNavigate,
   collapsed,
-  setCollapsed 
+  setCollapsed
 }) => {
   const [expandedModules, setExpandedModules] = useState<string[]>([activeModule]);
 
@@ -53,7 +53,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       setExpandedModules([id]);
       return;
     }
-    setExpandedModules(prev => 
+    setExpandedModules(prev =>
       prev.includes(id) ? prev.filter(mid => mid !== id) : [...prev, id]
     );
   };
@@ -66,17 +66,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
   };
 
   return (
-    <aside 
+    <aside
       className={`bg-emerald-950 text-emerald-100/70 flex flex-col transition-all duration-300 h-screen sticky top-0 z-50 border-r border-emerald-900/50 ${collapsed ? 'w-20' : 'w-72'}`}
     >
-      <div className="p-6 flex items-center justify-between border-b border-emerald-900/50">
-        {!collapsed && (
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center font-bold text-white shadow-lg shadow-emerald-500/20">E</div>
-            <span className="text-xl font-bold text-white tracking-wider">EHS PRO</span>
+      <div className="p-6 flex items-center justify-center border-b border-emerald-900/50 min-h-[88px]">
+        {!collapsed ? (
+          <div className="flex items-center justify-center w-full">
+            <img src="/assets/logo-full.png" alt="EHS PRO" className="h-12 w-auto object-contain filter drop-shadow-[0_0_8px_rgba(16,185,129,0.3)]" />
+          </div>
+        ) : (
+          <div className="w-full flex justify-center">
+            <img src="/assets/logo-icon.png" alt="EHS" className="h-10 w-10 object-contain filter drop-shadow-[0_0_8px_rgba(16,185,129,0.3)]" />
           </div>
         )}
-        {collapsed && <div className="w-full flex justify-center"><div className="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center font-bold text-white">E</div></div>}
       </div>
 
       <nav className="flex-1 overflow-y-auto py-6 space-y-2 px-3">
@@ -135,9 +137,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
             )}
           </div>
         </div>
-        
+
         <div className="p-4 flex justify-center bg-emerald-900/20">
-          <button 
+          <button
             onClick={() => setCollapsed(!collapsed)}
             className="w-full py-2 flex items-center justify-center hover:bg-emerald-900/50 rounded-lg transition-colors text-emerald-400/50 hover:text-emerald-400"
           >
