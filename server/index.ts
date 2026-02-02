@@ -247,7 +247,84 @@ app.post('/api/ai/suggest', async (req, res) => {
   res.json(result);
 });
 
-// Core Data Routes
+// Core Data Routes - CRUD
+// --- COMPANIES ---
+app.post('/api/companies', async (req, res) => {
+  try {
+    const { name, cnpj, cnae, address } = req.body;
+    const newCompany = await prisma.company.create({
+      data: { name, cnpj, cnae, address }
+    });
+    res.json(newCompany);
+  } catch (error) {
+    console.error("Error creating company:", error);
+    res.status(500).json({ error: 'Erro ao criar empresa' });
+  }
+});
+
+app.put('/api/companies/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, cnpj, cnae, address } = req.body;
+    const updatedCompany = await prisma.company.update({
+      where: { id },
+      data: { name, cnpj, cnae, address }
+    });
+    res.json(updatedCompany);
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao atualizar empresa' });
+  }
+});
+
+app.delete('/api/companies/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    await prisma.company.delete({ where: { id } });
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao excluir empresa' });
+  }
+});
+
+// --- BRANCHES ---
+app.post('/api/branches', async (req, res) => {
+  try {
+    const { name, cnpj, cnae, address, companyId } = req.body;
+    const newBranch = await prisma.branch.create({
+      data: { name, cnpj, cnae, address, companyId }
+    });
+    res.json(newBranch);
+  } catch (error) {
+    console.error("Error creating branch:", error);
+    res.status(500).json({ error: 'Erro ao criar filial' });
+  }
+});
+
+app.put('/api/branches/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, cnpj, cnae, address, companyId } = req.body;
+    const updatedBranch = await prisma.branch.update({
+      where: { id },
+      data: { name, cnpj, cnae, address, companyId }
+    });
+    res.json(updatedBranch);
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao atualizar filial' });
+  }
+});
+
+app.delete('/api/branches/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    await prisma.branch.delete({ where: { id } });
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao excluir filial' });
+  }
+});
+
+// Core Data Routes - GET
 app.get('/api/companies', async (req, res) => {
   try {
     const companies = await prisma.company.findMany({

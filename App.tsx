@@ -229,34 +229,88 @@ const App: React.FC = () => {
     }
   };
 
-  const saveCompany = (data: Partial<Company>) => {
-    if (data.id) {
-      setCompanies(companies.map(c => c.id === data.id ? { ...c, ...data } as Company : c));
-    } else {
-      setCompanies([...companies, { ...data, id: `c-${Date.now()}` } as Company]);
+  // CRUD Handlers - Connected to API
+  const saveCompany = async (data: Partial<Company>) => {
+    try {
+      let savedCompany;
+      if (data.id && !data.id.startsWith('c-')) { // Update existing
+        const res = await fetch(`/api/companies/${data.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        if (!res.ok) throw new Error('Failed to update company');
+        savedCompany = await res.json();
+        setCompanies(companies.map(c => c.id === savedCompany.id ? savedCompany : c));
+      } else { // Create new
+        const res = await fetch('/api/companies', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        if (!res.ok) throw new Error('Failed to create company');
+        savedCompany = await res.json();
+        setCompanies([...companies, savedCompany]);
+      }
+    } catch (err) {
+      console.error("Error saving company:", err);
+      // Optional: Add toast notification here
     }
   };
 
-  const deleteCompany = (id: string) => {
-    setCompanies(prev => prev.filter(c => c.id !== id));
-    setBranches(prev => prev.filter(b => b.companyId !== id));
-    if (activeBranchId && branches.find(b => b.id === activeBranchId)?.companyId === id) {
-      setActiveBranchId(null);
+  const deleteCompany = async (id: string) => {
+    try {
+      const res = await fetch(`/api/companies/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to delete company');
+
+      setCompanies(prev => prev.filter(c => c.id !== id));
+      setBranches(prev => prev.filter(b => b.companyId !== id)); // Cascading delete visual update
+      if (activeBranchId && branches.find(b => b.id === activeBranchId)?.companyId === id) {
+        setActiveBranchId(null);
+      }
+    } catch (err) {
+      console.error("Error deleting company:", err);
     }
   };
 
-  const saveBranch = (data: Partial<Branch>) => {
-    if (data.id) {
-      setBranches(branches.map(b => b.id === data.id ? { ...b, ...data } as Branch : b));
-    } else {
-      setBranches([...branches, { ...data, id: `b-${Date.now()}` } as Branch]);
+  const saveBranch = async (data: Partial<Branch>) => {
+    try {
+      let savedBranch;
+      if (data.id && !data.id.startsWith('b-')) { // Update existing
+        const res = await fetch(`/api/branches/${data.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        if (!res.ok) throw new Error('Failed to update branch');
+        savedBranch = await res.json();
+        setBranches(branches.map(b => b.id === savedBranch.id ? savedBranch : b));
+      } else { // Create new
+        const res = await fetch('/api/branches', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        if (!res.ok) throw new Error('Failed to create branch');
+        savedBranch = await res.json();
+        setBranches([...branches, savedBranch]);
+      }
+    } catch (err) {
+      console.error("Error saving branch:", err);
     }
   };
 
-  const deleteBranch = (id: string) => {
-    setBranches(prev => prev.filter(b => b.id !== id));
-    if (activeBranchId === id) {
-      setActiveBranchId(null);
+  const deleteBranch = async (id: string) => {
+    try {
+      const res = await fetch(`/api/branches/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to delete branch');
+
+      setBranches(prev => prev.filter(b => b.id !== id));
+      if (activeBranchId === id) {
+        setActiveBranchId(null);
+      }
+    } catch (err) {
+      console.error("Error deleting branch:", err);
     }
   };
 
