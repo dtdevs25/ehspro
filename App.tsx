@@ -528,7 +528,16 @@ const App: React.FC = () => {
               />
             )}
 
-            {activeModule === 'admin' && activeSubItem === 'users' && <UserPermissions users={allUsers} onUpdatePermissions={updatePermissions} />}
+            {activeModule === 'admin' && activeSubItem === 'users' && (
+              <UsersModule
+                currentUser={currentUser}
+                users={allUsers}
+                companies={companies}
+                branches={branches}
+                onSaveUser={saveUser}
+                onDeleteUser={deleteUser}
+              />
+            )}
           </div>
         </main>
       </div>
