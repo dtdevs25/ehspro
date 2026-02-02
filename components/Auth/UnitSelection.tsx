@@ -218,7 +218,11 @@ export const UnitSelection: React.FC<UnitSelectionProps> = ({ user, companies, b
                             });
 
                             if (res.ok) {
-                              window.location.reload(); // Force reload to fetch new branch and update lists context
+                              if (onDataUpdate) {
+                                await onDataUpdate();
+                              } else {
+                                window.location.reload();
+                              }
                             }
                           } catch (err) {
                             console.error("Failed to auto-create branch", err);
