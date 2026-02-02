@@ -23,11 +23,15 @@ export const UnitSelection: React.FC<UnitSelectionProps> = ({ user, companies, b
     });
   }, [branches, user]);
 
-  // 2. Identificar Empresas Disponíveis (baseado nas filiais permitidas)
+  // 2. Identificar Empresas Disponíveis
   const availableCompanies = useMemo(() => {
+    // Se for MASTER, mostra todas as empresas (mesmo sem filiais) para confirmação visual
+    if (user.role === 'MASTER') return companies;
+
+    // Para outros usuários, mostra apenas empresas onde eles têm filiais permitidas
     const companyIds = Array.from(new Set(allowedBranches.map(b => b.companyId)));
     return companies.filter(c => companyIds.includes(c.id));
-  }, [companies, allowedBranches]);
+  }, [companies, allowedBranches, user]);
 
   // 3. Filtragem de Busca
   const filteredCompanies = availableCompanies.filter(c =>
