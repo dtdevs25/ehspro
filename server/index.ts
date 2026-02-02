@@ -14,6 +14,22 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 const prisma = new PrismaClient();
+
+// --- EMERGENCY DB FIX ---
+(async () => {
+  try {
+    console.log('[SYSTEM] Checking Database Schema...');
+    await prisma.$executeRawUnsafe(`ALTER TABLE "usuarios" ADD COLUMN IF NOT EXISTS "modulos_permitidos" TEXT[] DEFAULT ARRAY[]::TEXT[];`);
+    await prisma.$executeRawUnsafe(`ALTER TABLE "usuarios" ADD COLUMN IF NOT EXISTS "usuario_pai_id" TEXT;`);
+    try {
+      await prisma.$executeRawUnsafe(`ALTER TYPE "tipo_usuario" ADD VALUE 'GESTOR';`);
+    } catch (e) { /* ignore if exists */ }
+    console.log('[SYSTEM] Database Schema Verified.');
+  } catch (e) {
+    console.error('[SYSTEM] DB Fix Error:', e);
+  }
+})();
+// ------------------------
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'ehs-pro-secret-key-prod-v1';
 
