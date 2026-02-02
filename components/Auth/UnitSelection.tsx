@@ -9,9 +9,10 @@ interface UnitSelectionProps {
   branches: Branch[];
   onSelect: (branchId: string) => void;
   onLogout: () => void;
+  onDataUpdate?: () => Promise<void>;
 }
 
-export const UnitSelection: React.FC<UnitSelectionProps> = ({ user, companies, branches, onSelect, onLogout }) => {
+export const UnitSelection: React.FC<UnitSelectionProps> = ({ user, companies, branches, onSelect, onLogout, onDataUpdate }) => {
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 

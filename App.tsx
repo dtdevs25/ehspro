@@ -129,30 +129,29 @@ const App: React.FC = () => {
   const [allUsers, setAllUsers] = useState<User[]>([MASTER_USER]);
 
   // Fetch initial data
-  React.useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [companiesRes, branchesRes] = await Promise.all([
-          fetch('/api/companies'),
-          fetch('/api/branches')
-        ]);
+  const fetchData = React.useCallback(async () => {
+    try {
+      const [companiesRes, branchesRes] = await Promise.all([
+        fetch('/api/companies'),
+        fetch('/api/branches')
+      ]);
 
-        if (companiesRes.ok && branchesRes.ok) {
-          const companiesData = await companiesRes.json();
-          const branchesData = await branchesRes.json();
-          setCompanies(companiesData);
-          setBranches(branchesData);
-        }
-      } catch (error) {
-        console.error("Failed to load initial data", error);
+      if (companiesRes.ok && branchesRes.ok) {
+        const companiesData = await companiesRes.json();
+        const branchesData = await branchesRes.json();
+        setCompanies(companiesData);
+        setBranches(branchesData);
       }
-    };
+    } catch (error) {
+      console.error("Failed to load initial data", error);
+    }
+  }, []);
 
-    // Always fetch data if user is logged in, or purely on mount if public data is safe (here restricted to logged in logic usually, but fetched globally for now)
+  React.useEffect(() => {
     if (currentUser) {
       fetchData();
     }
-  }, [currentUser]);
+  }, [currentUser, fetchData]);
 
   // View Filtering Logic
   const activeBranch = useMemo(() => branches.find(b => b.id === activeBranchId), [activeBranchId, branches]);
@@ -360,6 +359,7 @@ const App: React.FC = () => {
       branches={branches}
       onSelect={(branchId) => setActiveBranchId(branchId)}
       onLogout={handleLogout}
+      onDataUpdate={fetchData}
     />
   );
 
