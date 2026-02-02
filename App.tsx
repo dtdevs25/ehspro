@@ -417,11 +417,11 @@ const App: React.FC = () => {
           <div className="max-w-7xl mx-auto space-y-8 pb-10">
             {activeModule === 'dashboard' && <DashboardOverview collaborators={filteredCollaboratorsByUnit} certificates={filteredCertificatesByUnit} />}
 
-            {activeModule === 'registrations' && (
+            {activeModule === 'registrations' && activeCompany && (
               <RegistrationModule
                 type={activeSubItem as any}
-                companies={companies}
-                branches={branches}
+                companies={companies.filter(c => c.id === activeCompany.id)}
+                branches={branches.filter(b => b.companyId === activeCompany.id)}
                 onSaveCompany={saveCompany}
                 onSaveBranch={saveBranch}
                 onDeleteCompany={deleteCompany}
