@@ -252,12 +252,37 @@ app.post('/api/ai/suggest', async (req, res) => {
 app.post('/api/companies', async (req, res) => {
   try {
     const { name, cnpj, cnae, address, zipCode, street, number, neighborhood, city, state } = req.body;
-    const newCompany = await prisma.company.create({
-      data: { name, cnpj, cnae, address, zipCode, street, number, neighborhood, city, state }
+
+    // Transaction to create Company AND default Matriz Branch
+    const result = await prisma.$transaction(async (prisma) => {
+      // 1. Create Company
+      const newCompany = await prisma.company.create({
+        data: { name, cnpj, cnae, address, zipCode, street, number, neighborhood, city, state }
+      });
+
+      // 2. Create Default Branch (Matriz)
+      await prisma.branch.create({
+        data: {
+          name: `MATRIZ - ${name.substring(0, 20)}...`.toUpperCase(), // Or just 'MATRIZ'
+          companyId: newCompany.id,
+          cnpj: cnpj, // Matriz usually shares root CNPJ, but branches have different suffixes. 
+          // Ideally user should edit this later if different, but for auto-creation we reuse or leave blank?
+          // Uniqueness constraint on Branch CNPJ might conflict if we use SAME string as Company CNPJ?
+          // Company CNPJ is unique in Company table. Branch CNPJ is unique in Branch table.
+          // So it is fine to use same string in both tables.
+          cnae: cnae,
+          address: address,
+          zipCode, street, number, neighborhood, city, state
+        }
+      });
+
+      return newCompany;
     });
-    res.json(newCompany);
+
+    res.json(result);
   } catch (error) {
     console.error("Error creating company:", error);
+    // Handle unique constraint violation on CNPJ more gracefully if needed
     res.status(500).json({ error: 'Erro ao criar empresa' });
   }
 });

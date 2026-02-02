@@ -139,7 +139,7 @@ model Branch {
   city         String?  @map("cidade")
   state        String?  @map("estado")
 
-  company   Company  @relation(fields: [companyId], references: [id])
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
   collaborators Collaborator[]
   cipaTerms     CipaTerm[]
 
