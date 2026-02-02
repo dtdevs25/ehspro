@@ -187,8 +187,48 @@ export const UnitSelection: React.FC<UnitSelectionProps> = ({ user, companies, b
                     </div>
                   </button>
                 )) : (
-                  <div className="py-20 text-center space-y-4">
+                  <div className="py-20 text-center space-y-6">
                     <p className="text-white/40">Nenhuma filial disponível nesta empresa.</p>
+                    {user.role === 'MASTER' && (
+                      <button
+                        onClick={async () => {
+                          // Auto-create Matriz logic for legacy/broken companies
+                          try {
+                            const company = companies.find(c => c.id === selectedCompanyId);
+                            if (!company) return;
+
+                            const res = await fetch('/api/branches', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({
+                                name: 'MATRIZ',
+                                companyId: company.id,
+                                cnpj: company.cnpj,
+                                cnae: company.cnae || '',
+                                address: company.address || '',
+                                // Pass normalized fields if available in company object, assuming they match
+                                zipCode: company.zipCode,
+                                street: company.street,
+                                number: company.number,
+                                neighborhood: company.neighborhood,
+                                city: company.city,
+                                state: company.state
+                              })
+                            });
+
+                            if (res.ok) {
+                              window.location.reload(); // Force reload to fetch new branch and update lists context
+                            }
+                          } catch (err) {
+                            console.error("Failed to auto-create branch", err);
+                            alert("Erro ao gerar filial automática.");
+                          }
+                        }}
+                        className="px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold text-sm shadow-lg shadow-emerald-900/20 transition-all flex items-center gap-2 mx-auto"
+                      >
+                        <Building2 size={16} /> Gerar Filial Matriz Agora
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
@@ -196,16 +236,7 @@ export const UnitSelection: React.FC<UnitSelectionProps> = ({ user, companies, b
 
           </div>
 
-          {/* Footer */}
-          <div className="p-4 bg-black/20 border-t border-white/5 flex items-center justify-between text-[10px] font-medium text-white/30 uppercase tracking-widest px-8">
-            <div className="flex items-center gap-2">
-              <ShieldCheck size={12} className="text-emerald-600" />
-              Ambiente Seguro
-            </div>
-            <div>
-              v1.0.0
-            </div>
-          </div>
+          {/* Footer Removed as requested */}
         </div>
 
       </div>
