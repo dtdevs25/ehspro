@@ -286,13 +286,182 @@ export const RegistrationModule: React.FC<RegistrationModuleProps> = ({
             </div>
 
             <div className="overflow-y-auto custom-scrollbar flex-1">
-              <RegistrationForm
-                isCompany={isCompany}
-                companies={companies}
-                initialData={formData}
-                onSubmit={handleSubmit}
-                onCancel={handleCloseModal}
-              />
+              <form onSubmit={(e) => {
+                e.preventDefault();
+                if (formData.cnpj && !validateCNPJ(formData.cnpj)) {
+                  setCnpjError('CNPJ Inválido. Corrija para continuar.');
+                  return;
+                }
+                if (isCompany) onSaveCompany(formData);
+                else onSaveBranch(formData);
+                handleCloseModal();
+              }} className="p-8 space-y-6">
+
+                {/* Grid Principal */}
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+
+                  {/* Seleção de Matriz (Apenas Filial) */}
+                  {!isCompany && (
+                    <div className="md:col-span-12 space-y-2">
+                      <label className="text-xs font-black text-emerald-800/60 uppercase tracking-widest ml-1">Empresa Matriz</label>
+                      <select
+                        required
+                        value={formData.companyId || ''}
+                        onChange={e => setFormData({ ...formData, companyId: e.target.value })}
+                        className="w-full bg-emerald-50 border border-emerald-100 p-4 rounded-2xl font-medium focus:ring-4 focus:ring-emerald-500/10 transition-all outline-none"
+                      >
+                        <option value="">Selecione a Empresa Matriz...</option>
+                        {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                      </select>
+                    </div>
+                  )}
+
+                  {/* Nome / Razão Social */}
+                  <div className="md:col-span-12 space-y-2">
+                    <label className="text-xs font-black text-emerald-800/60 uppercase tracking-widest ml-1">Razão Social / Nome</label>
+                    <input
+                      required
+                      value={formData.name || ''}
+                      onChange={e => setFormData({ ...formData, name: e.target.value.toUpperCase() })}
+                      className="w-full bg-emerald-50 border border-emerald-100 p-4 rounded-2xl font-black text-emerald-950 focus:ring-4 focus:ring-emerald-500/10 transition-all outline-none"
+                      placeholder="EX: EHS SOLUTIONS LTDA"
+                    />
+                  </div>
+
+                  {/* CNPJ */}
+                  <div className="md:col-span-6 space-y-2">
+                    <label className="text-xs font-black text-emerald-800/60 uppercase tracking-widest ml-1 flex justify-between">
+                      CNPJ
+                      {cnpjError && <span className="text-red-500 font-bold">{cnpjError}</span>}
+                    </label>
+                    <input
+                      required
+                      maxLength={18}
+                      placeholder="00.000.000/0000-00"
+                      value={formData.cnpj || ''}
+                      onChange={e => {
+                        const val = formatCNPJ(e.target.value);
+                        setFormData({ ...formData, cnpj: val });
+                        if (val.length === 18) {
+                          if (!validateCNPJ(val)) setCnpjError('CNPJ Inválido');
+                          else setCnpjError('');
+                        } else {
+                          setCnpjError('');
+                        }
+                      }}
+                      className={`w-full bg-emerald-50 border p-4 rounded-2xl font-medium focus:ring-4 focus:ring-emerald-500/10 transition-all outline-none ${cnpjError ? 'border-red-300 text-red-600' : 'border-emerald-100'}`}
+                    />
+                  </div>
+
+                  {/* CNAE */}
+                  <div className="md:col-span-6 space-y-2">
+                    <label className="text-xs font-black text-emerald-800/60 uppercase tracking-widest ml-1 flex justify-between">
+                      CNAE Principal <span className="text-[9px] text-red-500 font-black">OBRIGATÓRIO</span>
+                    </label>
+                    <input
+                      required
+                      maxLength={10}
+                      placeholder="00.00-0-00"
+                      value={formData.cnae || ''}
+                      onChange={e => setFormData({ ...formData, cnae: formatCNAE(e.target.value) })}
+                      className="w-full bg-emerald-50 border border-emerald-200 p-4 rounded-2xl font-black text-emerald-950 focus:ring-4 focus:ring-emerald-500/10 transition-all outline-none border-2"
+                    />
+                  </div>
+
+                  {/* --- ENDEREÇO DETALHADO --- */}
+                  <div className="md:col-span-12 pt-4 pb-2">
+                    <div className="h-px bg-emerald-100 flex items-center justify-center">
+                      <span className="bg-white px-4 text-emerald-500 font-black text-xs uppercase tracking-widest">Endereço</span>
+                    </div>
+                  </div>
+
+                  {/* CEP */}
+                  <div className="md:col-span-4 space-y-2">
+                    <label className="text-xs font-black text-emerald-800/60 uppercase tracking-widest ml-1">CEP</label>
+                    <input
+                      required
+                      maxLength={9}
+                      placeholder="00000-000"
+                      value={addressParts.cep}
+                      onChange={e => handleAddressChange('cep', formatCEP(e.target.value))}
+                      className="w-full bg-emerald-50 border border-emerald-100 p-4 rounded-2xl font-medium focus:ring-4 focus:ring-emerald-500/10 transition-all outline-none"
+                    />
+                  </div>
+
+                  {/* Rua */}
+                  <div className="md:col-span-8 space-y-2">
+                    <label className="text-xs font-black text-emerald-800/60 uppercase tracking-widest ml-1">Logradouro (Rua, Av...)</label>
+                    <input
+                      required
+                      value={addressParts.street}
+                      onChange={e => handleAddressChange('street', e.target.value)}
+                      className="w-full bg-emerald-50 border border-emerald-100 p-4 rounded-2xl font-medium focus:ring-4 focus:ring-emerald-500/10 transition-all outline-none"
+                    />
+                  </div>
+
+                  {/* Número */}
+                  <div className="md:col-span-3 space-y-2">
+                    <label className="text-xs font-black text-emerald-800/60 uppercase tracking-widest ml-1">Número</label>
+                    <input
+                      required
+                      value={addressParts.number}
+                      onChange={e => handleAddressChange('number', e.target.value)}
+                      className="w-full bg-emerald-50 border border-emerald-100 p-4 rounded-2xl font-medium focus:ring-4 focus:ring-emerald-500/10 transition-all outline-none"
+                    />
+                  </div>
+
+                  {/* Bairro */}
+                  <div className="md:col-span-5 space-y-2">
+                    <label className="text-xs font-black text-emerald-800/60 uppercase tracking-widest ml-1">Bairro</label>
+                    <input
+                      required
+                      value={addressParts.district}
+                      onChange={e => handleAddressChange('district', e.target.value)}
+                      className="w-full bg-emerald-50 border border-emerald-100 p-4 rounded-2xl font-medium focus:ring-4 focus:ring-emerald-500/10 transition-all outline-none"
+                    />
+                  </div>
+
+                  {/* Cidade */}
+                  <div className="md:col-span-4 space-y-2">
+                    <label className="text-xs font-black text-emerald-800/60 uppercase tracking-widest ml-1">Cidade - UF</label>
+                    <div className="flex gap-2">
+                      <input
+                        required
+                        placeholder="Cidade"
+                        value={addressParts.city}
+                        onChange={e => handleAddressChange('city', e.target.value)}
+                        className="flex-1 bg-emerald-50 border border-emerald-100 p-4 rounded-2xl font-medium focus:ring-4 focus:ring-emerald-500/10 transition-all outline-none"
+                      />
+                      <input
+                        required
+                        maxLength={2}
+                        placeholder="UF"
+                        value={addressParts.state}
+                        onChange={e => handleAddressChange('state', e.target.value)}
+                        className="w-20 text-center bg-emerald-50 border border-emerald-100 p-4 rounded-2xl font-black focus:ring-4 focus:ring-emerald-500/10 transition-all outline-none"
+                      />
+                    </div>
+                  </div>
+
+                </div>
+
+                {/* Footer Actions */}
+                <div className="flex justify-end gap-3 pt-6 border-t border-emerald-50">
+                  <button
+                    type="button"
+                    onClick={handleCloseModal}
+                    className="px-8 py-3.5 font-bold text-emerald-600 hover:bg-emerald-50 rounded-2xl transition-all"
+                  >
+                    Descartar
+                  </button>
+                  <button
+                    type="submit"
+                    className="bg-emerald-600 text-white px-12 py-3.5 rounded-2xl font-black shadow-xl shadow-emerald-200 hover:bg-emerald-500 hover:scale-105 active:scale-95 transition-all"
+                  >
+                    {editingItem ? 'Salvar Alterações' : 'Confirmar Cadastro'}
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         </div>
