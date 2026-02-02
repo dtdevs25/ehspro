@@ -71,7 +71,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     >
       <div className="p-6 flex items-center justify-center border-b border-emerald-900/50 min-h-[88px] relative overflow-hidden">
         {/* Ambient Glow */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-24 h-24 bg-white/5 blur-[30px] rounded-full pointer-events-none"></div>
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-28 h-28 bg-white/30 blur-[50px] rounded-full pointer-events-none mix-blend-plus-lighter"></div>
 
         {!collapsed ? (
           <div className="flex items-center justify-center w-full relative z-10">

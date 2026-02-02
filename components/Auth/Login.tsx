@@ -103,7 +103,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
           <div className="relative z-10 text-center mb-6">
             <div className="inline-flex flex-col items-center justify-center mb-4 relative group">
               {/* White Glow Effect behind Logo */}
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 bg-white/10 blur-[40px] rounded-full pointer-events-none"></div>
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 bg-white/30 blur-[50px] rounded-full pointer-events-none mix-blend-plus-lighter"></div>
 
               <img src="/assets/logo-icon.png" alt="EHS PRO" className="relative h-24 w-auto drop-shadow-2xl z-10 transform group-hover:scale-105 transition-transform duration-500" />
               <h1 className="text-3xl font-black text-white tracking-tight drop-shadow-md mt-4 z-10">EHS PRO</h1>
