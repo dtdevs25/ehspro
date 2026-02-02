@@ -107,7 +107,15 @@ model Company {
   name      String   @map("nome")
   cnpj      String   @unique @map("cnpj")
   cnae      String   @map("cnae")
-  address   String   @map("endereco")
+  address   String   @map("endereco") // Legacy/Computed full address
+  
+  // Normalized Address
+  zipCode      String?  @map("cep")
+  street       String?  @map("logradouro")
+  number       String?  @map("numero")
+  neighborhood String?  @map("bairro")
+  city         String?  @map("cidade")
+  state        String?  @map("estado")
   
   branches  Branch[]
   collaborators Collaborator[]
@@ -122,6 +130,14 @@ model Branch {
   cnpj      String   @unique @map("cnpj")
   cnae      String   @map("cnae")
   address   String   @map("endereco")
+
+  // Normalized Address
+  zipCode      String?  @map("cep")
+  street       String?  @map("logradouro")
+  number       String?  @map("numero")
+  neighborhood String?  @map("bairro")
+  city         String?  @map("cidade")
+  state        String?  @map("estado")
 
   company   Company  @relation(fields: [companyId], references: [id])
   collaborators Collaborator[]

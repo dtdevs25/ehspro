@@ -251,9 +251,9 @@ app.post('/api/ai/suggest', async (req, res) => {
 // --- COMPANIES ---
 app.post('/api/companies', async (req, res) => {
   try {
-    const { name, cnpj, cnae, address } = req.body;
+    const { name, cnpj, cnae, address, zipCode, street, number, neighborhood, city, state } = req.body;
     const newCompany = await prisma.company.create({
-      data: { name, cnpj, cnae, address }
+      data: { name, cnpj, cnae, address, zipCode, street, number, neighborhood, city, state }
     });
     res.json(newCompany);
   } catch (error) {
@@ -265,10 +265,10 @@ app.post('/api/companies', async (req, res) => {
 app.put('/api/companies/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, cnpj, cnae, address } = req.body;
+    const { name, cnpj, cnae, address, zipCode, street, number, neighborhood, city, state } = req.body;
     const updatedCompany = await prisma.company.update({
       where: { id },
-      data: { name, cnpj, cnae, address }
+      data: { name, cnpj, cnae, address, zipCode, street, number, neighborhood, city, state }
     });
     res.json(updatedCompany);
   } catch (error) {
@@ -289,9 +289,9 @@ app.delete('/api/companies/:id', async (req, res) => {
 // --- BRANCHES ---
 app.post('/api/branches', async (req, res) => {
   try {
-    const { name, cnpj, cnae, address, companyId } = req.body;
+    const { name, cnpj, cnae, address, companyId, zipCode, street, number, neighborhood, city, state } = req.body;
     const newBranch = await prisma.branch.create({
-      data: { name, cnpj, cnae, address, companyId }
+      data: { name, cnpj, cnae, address, companyId, zipCode, street, number, neighborhood, city, state }
     });
     res.json(newBranch);
   } catch (error) {
@@ -303,10 +303,10 @@ app.post('/api/branches', async (req, res) => {
 app.put('/api/branches/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, cnpj, cnae, address, companyId } = req.body;
+    const { name, cnpj, cnae, address, companyId, zipCode, street, number, neighborhood, city, state } = req.body;
     const updatedBranch = await prisma.branch.update({
       where: { id },
-      data: { name, cnpj, cnae, address, companyId }
+      data: { name, cnpj, cnae, address, companyId, zipCode, street, number, neighborhood, city, state }
     });
     res.json(updatedBranch);
   } catch (error) {

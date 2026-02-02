@@ -47,19 +47,28 @@ export const RegistrationModule: React.FC<RegistrationModuleProps> = ({
     if (item) {
       setEditingItem(item);
       setFormData(item);
-      // Parse address
-      const parts = item.address ? item.address.split(',').map((s: string) => s.trim()) : [];
-      // address format expectation: Rua X, 123, Bairro, Cidade - UF (CEP)
-      // This is weak parsing but sufficient for UX if format is maintained.
-      // Better: Reset address parts if standard format matches, else just put everything in street.
-      setAddressParts({
-        street: parts[0] || '',
-        number: parts[1] || '',
-        district: parts[2] || '',
-        city: parts[3] ? parts[3].split('-')[0].trim() : '',
-        state: parts[3] ? parts[3].split('-')[1]?.split('(')[0].trim() : '',
-        cep: parts[3] && parts[3].includes('(') ? parts[3].split('(')[1].replace(')', '') : ''
-      });
+      // Populate address parts from specific fields if available, otherwise parse from string
+      if (item.street || item.zipCode) {
+        setAddressParts({
+          street: item.street || '',
+          number: item.number || '',
+          district: item.neighborhood || '', // mapped from neighborhood in DB
+          city: item.city || '',
+          state: item.state || '',
+          cep: item.zipCode || ''
+        });
+      } else {
+        // Fallback legacy parse
+        const parts = item.address ? item.address.split(',').map((s: string) => s.trim()) : [];
+        setAddressParts({
+          street: parts[0] || '',
+          number: parts[1] || '',
+          district: parts[2] || '',
+          city: parts[3] ? parts[3].split('-')[0].trim() : '',
+          state: parts[3] ? parts[3].split('-')[1]?.split('(')[0].trim() : '',
+          cep: parts[3] && parts[3].includes('(') ? parts[3].split('(')[1].replace(')', '') : ''
+        });
+      }
     } else {
       setEditingItem(null);
       setFormData({ name: '', cnpj: '', cnae: '', address: '', companyId: '' });
@@ -72,8 +81,21 @@ export const RegistrationModule: React.FC<RegistrationModuleProps> = ({
   const handleAddressChange = (field: string, value: string) => {
     const newParts = { ...addressParts, [field]: value.toUpperCase() }; // Auto uppercase address too
     setAddressParts(newParts);
+
+    // Update formData with individual fields AND the legacy full address string
     const fullAddr = `${newParts.street}, ${newParts.number}, ${newParts.district}, ${newParts.city} - ${newParts.state} (${newParts.cep})`;
-    setFormData({ ...formData, address: fullAddr });
+
+    setFormData({
+      ...formData,
+      address: fullAddr,
+      // Save individual fields matching API expectation
+      zipCode: newParts.cep,
+      street: newParts.street,
+      number: newParts.number,
+      neighborhood: newParts.district,
+      city: newParts.city,
+      state: newParts.state
+    });
   };
 
   const handleCloseModal = () => {
