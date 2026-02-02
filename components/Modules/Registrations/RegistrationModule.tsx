@@ -46,32 +46,48 @@ export const RegistrationModule: React.FC<RegistrationModuleProps> = ({
   const handleOpenModal = (item?: any) => {
     if (item) {
       setEditingItem(item);
-      setFormData(item);
-      // Populate address parts from specific fields if available, otherwise parse from string
+
+      let initialAddressParts = { street: '', number: '', district: '', city: '', state: '', cep: '' };
+
       if (item.street || item.zipCode) {
-        setAddressParts({
+        initialAddressParts = {
           street: item.street || '',
           number: item.number || '',
           district: item.neighborhood || '', // mapped from neighborhood in DB
           city: item.city || '',
           state: item.state || '',
           cep: item.zipCode || ''
-        });
-      } else {
+        };
+      } else if (item.address) {
         // Fallback legacy parse
-        const parts = item.address ? item.address.split(',').map((s: string) => s.trim()) : [];
-        setAddressParts({
+        const parts = item.address.split(',').map((s: string) => s.trim());
+        initialAddressParts = {
           street: parts[0] || '',
           number: parts[1] || '',
           district: parts[2] || '',
           city: parts[3] ? parts[3].split('-')[0].trim() : '',
           state: parts[3] ? parts[3].split('-')[1]?.split('(')[0].trim() : '',
           cep: parts[3] && parts[3].includes('(') ? parts[3].split('(')[1].replace(')', '') : ''
-        });
+        };
       }
+
+      setAddressParts(initialAddressParts);
+
+      // CRITICAL: Merge computed address fields into formData so they are sent on save
+      setFormData({
+        ...item,
+        zipCode: initialAddressParts.cep,
+        street: initialAddressParts.street,
+        number: initialAddressParts.number,
+        neighborhood: initialAddressParts.district,
+        city: initialAddressParts.city,
+        state: initialAddressParts.state,
+        // address: item.address // Keep original legacy string or recompute? Keep original as base.
+      });
+
     } else {
       setEditingItem(null);
-      setFormData({ name: '', cnpj: '', cnae: '', address: '', companyId: '' });
+      setFormData({ name: '', cnpj: '', cnae: '', address: '', companyId: '', street: '', number: '', neighborhood: '', city: '', state: '', zipCode: '' });
       setAddressParts({ street: '', number: '', district: '', city: '', state: '', cep: '' });
     }
     setCnpjError('');
