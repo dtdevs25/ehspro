@@ -173,6 +173,108 @@ app.post('/api/auth/reset-password', async (req, res) => {
   }
 });
 
+// --- USER MANAGEMENT ENDPOINTS ---
+
+app.get('/api/users', async (req, res) => {
+  try {
+    const users = await prisma.user.findMany({
+      orderBy: { createdAt: 'desc' },
+      include: {
+        parentUser: { // Include parent name for display
+          select: { name: true, email: true }
+        }
+      }
+    });
+    // Remove password hash before sending
+    const safeUsers = users.map(u => {
+      const { password, ...rest } = u;
+      return rest;
+    });
+    res.json(safeUsers);
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao listar usuários' });
+  }
+});
+
+app.post('/api/users', async (req, res) => {
+  try {
+    const { name, email, password, role, allowedBranches, allowedModules, parentUserId, functionName } = req.body;
+
+    // Check if email exists
+    const existing = await prisma.user.findUnique({ where: { email } });
+    if (existing) {
+      return res.status(400).json({ error: 'Email já cadastrado.' });
+    }
+
+    const hashedPassword = await bcrypt.hash(password || '123456', 10);
+
+    const newUser = await prisma.user.create({
+      data: {
+        name,
+        email,
+        password: hashedPassword,
+        role: role || 'USER',
+        status: 'ACTIVE',
+        allowedBranches: allowedBranches || [],
+        allowedModules: allowedModules || [],
+        parentUserId: parentUserId || null,
+        functionName: functionName || null,
+      }
+    });
+
+    // Return without password
+    const { password: _, ...userWithoutPwd } = newUser;
+    res.json(userWithoutPwd);
+
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ error: 'Erro ao criar usuário' });
+  }
+});
+
+app.put('/api/users/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, email, password, role, allowedBranches, allowedModules, status, functionName } = req.body;
+
+    const updateData: any = {
+      name,
+      email,
+      role,
+      allowedBranches,
+      allowedModules,
+      status,
+      functionName
+    };
+
+    // Only update password if provided
+    if (password && password.trim() !== '') {
+      updateData.password = await bcrypt.hash(password, 10);
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: { id },
+      data: updateData
+    });
+
+    const { password: _, ...userWithoutPwd } = updatedUser;
+    res.json(userWithoutPwd);
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao atualizar usuário' });
+  }
+});
+
+app.delete('/api/users/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    // Prevent deleting MASTER if it's the only one, but for now just simple delete
+    await prisma.user.delete({ where: { id } });
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao excluir usuário' });
+  }
+});
+
 // Auth Routes: Login
 app.post('/api/auth/login', async (req, res) => {
   const { email, password } = req.body;
