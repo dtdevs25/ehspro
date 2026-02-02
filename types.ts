@@ -17,10 +17,12 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  role: 'MASTER' | 'USER';
+  role: 'MASTER' | 'MANAGER' | 'USER';
   functionName?: string;
   permissions: Permission[];
   allowedBranches?: string[];
+  allowedModules?: string[];
+  parentUserId?: string;
 }
 
 export interface Role {
@@ -45,6 +47,12 @@ export interface Company {
   cnpj: string;
   cnae: string;
   address: string;
+  zipCode?: string;
+  street?: string;
+  number?: string;
+  neighborhood?: string;
+  city?: string;
+  state?: string;
 }
 
 export interface Branch {
@@ -54,6 +62,12 @@ export interface Branch {
   cnpj: string;
   cnae: string;
   address: string;
+  zipCode?: string;
+  street?: string;
+  number?: string;
+  neighborhood?: string;
+  city?: string;
+  state?: string;
 }
 
 export interface Collaborator {
