@@ -3,7 +3,7 @@ import React, { useState, useMemo } from 'react';
 import { Sidebar } from './components/Layout/Sidebar';
 import { CollaboratorForm } from './components/Modules/RH/CollaboratorForm';
 import { BulkImportModal } from './components/Modules/RH/BulkImportModal';
-import { UserPermissions } from './components/Modules/Admin/UserPermissions';
+import { UsersModule } from './components/Modules/Admin/UsersModule';
 import { Login } from './components/Auth/Login';
 import { ResetPassword } from './components/Auth/ResetPassword';
 import { DashboardOverview } from './components/Modules/Dashboard/DashboardOverview';
@@ -131,9 +131,10 @@ const App: React.FC = () => {
   // Fetch initial data
   const fetchData = React.useCallback(async () => {
     try {
-      const [companiesRes, branchesRes] = await Promise.all([
+      const [companiesRes, branchesRes, usersRes] = await Promise.all([
         fetch('/api/companies'),
-        fetch('/api/branches')
+        fetch('/api/branches'),
+        fetch('/api/users')
       ]);
 
       if (companiesRes.ok && branchesRes.ok) {
@@ -141,6 +142,11 @@ const App: React.FC = () => {
         const branchesData = await branchesRes.json();
         setCompanies(companiesData);
         setBranches(branchesData);
+
+        if (usersRes.ok) {
+          const usersData = await usersRes.json();
+          setAllUsers(usersData);
+        }
       }
     } catch (error) {
       console.error("Failed to load initial data", error);
@@ -310,6 +316,44 @@ const App: React.FC = () => {
       }
     } catch (err) {
       console.error("Error deleting branch:", err);
+    }
+  };
+
+  const saveUser = async (data: any) => {
+    try {
+      let savedUser;
+      if (data.id) { // Update
+        const res = await fetch(`/api/users/${data.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        if (!res.ok) throw new Error('Failed to update user');
+        savedUser = await res.json();
+        setAllUsers(prev => prev.map(u => u.id === savedUser.id ? savedUser : u));
+      } else { // Create
+        const res = await fetch('/api/users', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        if (!res.ok) throw new Error('Failed to create user');
+        savedUser = await res.json();
+        setAllUsers(prev => [savedUser, ...prev]);
+      }
+    } catch (err) {
+      console.error("Error saving user:", err);
+      throw err; // Re-throw to show error in UI if needed
+    }
+  };
+
+  const deleteUser = async (id: string) => {
+    try {
+      const res = await fetch(`/api/users/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to delete user');
+      setAllUsers(prev => prev.filter(u => u.id !== id));
+    } catch (err) {
+      console.error("Error deleting user:", err);
     }
   };
 
