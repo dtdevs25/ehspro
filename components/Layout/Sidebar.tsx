@@ -69,14 +69,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
     <aside
       className={`bg-emerald-950 text-emerald-100/70 flex flex-col transition-all duration-300 h-screen sticky top-0 z-50 border-r border-emerald-900/50 ${collapsed ? 'w-20' : 'w-72'}`}
     >
-      <div className="p-6 flex items-center justify-center border-b border-emerald-900/50 min-h-[88px]">
+      <div className="p-6 flex items-center justify-center border-b border-emerald-900/50 min-h-[88px] relative overflow-hidden">
+        {/* Ambient Glow */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-24 h-24 bg-white/5 blur-[30px] rounded-full pointer-events-none"></div>
+
         {!collapsed ? (
-          <div className="flex items-center justify-center w-full">
-            <img src="/assets/logo-full.png" alt="EHS PRO" className="h-12 w-auto object-contain filter drop-shadow-[0_0_8px_rgba(16,185,129,0.3)]" />
+          <div className="flex items-center justify-center w-full relative z-10">
+            <img src="/assets/logo-full.png" alt="EHS PRO" className="h-12 w-auto object-contain filter drop-shadow-md" />
           </div>
         ) : (
-          <div className="w-full flex justify-center">
-            <img src="/assets/logo-icon.png" alt="EHS" className="h-10 w-10 object-contain filter drop-shadow-[0_0_8px_rgba(16,185,129,0.3)]" />
+          <div className="w-full flex justify-center relative z-10">
+            <img src="/assets/logo-icon.png" alt="EHS" className="h-10 w-10 object-contain filter drop-shadow-md" />
           </div>
         )}
       </div>

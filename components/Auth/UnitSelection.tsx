@@ -52,8 +52,9 @@ export const UnitSelection: React.FC<UnitSelectionProps> = ({ user, companies, b
         {/* Header */}
         <div className="flex items-center justify-between mb-8 px-2">
           <div className="flex items-center gap-4">
-            <div className="h-16 w-auto flex items-center justify-center">
-              <img src="/assets/logo-full.png" alt="EHS PRO Logo" className="h-full object-contain filter drop-shadow-[0_0_15px_rgba(16,185,129,0.5)]" />
+            <div className="h-16 w-auto flex items-center justify-center relative">
+              <div className="absolute inset-0 bg-white/15 blur-xl rounded-full scale-150 pointer-events-none"></div>
+              <img src="/assets/logo-full.png" alt="EHS PRO Logo" className="relative h-full object-contain filter drop-shadow-[0_4px_6px_rgba(0,0,0,0.3)] z-10" />
             </div>
           </div>
 
