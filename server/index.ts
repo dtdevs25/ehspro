@@ -214,7 +214,7 @@ app.get('/api/users', async (req, res) => {
 
 app.post('/api/users', async (req, res) => {
   try {
-    const { name, email, password, role, allowedBranches, allowedModules, parentUserId, functionName } = req.body;
+    const { name, email, password, role, allowedBranches, allowedModules, permissions, parentUserId, functionName } = req.body;
 
     // Check if email exists
     const existing = await prisma.user.findUnique({ where: { email } });
@@ -233,6 +233,7 @@ app.post('/api/users', async (req, res) => {
         status: 'ACTIVE',
         allowedBranches: allowedBranches || [],
         allowedModules: allowedModules || [],
+        permissions: permissions || [],
         parentUserId: parentUserId || null,
         functionName: functionName || null,
       }
@@ -251,7 +252,7 @@ app.post('/api/users', async (req, res) => {
 app.put('/api/users/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, email, password, role, allowedBranches, allowedModules, status, functionName } = req.body;
+    const { name, email, password, role, allowedBranches, allowedModules, permissions, status, functionName } = req.body;
 
     const updateData: any = {
       name,
@@ -259,6 +260,7 @@ app.put('/api/users/:id', async (req, res) => {
       role,
       allowedBranches,
       allowedModules,
+      permissions,
       status,
       functionName
     };

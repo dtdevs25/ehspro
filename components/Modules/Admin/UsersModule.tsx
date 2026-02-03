@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo } from 'react';
-import { User, Company, Branch, UserRole } from '../../../types';
+import { User, Company, Branch, UserRole, Permission } from '../../../types';
 import { Search, Plus, Edit3, Trash2, Key, Shield, Building2, CheckCircle2, Circle, X } from 'lucide-react';
 import { MENU_CONFIG } from '../../../constants';
 
@@ -28,6 +28,7 @@ export const UsersModule: React.FC<UsersModuleProps> = ({
         role: 'USER' as UserRole,
         allowedBranches: [] as string[],
         allowedModules: [] as string[],
+        permissions: [] as Permission[],
         functionName: ''
     });
 
@@ -73,6 +74,7 @@ export const UsersModule: React.FC<UsersModuleProps> = ({
                 role: user.role,
                 allowedBranches: user.allowedBranches || [],
                 allowedModules: user.allowedModules || [],
+                permissions: user.permissions || [],
                 functionName: user.functionName || ''
             });
         } else {
@@ -84,6 +86,7 @@ export const UsersModule: React.FC<UsersModuleProps> = ({
                 role: 'USER', // Default
                 allowedBranches: [],
                 allowedModules: [],
+                permissions: [],
                 functionName: ''
             });
         }
@@ -113,9 +116,47 @@ export const UsersModule: React.FC<UsersModuleProps> = ({
 
     const toggleModule = (moduleId: string) => {
         setFormData(prev => {
-            const current = prev.allowedModules;
-            if (current.includes(moduleId)) return { ...prev, allowedModules: current.filter(id => id !== moduleId) };
-            return { ...prev, allowedModules: [...current, moduleId] };
+            const currentModules = prev.allowedModules;
+            const currentPermissions = prev.permissions || [];
+
+            if (currentModules.includes(moduleId)) {
+                // Remove
+                return {
+                    ...prev,
+                    allowedModules: currentModules.filter(id => id !== moduleId),
+                    permissions: currentPermissions.filter(p => p.moduleId !== moduleId)
+                };
+            } else {
+                // Add with all submodules selected by default
+                const moduleConfig = MENU_CONFIG.find(m => m.id === moduleId);
+                const allSubIds = moduleConfig ? moduleConfig.subItems.map(s => s.id) : [];
+
+                return {
+                    ...prev,
+                    allowedModules: [...currentModules, moduleId],
+                    permissions: [...currentPermissions, { moduleId, subModules: allSubIds }]
+                };
+            }
+        });
+    };
+
+    const toggleSubModule = (moduleId: string, subId: string) => {
+        setFormData(prev => {
+            const currentPermissions = [...(prev.permissions || [])];
+            const permIndex = currentPermissions.findIndex(p => p.moduleId === moduleId);
+
+            if (permIndex >= 0) {
+                const perm = { ...currentPermissions[permIndex] };
+                if (perm.subModules.includes(subId)) {
+                    perm.subModules = perm.subModules.filter(s => s !== subId);
+                } else {
+                    perm.subModules = [...perm.subModules, subId];
+                }
+                currentPermissions[permIndex] = perm;
+
+                return { ...prev, permissions: currentPermissions };
+            }
+            return prev;
         });
     };
 
@@ -177,8 +218,8 @@ export const UsersModule: React.FC<UsersModuleProps> = ({
                                     </td>
                                     <td className="px-8 py-4">
                                         <span className={`text-[10px] font-black uppercase px-2 py-1 rounded-md ${user.role === 'MASTER' ? 'bg-purple-100 text-purple-700' :
-                                                user.role === 'MANAGER' ? 'bg-blue-100 text-blue-700' :
-                                                    'bg-emerald-100 text-emerald-700'
+                                            user.role === 'MANAGER' ? 'bg-blue-100 text-blue-700' :
+                                                'bg-emerald-100 text-emerald-700'
                                             }`}>
                                             {user.role}
                                         </span>
@@ -283,15 +324,44 @@ export const UsersModule: React.FC<UsersModuleProps> = ({
                                     <div className="space-y-4 pt-4 border-t border-emerald-50">
                                         <h3 className="text-sm font-black text-emerald-800 uppercase flex items-center gap-2"><Shield size={16} /> Permissões de Módulos</h3>
                                         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                                            {MENU_CONFIG.filter(m => m.id !== 'dashboard').map(menu => (
-                                                <label key={menu.id} className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${formData.allowedModules.includes(menu.id) ? 'bg-emerald-100 border-emerald-300' : 'bg-white border-emerald-100 hover:bg-emerald-50'}`}>
-                                                    <input type="checkbox" className="hidden" checked={formData.allowedModules.includes(menu.id)} onChange={() => toggleModule(menu.id)} />
-                                                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${formData.allowedModules.includes(menu.id) ? 'bg-emerald-500 text-white' : 'bg-emerald-50 text-emerald-300'}`}>
-                                                        <Shield size={16} />
+                                            {MENU_CONFIG.filter(m => m.id !== 'dashboard').map(menu => {
+                                                const isModuleSelected = formData.allowedModules.includes(menu.id);
+                                                const modulePerm = formData.permissions.find(p => p.moduleId === menu.id);
+
+                                                return (
+                                                    <div key={menu.id} className={`flex flex-col gap-2 p-3 rounded-xl border transition-all ${isModuleSelected ? 'bg-emerald-50 border-emerald-300' : 'bg-white border-emerald-100'}`}>
+                                                        <label className="flex items-center gap-3 cursor-pointer">
+                                                            <input type="checkbox" className="hidden" checked={isModuleSelected} onChange={() => toggleModule(menu.id)} />
+                                                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${isModuleSelected ? 'bg-emerald-500 text-white' : 'bg-emerald-50 text-emerald-300'}`}>
+                                                                <Shield size={16} />
+                                                            </div>
+                                                            <span className="text-xs font-bold text-emerald-900 uppercase">{menu.label}</span>
+                                                        </label>
+
+                                                        {isModuleSelected && (
+                                                            <div className="pl-11 grid grid-cols-1 gap-1.5 animate-in slide-in-from-top-2">
+                                                                {menu.subItems.map(sub => {
+                                                                    const isSubSelected = modulePerm?.subModules.includes(sub.id);
+                                                                    return (
+                                                                        <label key={sub.id} className="flex items-center gap-2 cursor-pointer group">
+                                                                            <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${isSubSelected ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white border-emerald-200 text-transparent'}`}>
+                                                                                <CheckCircle2 size={10} />
+                                                                            </div>
+                                                                            <input
+                                                                                type="checkbox"
+                                                                                className="hidden"
+                                                                                checked={!!isSubSelected}
+                                                                                onChange={() => toggleSubModule(menu.id, sub.id)}
+                                                                            />
+                                                                            <span className="text-[10px] font-medium text-emerald-700 group-hover:text-emerald-900">{sub.label}</span>
+                                                                        </label>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        )}
                                                     </div>
-                                                    <span className="text-xs font-bold text-emerald-900 uppercase">{menu.label}</span>
-                                                </label>
-                                            ))}
+                                                );
+                                            })}
                                         </div>
                                     </div>
                                 </>

@@ -8,6 +8,8 @@ export enum ModuleType {
   REGISTRATIONS = 'REGISTRATIONS'
 }
 
+export type UserRole = 'MASTER' | 'MANAGER' | 'USER';
+
 export interface Permission {
   moduleId: string;
   subModules: string[];
