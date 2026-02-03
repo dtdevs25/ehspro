@@ -12,7 +12,8 @@ import {
   Building2,
   GitBranch,
   UserCircle,
-  Stethoscope
+  Stethoscope,
+  GraduationCap
 } from 'lucide-react';
 import { MENU_CONFIG } from '../../constants';
 import { User } from '../../types';
@@ -34,7 +35,8 @@ const IconMap: Record<string, any> = {
   Archive,
   Building2,
   GitBranch,
-  Stethoscope
+  Stethoscope,
+  GraduationCap
 };
 
 export const Sidebar: React.FC<SidebarProps> = ({

@@ -2,7 +2,7 @@
 import { ModuleType, MenuItem, User, Role, JobFunction, Company, Branch } from './types';
 
 // Função auxiliar para ordenar submenus
-const sortSubItems = (items: { id: string, label: string, component: string }[]) => 
+const sortSubItems = (items: { id: string, label: string, component: string }[]) =>
   [...items].sort((a, b) => a.label.localeCompare(b.label));
 
 export const MENU_CONFIG: MenuItem[] = [
@@ -33,7 +33,7 @@ export const MENU_CONFIG: MenuItem[] = [
     module: ModuleType.DASHBOARD,
     subItems: sortSubItems([
       { id: 'overview', label: 'Visão Geral', component: 'DashboardOverview' }
-    ] )
+    ])
   },
   {
     id: 'medicine',
@@ -73,7 +73,17 @@ export const MENU_CONFIG: MenuItem[] = [
       { id: 'ltcat', label: 'LTCAT', component: 'LTCATManagement' },
       { id: 'periculosidade', label: 'Periculosidade', component: 'Periculosidade' },
       { id: 'pgr', label: 'PGR', component: 'PGRManagement' },
-      { id: 'trainings', label: 'Treinamentos', component: 'Trainings' }
+      { id: 'pgr', label: 'PGR', component: 'PGRManagement' }
+    ])
+  },
+  {
+    id: 'training',
+    label: 'Treinamentos',
+    icon: 'GraduationCap',
+    module: ModuleType.TRAINING,
+    subItems: sortSubItems([
+      { id: 'expirations', label: 'Gestão de Vencimentos', component: 'Trainings' },
+      { id: 'integration', label: 'Integração', component: 'TrainingIntegration' }
     ])
   }
 ].sort((a, b) => a.label.localeCompare(b.label));

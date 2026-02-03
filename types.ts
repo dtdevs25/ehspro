@@ -5,7 +5,8 @@ export enum ModuleType {
   SAFETY = 'SAFETY',
   MEDICINE = 'MEDICINE',
   ADMIN = 'ADMIN',
-  REGISTRATIONS = 'REGISTRATIONS'
+  REGISTRATIONS = 'REGISTRATIONS',
+  TRAINING = 'TRAINING'
 }
 
 export type UserRole = 'MASTER' | 'MANAGER' | 'USER';

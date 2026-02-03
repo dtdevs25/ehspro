@@ -44,8 +44,10 @@ import {
   Building2,
   MapPin,
   ChevronRight,
-  ArrowLeftRight
+  ArrowLeftRight,
+  GraduationCap
 } from 'lucide-react';
+import { TrainingIntegration } from './components/Modules/Training/TrainingIntegration';
 
 // Cadastros de Demonstração (Enriquecidos com Unidades Diferentes)
 const DEMO_COLLABORATORS: Collaborator[] = [
@@ -537,6 +539,18 @@ const App: React.FC = () => {
                 onSaveUser={saveUser}
                 onDeleteUser={deleteUser}
               />
+            )}
+
+            {activeModule === 'training' && activeSubItem === 'integration' && <TrainingIntegration />}
+            {/* For now reusing a placeholder or standard view for Expirations until dedicated component is built */}
+            {activeModule === 'training' && activeSubItem === 'expirations' && (
+              <div className="flex flex-col items-center justify-center p-12 text-center space-y-4">
+                <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center">
+                  <GraduationCap size={40} className="text-emerald-600" />
+                </div>
+                <h2 className="text-2xl font-bold text-emerald-900">Gestão de Vencimentos em Breve</h2>
+                <p className="text-emerald-600">O módulo de gestão de vencimentos de treinamentos está sendo migrado.</p>
+              </div>
             )}
           </div>
         </main>
