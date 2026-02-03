@@ -40,13 +40,18 @@ async function generateWithOpenAICompatible(apiKey: string, baseUrl: string, mod
 // Unified Generation Function
 async function robustGenerate(prompt: string, systemContext: string = "Você é um especialista em RH e Segurança do Trabalho."): Promise<string> {
     // 1. Try Grok if available (User asked for Grok)
-    // Using xAI API endpoint: https://api.x.ai/v1
+    // Supports multiple keys separated by comma
     if (GROK_API_KEY) {
-        try {
-            console.log("Tentando gerar com Grok...");
-            return await generateWithOpenAICompatible(GROK_API_KEY, 'https://api.x.ai/v1', 'grok-beta', prompt, systemContext);
-        } catch (e: any) {
-            console.error("Erro no Grok, tentando fallback...", e.message);
+        const grokKeys = GROK_API_KEY.includes(',') ? GROK_API_KEY.split(',').map(k => k.trim()) : [GROK_API_KEY];
+
+        for (const key of grokKeys) {
+            if (!key) continue;
+            try {
+                console.log(`Tentando gerar com Grok (Key ending ${key.slice(-4)})...`);
+                return await generateWithOpenAICompatible(key, 'https://api.x.ai/v1', 'grok-beta', prompt, systemContext);
+            } catch (e: any) {
+                console.error(`Erro no Grok (Key ${key.slice(-4)}), tentando próxima...`, e.message);
+            }
         }
     }
 
