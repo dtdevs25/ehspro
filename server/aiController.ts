@@ -51,30 +51,40 @@ async function robustGenerate(prompt: string, systemContext: string = "Você é 
         }
     }
 
-    // 2. Try Gemini
+    // 2. Try Gemini with Fallback Strategy
     if (geminiAi) {
-        try {
-            console.log("Tentando gerar com Gemini 2.0...");
-            const response = await geminiAi.models.generateContent({
-                model: 'gemini-2.0-flash',
-                contents: `${systemContext}\n\n${prompt}`,
-            });
-            return response.text || "Sem resposta do Gemini 2.0.";
-        } catch (e) {
-            console.warn("Falha no Gemini 2.0, tentando 1.5...", e);
+        const modelsToTry = [
+            'gemini-2.0-flash',
+            'gemini-1.5-flash',
+            'gemini-1.5-flash-001',
+            'gemini-1.5-pro',
+            'gemini-pro'
+        ];
+
+        for (const model of modelsToTry) {
             try {
+                console.log(`Tentando gerar com Gemini (${model})...`);
                 const response = await geminiAi.models.generateContent({
-                    model: 'gemini-1.5-flash',
+                    model: model,
                     contents: `${systemContext}\n\n${prompt}`,
                 });
-                return response.text || "Sem resposta do Gemini 1.5.";
-            } catch (e2) {
-                console.error("Erro fatal no Gemini:", e2);
+                return response.text || `Sem resposta do ${model}.`;
+            } catch (e: any) {
+                // Log specific error for debugging but continue to next model
+                const isQuota = e?.stack?.includes('429') || e?.message?.includes('429') || e?.toString().includes('Quota');
+                const isNotFound = e?.stack?.includes('404') || e?.message?.includes('404');
+
+                console.warn(`Falha no modelo ${model}: ${isQuota ? 'Cota Excedida' : (isNotFound ? 'Modelo não encontrado' : 'Erro desconhecido')}`);
+
+                // If it's the last model, log the full error
+                if (model === modelsToTry[modelsToTry.length - 1]) {
+                    console.error("Todas as tentativas no Gemini falharam.", e);
+                }
             }
         }
     }
 
-    return "Não foi possível gerar o conteúdo (Erro de API/Conexão). Verifique logs do servidor.";
+    return "Não foi possível gerar o conteúdo. (Cotas excedidas ou Chaves inválidas).";
 }
 
 export const generateProfessionalSummary = async (data: any) => {
