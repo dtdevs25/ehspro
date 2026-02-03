@@ -139,7 +139,9 @@ export const SimpleCRUDModule: React.FC<SimpleCRUDModuleProps> = ({ title, items
           <div className="absolute inset-0 bg-emerald-950/40 backdrop-blur-sm" onClick={handleCloseModal}></div>
           <div className="bg-white w-full max-w-lg rounded-[2rem] shadow-2xl relative z-10 overflow-hidden border border-white/20">
             <div className="p-6 border-b border-emerald-50 flex items-center justify-between">
-              <h2 className="text-lg font-black text-emerald-950">{editingItem ? 'Editar' : 'Novo'} {title.slice(0, -1)}</h2>
+              <h2 className="text-lg font-black text-emerald-950">
+                {editingItem ? 'Editar' : (isRoles ? 'Novo' : 'Nova')} {isRoles ? 'Cargo' : 'Função'}
+              </h2>
               <button onClick={handleCloseModal} className="p-1.5 text-emerald-400 hover:bg-emerald-100 rounded-full"><X size={20} /></button>
             </div>
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
