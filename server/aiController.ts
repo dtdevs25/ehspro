@@ -8,7 +8,7 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.API_KEY;
 const GROK_API_KEY = process.env.GROK_API_KEY;
 
 // Gemini Client
-const geminiClient = GEMINI_API_KEY ? new GoogleGenerativeAI(GEMINI_API_KEY) : null;
+// Gemini Client instantiated dynamically below
 
 // Generic helper for OpenAI-compatible APIs (Grok, etc.)
 async function generateWithOpenAICompatible(apiKey: string, baseUrl: string, model: string, prompt: string, systemPrompt?: string) {
@@ -56,7 +56,10 @@ async function robustGenerate(prompt: string, systemContext: string = "Você é 
     }
 
     // 2. Try Gemini with Fallback Strategy
-    if (geminiClient) {
+    // 2. Try Gemini with Fallback Strategy (Multiple Keys & Multiple Models)
+    if (GEMINI_API_KEY) {
+        const geminiKeys = GEMINI_API_KEY.includes(',') ? GEMINI_API_KEY.split(',').map(k => k.trim()) : [GEMINI_API_KEY];
+
         const modelsToTry = [
             'gemini-1.5-flash',
             'gemini-2.0-flash',
@@ -64,35 +67,38 @@ async function robustGenerate(prompt: string, systemContext: string = "Você é 
             'gemini-pro'
         ];
 
-        for (const modelName of modelsToTry) {
-            try {
-                console.log(`Tentando gerar com Gemini (${modelName})...`);
-                const model = geminiClient.getGenerativeModel({ model: modelName });
+        // Loop through available Gemini Keys
+        for (const key of geminiKeys) {
+            if (!key) continue;
 
-                // Gemini SDK doesn't support system instructions in 1.0 reliably in all regions,
-                // but 1.5+ does. We can prepend it to prompt just to be safe and compatible across versions.
-                const fullPrompt = `${systemContext}\n\n${prompt}`;
+            // Loop through models for this specific key
+            for (const modelName of modelsToTry) {
+                try {
+                    const client = new GoogleGenerativeAI(key);
+                    const model = client.getGenerativeModel({ model: modelName });
 
-                const result = await model.generateContent(fullPrompt);
-                const response = await result.response;
-                const text = response.text();
+                    console.log(`Tentando Gemini (Key ...${key.slice(-4)}) com modelo ${modelName}...`);
 
-                if (text) return text;
-                throw new Error("Resposta vazia.");
+                    // Gemini SDK doesn't support system instructions in 1.0 reliably in all regions,
+                    // but 1.5+ does. We can prepend it to prompt just to be safe and compatible across versions.
+                    const fullPrompt = `${systemContext}\n\n${prompt}`;
 
-            } catch (e: any) {
-                // Log specific error for debugging but continue to next model
-                const isQuota = e?.stack?.includes('429') || e?.message?.includes('429') || e?.toString().includes('Quota');
-                const isNotFound = e?.stack?.includes('404') || e?.message?.includes('404') || e?.message?.includes('not found');
+                    const result = await model.generateContent(fullPrompt);
+                    const response = await result.response;
+                    const text = response.text();
 
-                console.warn(`Falha no modelo ${modelName}: ${isQuota ? 'Cota Excedida' : (isNotFound ? 'Modelo não encontrado' : e.message)}`);
+                    if (text) return text;
+                    throw new Error("Resposta vazia.");
 
-                // If it's the last model, log the full error
-                if (modelName === modelsToTry[modelsToTry.length - 1]) {
-                    console.error("Todas as tentativas no Gemini falharam.");
+                } catch (e: any) {
+                    const isQuota = e?.stack?.includes('429') || e?.message?.includes('429') || e?.toString().includes('Quota');
+                    const isNotFound = e?.stack?.includes('404') || e?.message?.includes('404') || e?.message?.includes('not found');
+
+                    console.warn(`Falha (Key ...${key.slice(-4)}) modelo ${modelName}: ${isQuota ? 'Cota Excedida' : (isNotFound ? 'Modelo não encontrado' : e.message)}`);
                 }
             }
         }
+        console.error("Todas as tentativas com todas as chaves Gemini falharam.");
     }
 
     return "Não foi possível gerar o conteúdo. (Cotas excedidas ou Chaves inválidas).";
