@@ -59,6 +59,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   };
 
   const hasAccess = (moduleId: string, subId?: string) => {
+    if (user.role === 'MASTER') return true;
+
     const perm = user.permissions.find(p => p.moduleId === moduleId);
     if (!perm) return false;
     if (subId) return perm.subModules.includes(subId);
