@@ -54,18 +54,27 @@ async function robustGenerate(prompt: string, systemContext: string = "Você é 
     // 2. Try Gemini
     if (geminiAi) {
         try {
-            console.log("Tentando gerar com Gemini...");
+            console.log("Tentando gerar com Gemini 2.0...");
             const response = await geminiAi.models.generateContent({
                 model: 'gemini-2.0-flash',
                 contents: `${systemContext}\n\n${prompt}`,
             });
-            return response.text || "Sem resposta.";
+            return response.text || "Sem resposta do Gemini 2.0.";
         } catch (e) {
-            console.error("Erro no Gemini:", e);
+            console.warn("Falha no Gemini 2.0, tentando 1.5...", e);
+            try {
+                const response = await geminiAi.models.generateContent({
+                    model: 'gemini-1.5-flash',
+                    contents: `${systemContext}\n\n${prompt}`,
+                });
+                return response.text || "Sem resposta do Gemini 1.5.";
+            } catch (e2) {
+                console.error("Erro fatal no Gemini:", e2);
+            }
         }
     }
 
-    return "Não foi possível gerar o conteúdo. Verifique as chaves de API (Grok/Gemini).";
+    return "Não foi possível gerar o conteúdo (Erro de API/Conexão). Verifique logs do servidor.";
 }
 
 export const generateProfessionalSummary = async (data: any) => {
