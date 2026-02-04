@@ -12,11 +12,14 @@ interface SimpleCRUDModuleProps {
   onDelete: (id: string) => void;
   icon: any;
   availableFunctions?: JobFunction[];
+  onCreateFunction?: (data: any) => Promise<void>; // Optional prop for creating functions from Roles
 }
 
-export const SimpleCRUDModule: React.FC<SimpleCRUDModuleProps> = ({ title, items, onSave, onDelete, icon: Icon, availableFunctions = [] }) => {
+export const SimpleCRUDModule: React.FC<SimpleCRUDModuleProps> = ({ title, items, onSave, onDelete, icon: Icon, availableFunctions = [], onCreateFunction }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isBulkImportOpen, setIsBulkImportOpen] = useState(false);
+  const [isFunctionModalOpen, setIsFunctionModalOpen] = useState(false);
+  const [newFunctionData, setNewFunctionData] = useState({ name: '', cbo: '' });
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [editingItem, setEditingItem] = useState<any>(null);
   const [formData, setFormData] = useState<any>({ name: '', description: '', cbo: '', functionId: '' });
@@ -61,6 +64,15 @@ export const SimpleCRUDModule: React.FC<SimpleCRUDModuleProps> = ({ title, items
     e.preventDefault();
     onSave({ ...editingItem, ...formData });
     handleCloseModal();
+  };
+
+  const handleSaveNewFunction = async () => {
+    if (!newFunctionData.name || !newFunctionData.cbo) return alert("Preencha nome e CBO");
+    if (onCreateFunction) {
+      await onCreateFunction(newFunctionData);
+      setNewFunctionData({ name: '', cbo: '' });
+      setIsFunctionModalOpen(false);
+    }
   };
 
   const handleBulkImport = (data: any[]) => {
@@ -170,10 +182,17 @@ export const SimpleCRUDModule: React.FC<SimpleCRUDModuleProps> = ({ title, items
               {isRoles && (
                 <div className="space-y-1">
                   <label className="text-[9px] font-black text-emerald-800/60 uppercase tracking-widest ml-1">Função Vinculada</label>
-                  <select required value={formData.functionId || ''} onChange={e => setFormData({ ...formData, functionId: e.target.value })} className="w-full bg-emerald-50 border border-emerald-100 p-3 rounded-xl font-bold text-sm">
-                    <option value="">Selecione...</option>
-                    {availableFunctions.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
-                  </select>
+                  <div className="flex gap-2">
+                    <select required value={formData.functionId || ''} onChange={e => setFormData({ ...formData, functionId: e.target.value })} className="w-full bg-emerald-50 border border-emerald-100 p-3 rounded-xl font-bold text-sm">
+                      <option value="">Selecione...</option>
+                      {availableFunctions.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
+                    </select>
+                    {onCreateFunction && (
+                      <button type="button" onClick={() => setIsFunctionModalOpen(true)} className="bg-emerald-100 text-emerald-600 p-3 rounded-xl hover:bg-emerald-200 transition-colors" title="Criar Nova Função">
+                        <Plus size={20} />
+                      </button>
+                    )}
+                  </div>
                 </div>
               )}
               <div className="space-y-1">
@@ -188,6 +207,37 @@ export const SimpleCRUDModule: React.FC<SimpleCRUDModuleProps> = ({ title, items
                 <button type="submit" className="bg-emerald-600 text-white px-8 py-2.5 rounded-xl font-black text-[10px] uppercase shadow-lg">Confirmar</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Mini Modal for New Function */}
+      {isFunctionModalOpen && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" onClick={() => setIsFunctionModalOpen(false)}></div>
+          <div className="bg-white p-6 rounded-2xl shadow-2xl relative z-20 w-80 space-y-4 border border-emerald-100">
+            <h3 className="font-black text-emerald-950">Cadastrar Nova Função</h3>
+            <input
+              placeholder="Nome da Função"
+              className="w-full bg-emerald-50 p-2 rounded-lg text-sm font-bold border border-emerald-100"
+              value={newFunctionData.name}
+              onChange={e => setNewFunctionData({ ...newFunctionData, name: e.target.value })}
+            />
+            <input
+              placeholder="CBO (0000-00)"
+              className="w-full bg-emerald-50 p-2 rounded-lg text-sm font-bold border border-emerald-100"
+              value={newFunctionData.cbo}
+              onChange={e => {
+                let v = e.target.value.replace(/\D/g, '');
+                if (v.length > 6) v = v.slice(0, 6);
+                if (v.length > 4) v = v.replace(/^(\d{4})(\d)/, '$1-$2');
+                setNewFunctionData({ ...newFunctionData, cbo: v });
+              }}
+            />
+            <div className="flex justify-end gap-2 text-xs">
+              <button onClick={() => setIsFunctionModalOpen(false)} className="px-3 py-2 text-emerald-600 font-bold">Cancelar</button>
+              <button onClick={handleSaveNewFunction} className="bg-emerald-600 text-white px-3 py-2 rounded-lg font-bold">Salvar</button>
+            </div>
           </div>
         </div>
       )}
