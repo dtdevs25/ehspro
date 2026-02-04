@@ -377,7 +377,7 @@ app.post('/api/companies', async (req, res) => {
     const result = await prisma.$transaction(async (prisma) => {
       // 1. Create Company
       const newCompany = await prisma.company.create({
-        data: { name, cnpj, cnae, address, zipCode, street, number, neighborhood, city, state }
+        data: { name, cnpj, cnae, address }
       });
 
       // 2. Create Default Branch (Matriz)
@@ -391,8 +391,7 @@ app.post('/api/companies', async (req, res) => {
           // Company CNPJ is unique in Company table. Branch CNPJ is unique in Branch table.
           // So it is fine to use same string in both tables.
           cnae: cnae,
-          address: address,
-          zipCode, street, number, neighborhood, city, state
+          address: address
         }
       });
 
@@ -410,10 +409,10 @@ app.post('/api/companies', async (req, res) => {
 app.put('/api/companies/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, cnpj, cnae, address, zipCode, street, number, neighborhood, city, state } = req.body;
+    const { name, cnpj, cnae, address } = req.body;
     const updatedCompany = await prisma.company.update({
       where: { id },
-      data: { name, cnpj, cnae, address, zipCode, street, number, neighborhood, city, state }
+      data: { name, cnpj, cnae, address }
     });
     res.json(updatedCompany);
   } catch (error) {
@@ -434,9 +433,9 @@ app.delete('/api/companies/:id', async (req, res) => {
 // --- BRANCHES ---
 app.post('/api/branches', async (req, res) => {
   try {
-    const { name, cnpj, cnae, address, companyId, zipCode, street, number, neighborhood, city, state } = req.body;
+    const { name, cnpj, cnae, address, companyId } = req.body;
     const newBranch = await prisma.branch.create({
-      data: { name, cnpj, cnae, address, companyId, zipCode, street, number, neighborhood, city, state }
+      data: { name, cnpj, cnae, address, companyId }
     });
     res.json(newBranch);
   } catch (error) {
@@ -448,10 +447,10 @@ app.post('/api/branches', async (req, res) => {
 app.put('/api/branches/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, cnpj, cnae, address, companyId, zipCode, street, number, neighborhood, city, state } = req.body;
+    const { name, cnpj, cnae, address, companyId } = req.body;
     const updatedBranch = await prisma.branch.update({
       where: { id },
-      data: { name, cnpj, cnae, address, companyId, zipCode, street, number, neighborhood, city, state }
+      data: { name, cnpj, cnae, address, companyId }
     });
     res.json(updatedBranch);
   } catch (error) {
