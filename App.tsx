@@ -163,9 +163,9 @@ const App: React.FC = () => {
     }
   }, [currentUser, fetchData]);
 
-  // Auto-select first branch
+  // Auto-select branch ONLY if there is exactly one branch available
   React.useEffect(() => {
-    if (branches.length > 0 && !activeBranchId) {
+    if (branches.length === 1 && !activeBranchId) {
       setActiveBranchId(branches[0].id);
     }
   }, [branches, activeBranchId]);
@@ -688,7 +688,7 @@ const App: React.FC = () => {
           onClose={() => setIsImportModalOpen(false)}
           onImport={handleCollaboratorImport}
           existingRegistrationCount={collaborators.length}
-          currentData={collaborators}
+          currentData={filteredCollaboratorsByUnit} // Use only filtered data for the current unit
         />
       )}
     </div>
