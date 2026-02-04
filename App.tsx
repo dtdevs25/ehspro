@@ -41,6 +41,7 @@ import {
   Briefcase,
   Wrench,
   Eye,
+  Trash2,
   Building2,
   MapPin,
   ChevronRight,
@@ -220,8 +221,11 @@ const App: React.FC = () => {
       if (!data.id || data.id.startsWith('demo-')) delete payload.id;
 
       // If we are editing, we expect a valid UUID ID
-      if (editingCollaborator && editingCollaborator.id) {
-        const res = await fetch(`/api/collaborators/${editingCollaborator.id}`, {
+      // FIX: Ensure we use the ID from the data passed in if it matches editingCollaborator
+      const targetId = editingCollaborator?.id || data.id;
+
+      if (targetId && !targetId.startsWith('demo-')) {
+        const res = await fetch(`/api/collaborators/${targetId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
@@ -229,6 +233,8 @@ const App: React.FC = () => {
         if (res.ok) {
           savedCollaborator = await res.json();
           setCollaborators(prev => prev.map(c => c.id === savedCollaborator.id ? savedCollaborator : c));
+        } else {
+          console.error("Failed to update", await res.text());
         }
       } else {
         // Create
@@ -253,6 +259,29 @@ const App: React.FC = () => {
     } catch (err) {
       console.error("Error saving collaborator:", err);
       alert("Erro ao salvar colaborador. Verifique o console.");
+    }
+  };
+
+
+
+  const deleteCollaborator = async (id: string) => {
+    try {
+      if (id.startsWith('demo-')) {
+        setCollaborators(prev => prev.filter(c => c.id !== id));
+        setIsCollaboratorFormOpen(false);
+        setEditingCollaborator(null);
+        return;
+      }
+      const res = await fetch(`/api/collaborators/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        setCollaborators(prev => prev.filter(c => c.id !== id));
+        setIsCollaboratorFormOpen(false);
+        setEditingCollaborator(null);
+      } else {
+        alert("Erro ao excluir. Tente novamente.");
+      }
+    } catch (e) {
+      console.error("Failed to delete collaborator", e);
     }
   };
 
@@ -674,6 +703,7 @@ const App: React.FC = () => {
       {isCollaboratorFormOpen && (
         <CollaboratorForm
           onSave={saveCollaborator}
+          onDelete={editingCollaborator ? () => deleteCollaborator(editingCollaborator.id) : undefined}
           onCancel={() => { setIsCollaboratorFormOpen(false); setEditingCollaborator(null); }}
           roles={roles}
           functions={functions}

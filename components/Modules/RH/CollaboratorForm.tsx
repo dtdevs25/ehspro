@@ -17,7 +17,8 @@ import {
   CreditCard,
   FileText,
   UserCheck,
-  UserMinus
+  UserMinus,
+  Trash2,
 } from 'lucide-react';
 import { Collaborator, Role, JobFunction, Company, Branch } from '../../../types';
 import { generateProfessionalSummary } from '../../../services/geminiService';
@@ -32,6 +33,7 @@ interface CollaboratorFormProps {
   branches: Branch[];
   initialData?: Collaborator | null;
   nextRegistration: string;
+  onDelete?: () => void;
 }
 
 export const CollaboratorForm: React.FC<CollaboratorFormProps> = ({
@@ -42,7 +44,8 @@ export const CollaboratorForm: React.FC<CollaboratorFormProps> = ({
   companies,
   branches,
   initialData,
-  nextRegistration
+  nextRegistration,
+  onDelete
 }) => {
   const [formData, setFormData] = useState<Partial<Collaborator>>(initialData || {
     registration: nextRegistration,
@@ -154,8 +157,8 @@ export const CollaboratorForm: React.FC<CollaboratorFormProps> = ({
               type="button"
               onClick={() => setActiveTab(tab.id as any)}
               className={`flex items-center gap-2 px-6 py-4 border-b-4 transition-all whitespace-nowrap ${activeTab === tab.id
-                  ? 'border-emerald-600 text-emerald-950 font-black'
-                  : 'border-transparent text-emerald-400 font-bold hover:text-emerald-600'
+                ? 'border-emerald-600 text-emerald-950 font-black'
+                : 'border-transparent text-emerald-400 font-bold hover:text-emerald-600'
                 }`}
             >
               <tab.icon size={16} />
@@ -278,11 +281,26 @@ export const CollaboratorForm: React.FC<CollaboratorFormProps> = ({
           </div>
         </form>
 
-        <div className="p-6 border-t border-emerald-50 bg-emerald-50/20 shrink-0 flex justify-end gap-3">
-          <button type="button" onClick={onCancel} className="px-6 py-3 font-black text-xs text-emerald-600 uppercase tracking-widest hover:bg-emerald-100 rounded-xl transition-all">Cancelar</button>
-          <button form="collabForm" type="submit" className="bg-emerald-600 hover:bg-emerald-500 text-white px-10 py-3 rounded-xl flex items-center justify-center gap-2 font-black text-xs uppercase tracking-widest shadow-lg transition-all">
-            <Save size={18} /> {initialData ? 'Atualizar' : 'Salvar'}
-          </button>
+        <div className="p-6 border-t border-emerald-50 bg-emerald-50/20 shrink-0 flex justify-between gap-3">
+          {onDelete && initialData && (
+            <button
+              type="button"
+              onClick={() => {
+                if (window.confirm("ATENÇÃO: A exclusão é irreversível. Deseja realmente excluir este colaborador?")) {
+                  onDelete();
+                }
+              }}
+              className="px-6 py-3 bg-red-50 text-red-600 hover:bg-red-100 rounded-xl font-black text-xs uppercase tracking-widest flex items-center gap-2 transition-all"
+            >
+              <Trash2 size={16} /> Excluir
+            </button>
+          )}
+          <div className="flex justify-end gap-3 flex-1">
+            <button type="button" onClick={onCancel} className="px-6 py-3 font-black text-xs text-emerald-600 uppercase tracking-widest hover:bg-emerald-100 rounded-xl transition-all">Cancelar</button>
+            <button form="collabForm" type="submit" className="bg-emerald-600 hover:bg-emerald-500 text-white px-10 py-3 rounded-xl flex items-center justify-center gap-2 font-black text-xs uppercase tracking-widest shadow-lg transition-all">
+              <Save size={18} /> {initialData ? 'Atualizar' : 'Salvar'}
+            </button>
+          </div>
         </div>
       </div>
     </div>
