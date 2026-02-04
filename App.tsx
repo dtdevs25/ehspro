@@ -518,7 +518,17 @@ const App: React.FC = () => {
               </div>
             )}
 
-            {activeModule === 'rh' && activeSubItem === 'roles' && <SimpleCRUDModule items={roles} onSave={saveRole} onDelete={() => { }} title="Cargos" icon={Briefcase} availableFunctions={functions} />}
+            {activeModule === 'rh' && activeSubItem === 'roles' && (
+              <SimpleCRUDModule
+                items={roles}
+                onSave={saveRole}
+                onDelete={() => { }}
+                title="Cargos"
+                icon={Briefcase}
+                availableFunctions={functions}
+                onCreateFunction={async (data) => saveFunction(data)}
+              />
+            )}
             {activeModule === 'rh' && activeSubItem === 'functions' && <SimpleCRUDModule items={functions} onSave={saveFunction} onDelete={() => { }} title="Funções" icon={Wrench} />}
             {activeModule === 'rh' && activeSubItem === 'absenteeism' && <AbsenteeismModule collaborators={filteredCollaboratorsByUnit} certificates={filteredCertificatesByUnit} onSaveCertificate={saveCertificate} />}
 
