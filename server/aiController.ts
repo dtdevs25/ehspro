@@ -42,13 +42,18 @@ async function robustGenerate(prompt: string, systemContext: string = "Você é 
     // 1. Try Groq (Llama 3) - User Preferred (Free Tier)
     if (GROQ_API_KEY) {
         const groqKeys = GROQ_API_KEY.includes(',') ? GROQ_API_KEY.split(',').map(k => k.trim()) : [GROQ_API_KEY];
+        // Models to try: Llama 3 70B (High Quality) -> 8B (Fast/Backup) -> Mixtral (Backup)
+        const groqModels = ['llama3-70b-8192', 'llama3-8b-8192', 'mixtral-8x7b-32768'];
+
         for (const key of groqKeys) {
             if (!key) continue;
-            try {
-                console.log(`Tentando gerar com Groq Llama3 (Key ...${key.slice(-4)})...`);
-                return await generateWithOpenAICompatible(key, 'https://api.groq.com/openai/v1', 'llama3-70b-8192', prompt, systemContext);
-            } catch (e: any) {
-                console.error(`Erro no Groq:`, e.message);
+            for (const model of groqModels) {
+                try {
+                    console.log(`Tentando gerar com Groq ${model} (Key ...${key.slice(-4)})...`);
+                    return await generateWithOpenAICompatible(key, 'https://api.groq.com/openai/v1', model, prompt, systemContext);
+                } catch (e: any) {
+                    console.warn(`Groq ${model} falhou:`, e.message);
+                }
             }
         }
     }
@@ -56,7 +61,17 @@ async function robustGenerate(prompt: string, systemContext: string = "Você é 
     // 2. Try Gemini (Google) - User Preferred
     if (GEMINI_API_KEY) {
         const geminiKeys = GEMINI_API_KEY.includes(',') ? GEMINI_API_KEY.split(',').map(k => k.trim()) : [GEMINI_API_KEY];
-        const modelsToTry = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'];
+        // Exhaustive list of Gemini models to bypass 404s and 429s
+        const modelsToTry = [
+            'gemini-1.5-flash',
+            'gemini-1.5-flash-latest',
+            'gemini-1.5-flash-001',
+            'gemini-2.0-flash-exp', // Experimental 2.0
+            'gemini-1.5-pro',
+            'gemini-1.5-pro-latest',
+            'gemini-1.0-pro',
+            'gemini-pro'
+        ];
 
         for (const key of geminiKeys) {
             if (!key) continue;
@@ -77,7 +92,7 @@ async function robustGenerate(prompt: string, systemContext: string = "Você é 
                         throw new Error("Resposta vazia.");
                     } catch (e: any) {
                         // Log warning but continue to next model
-                        console.warn(`Gemini ${modelName} falhou: ${e.message?.slice(0, 100)}...`);
+                        console.warn(`Gemini ${modelName} falhou: ${e.message?.slice(0, 150)}...`);
                     }
                 }
             } catch (e: any) {
