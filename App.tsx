@@ -51,6 +51,7 @@ import {
 } from 'lucide-react';
 import { TrainingIntegration } from './components/Modules/Training/TrainingIntegration';
 import { CollaboratorDetailsModal } from './components/Modules/RH/CollaboratorDetailsModal';
+import { ConfirmationModal } from './components/Layout/ConfirmationModal';
 
 // Cadastros de Demonstração (Enriquecidos com Unidades Diferentes)
 const DEMO_COLLABORATORS: Collaborator[] = [
@@ -192,8 +193,10 @@ const App: React.FC = () => {
   const [isCollaboratorFormOpen, setIsCollaboratorFormOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [editingCollaborator, setEditingCollaborator] = useState<Collaborator | null>(null);
+
   const [viewingCollaborator, setViewingCollaborator] = useState<Collaborator | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{ isOpen: boolean, id: string | null }>({ isOpen: false, id: null });
 
   const handleLogin = (email: string) => {
     const found = allUsers.find(u => u.email === email) || MASTER_USER;
@@ -283,6 +286,10 @@ const App: React.FC = () => {
     } catch (e) {
       console.error("Failed to delete collaborator", e);
     }
+  };
+
+  const requestDeleteCollaborator = (id: string) => {
+    setDeleteConfirmation({ isOpen: true, id });
   };
 
   const handleCollaboratorImport = async (data: Collaborator[]) => {
@@ -718,7 +725,7 @@ const App: React.FC = () => {
       {isCollaboratorFormOpen && (
         <CollaboratorForm
           onSave={saveCollaborator}
-          onDelete={editingCollaborator ? () => deleteCollaborator(editingCollaborator.id) : undefined}
+          onDelete={editingCollaborator ? () => requestDeleteCollaborator(editingCollaborator.id) : undefined}
           onCancel={() => { setIsCollaboratorFormOpen(false); setEditingCollaborator(null); }}
           roles={roles}
           functions={functions}
@@ -749,6 +756,18 @@ const App: React.FC = () => {
           branches={branches}
         />
       )}
+
+      <ConfirmationModal
+        isOpen={deleteConfirmation.isOpen}
+        onClose={() => setDeleteConfirmation({ isOpen: false, id: null })}
+        onConfirm={() => {
+          if (deleteConfirmation.id) deleteCollaborator(deleteConfirmation.id);
+        }}
+        title="Excluir Colaborador"
+        message="Esta ação é irreversível. O registro do colaborador será permanentemente removido do sistema. Deseja continuar?"
+        confirmText="Sim, Excluir"
+        cancelText="Cancelar"
+      />
     </div>
   );
 };

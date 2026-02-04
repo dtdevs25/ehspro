@@ -285,11 +285,7 @@ export const CollaboratorForm: React.FC<CollaboratorFormProps> = ({
           {onDelete && initialData && (
             <button
               type="button"
-              onClick={() => {
-                if (window.confirm("ATENÇÃO: A exclusão é irreversível. Deseja realmente excluir este colaborador?")) {
-                  onDelete();
-                }
-              }}
+              onClick={() => onDelete()}
               className="px-6 py-3 bg-red-50 text-red-600 hover:bg-red-100 rounded-xl font-black text-xs uppercase tracking-widest flex items-center gap-2 transition-all"
             >
               <Trash2 size={16} /> Excluir
