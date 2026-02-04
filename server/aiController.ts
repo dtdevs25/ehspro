@@ -69,8 +69,7 @@ async function robustGenerate(prompt: string, systemContext: string = "Você é 
                         console.log(`Tentando Gemini (${modelName}) (Key ...${key.slice(-4)})...`);
                         const response = await ai.models.generateContent({
                             model: modelName,
-                            contents: [{ role: 'user', parts: [{ text: `${systemContext}\n\n${prompt}` }] }],
-                            generationConfig: { temperature: 0.7 }
+                            contents: `${systemContext}\n\n${prompt}`
                         });
 
                         const text = response.text;
