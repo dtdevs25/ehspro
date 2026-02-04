@@ -45,6 +45,7 @@ import {
   MapPin,
   ChevronRight,
   ArrowLeftRight,
+  FileSpreadsheet,
   GraduationCap
 } from 'lucide-react';
 import { TrainingIntegration } from './components/Modules/Training/TrainingIntegration';
@@ -178,6 +179,7 @@ const App: React.FC = () => {
 
   // UI Handlers
   const [isCollaboratorFormOpen, setIsCollaboratorFormOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [editingCollaborator, setEditingCollaborator] = useState<Collaborator | null>(null);
   const [viewingCollaborator, setViewingCollaborator] = useState<Collaborator | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -220,6 +222,12 @@ const App: React.FC = () => {
     setEditingCollaborator(null);
   };
 
+  const handleCollaboratorImport = (data: Collaborator[]) => {
+    setCollaborators(prev => [...prev, ...data]);
+    setIsImportModalOpen(false);
+  };
+
+  // ... (rest of CRUD handlers)
   const saveRole = (data: Partial<Role>) => {
     if (data.id) {
       setRoles(roles.map(r => r.id === data.id ? { ...r, ...data } as Role : r));
@@ -261,7 +269,6 @@ const App: React.FC = () => {
       }
     } catch (err) {
       console.error("Error saving company:", err);
-      // Optional: Add toast notification here
     }
   };
 
@@ -345,7 +352,7 @@ const App: React.FC = () => {
       }
     } catch (err) {
       console.error("Error saving user:", err);
-      throw err; // Re-throw to show error in UI if needed
+      throw err;
     }
   };
 
@@ -384,13 +391,11 @@ const App: React.FC = () => {
   };
 
   // Main Render Logic
-  // Check for Reset Password Token
   const queryParams = new URLSearchParams(window.location.search);
   const resetToken = queryParams.get('token');
 
   if (resetToken) {
     return <ResetPassword token={resetToken} onSuccess={() => {
-      // Clear query param and reload/rerender to show Login
       window.history.replaceState({}, document.title, "/");
       window.location.reload();
     }} />;
@@ -482,9 +487,14 @@ const App: React.FC = () => {
                     <h1 className="text-3xl font-black text-emerald-950">Colaboradores</h1>
                     <p className="text-xs font-bold text-emerald-500 uppercase tracking-widest">{activeBranch?.name} • {searchedCollaborators.length} Registros</p>
                   </div>
-                  <button onClick={() => setIsCollaboratorFormOpen(true)} className="bg-emerald-600 text-white px-8 py-4 rounded-2xl font-black flex items-center gap-3 shadow-xl hover:bg-emerald-500 transition-all">
-                    <Plus size={20} /> Novo Registro
-                  </button>
+                  <div className="flex gap-2">
+                    <button onClick={() => setIsImportModalOpen(true)} className="bg-emerald-50 text-emerald-600 px-6 py-4 rounded-2xl font-black flex items-center gap-2 border border-emerald-100 uppercase hover:bg-emerald-100 transition-all text-xs tracking-widest">
+                      <FileSpreadsheet size={18} /> Importar
+                    </button>
+                    <button onClick={() => setIsCollaboratorFormOpen(true)} className="bg-emerald-600 text-white px-8 py-4 rounded-2xl font-black flex items-center gap-3 shadow-xl hover:bg-emerald-500 transition-all uppercase text-xs tracking-widest">
+                      <Plus size={18} /> Novo Registro
+                    </button>
+                  </div>
                 </div>
                 <div className="relative">
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-emerald-300" size={20} />
@@ -580,8 +590,15 @@ const App: React.FC = () => {
             : 1).toString()}
         />
       )}
+
+      {isImportModalOpen && (
+        <BulkImportModal
+          onClose={() => setIsImportModalOpen(false)}
+          onImport={handleCollaboratorImport}
+          existingRegistrationCount={collaborators.length}
+        />
+      )}
     </div>
   );
 };
-
 export default App;

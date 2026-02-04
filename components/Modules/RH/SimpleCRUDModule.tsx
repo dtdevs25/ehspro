@@ -19,7 +19,7 @@ export const SimpleCRUDModule: React.FC<SimpleCRUDModuleProps> = ({ title, items
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isBulkImportOpen, setIsBulkImportOpen] = useState(false);
   const [isFunctionModalOpen, setIsFunctionModalOpen] = useState(false);
-  const [newFunctionData, setNewFunctionData] = useState({ name: '', cbo: '' });
+  const [newFunctionData, setNewFunctionData] = useState({ name: '', cbo: '', description: '' });
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [editingItem, setEditingItem] = useState<any>(null);
   const [formData, setFormData] = useState<any>({ name: '', description: '', cbo: '', functionId: '' });
@@ -211,32 +211,68 @@ export const SimpleCRUDModule: React.FC<SimpleCRUDModuleProps> = ({ title, items
         </div>
       )}
 
-      {/* Mini Modal for New Function */}
+      {/* Modal for New Function (Full Featured) */}
       {isFunctionModalOpen && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" onClick={() => setIsFunctionModalOpen(false)}></div>
-          <div className="bg-white p-6 rounded-2xl shadow-2xl relative z-20 w-80 space-y-4 border border-emerald-100">
-            <h3 className="font-black text-emerald-950">Cadastrar Nova Função</h3>
-            <input
-              placeholder="Nome da Função"
-              className="w-full bg-emerald-50 p-2 rounded-lg text-sm font-bold border border-emerald-100"
-              value={newFunctionData.name}
-              onChange={e => setNewFunctionData({ ...newFunctionData, name: e.target.value })}
-            />
-            <input
-              placeholder="CBO (0000-00)"
-              className="w-full bg-emerald-50 p-2 rounded-lg text-sm font-bold border border-emerald-100"
-              value={newFunctionData.cbo}
-              onChange={e => {
-                let v = e.target.value.replace(/\D/g, '');
-                if (v.length > 6) v = v.slice(0, 6);
-                if (v.length > 4) v = v.replace(/^(\d{4})(\d)/, '$1-$2');
-                setNewFunctionData({ ...newFunctionData, cbo: v });
-              }}
-            />
-            <div className="flex justify-end gap-2 text-xs">
-              <button onClick={() => setIsFunctionModalOpen(false)} className="px-3 py-2 text-emerald-600 font-bold">Cancelar</button>
-              <button onClick={handleSaveNewFunction} className="bg-emerald-600 text-white px-3 py-2 rounded-lg font-bold">Salvar</button>
+          <div className="absolute inset-0 bg-emerald-950/40 backdrop-blur-sm" onClick={() => setIsFunctionModalOpen(false)}></div>
+          <div className="bg-white w-full max-w-lg rounded-[2rem] shadow-2xl relative z-20 overflow-hidden border border-white/20">
+            <div className="p-6 border-b border-emerald-50 flex items-center justify-between">
+              <h3 className="text-lg font-black text-emerald-950">Nova Função</h3>
+              <button onClick={() => setIsFunctionModalOpen(false)} className="p-1.5 text-emerald-400 hover:bg-emerald-100 rounded-full"><X size={20} /></button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="space-y-1">
+                <label className="text-[9px] font-black text-emerald-800/60 uppercase tracking-widest ml-1">Nome da Função</label>
+                <input
+                  placeholder="Ex: Auxiliar Administrativo"
+                  className="w-full bg-emerald-50 border border-emerald-100 p-3 rounded-xl font-bold text-sm"
+                  value={newFunctionData.name}
+                  onChange={e => setNewFunctionData({ ...newFunctionData, name: e.target.value })}
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[9px] font-black text-emerald-800/60 uppercase tracking-widest ml-1">Código CBO</label>
+                <input
+                  placeholder="0000-00"
+                  className="w-full bg-emerald-50 border border-emerald-100 p-3 rounded-xl font-bold text-sm"
+                  value={newFunctionData.cbo}
+                  onChange={e => {
+                    let v = e.target.value.replace(/\D/g, '');
+                    if (v.length > 6) v = v.slice(0, 6);
+                    if (v.length > 4) v = v.replace(/^(\d{4})(\d)/, '$1-$2');
+                    setNewFunctionData({ ...newFunctionData, cbo: v });
+                  }}
+                />
+              </div>
+              <div className="space-y-1">
+                <div className="flex justify-between items-center mb-1">
+                  <label className="text-[9px] font-black text-emerald-800/60 uppercase tracking-widest ml-1">Descrição</label>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (!newFunctionData.name) return alert("Insira o nome primeiro.");
+                      if (!newFunctionData.cbo) return alert("CBO obrigatório para IA.");
+                      setIsAiLoading(true);
+                      const desc = await generateRoleDescription(newFunctionData.name, newFunctionData.cbo);
+                      setNewFunctionData(prev => ({ ...prev, description: desc }));
+                      setIsAiLoading(false);
+                    }}
+                    disabled={isAiLoading}
+                    className="text-[8px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded font-black border border-emerald-200"
+                  >
+                    IA CREATES
+                  </button>
+                </div>
+                <textarea
+                  value={newFunctionData.description || ''}
+                  onChange={e => setNewFunctionData({ ...newFunctionData, description: e.target.value })}
+                  className="w-full bg-emerald-50 border border-emerald-100 p-3 rounded-xl font-medium text-xs min-h-[120px]"
+                />
+              </div>
+              <div className="flex justify-end gap-2 pt-4">
+                <button onClick={() => setIsFunctionModalOpen(false)} className="px-5 py-2.5 font-black text-[10px] text-emerald-600 uppercase">Cancelar</button>
+                <button onClick={handleSaveNewFunction} className="bg-emerald-600 text-white px-8 py-2.5 rounded-xl font-black text-[10px] uppercase shadow-lg">Salvar Função</button>
+              </div>
             </div>
           </div>
         </div>
