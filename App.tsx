@@ -639,10 +639,25 @@ const App: React.FC = () => {
                           <td className="px-8 py-5 font-black text-xs text-emerald-600">{c.registration}</td>
                           <td className="px-8 py-5 font-black text-emerald-950">{c.name}</td>
                           <td className="px-8 py-5 text-sm text-emerald-800 font-medium">{functions.find(f => f.id === c.functionId)?.name || '-'}</td>
-                          <td className="px-8 py-5"><span className="bg-emerald-100 text-emerald-700 text-[10px] font-black px-3 py-1 rounded-full uppercase">{c.status}</span></td>
+                          <td className="px-8 py-5">
+                            <span className={`text-[10px] font-black px-3 py-1 rounded-full uppercase ${c.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
+                              {c.status === 'ACTIVE' ? 'Ativo' : 'Inativo'}
+                            </span>
+                          </td>
                           <td className="px-8 py-5 text-right opacity-0 group-hover:opacity-100">
-                            <button onClick={() => setViewingCollaborator(c)} className="p-2 text-emerald-600" title="Visualizar"><Eye size={18} /></button>
-                            <button onClick={() => { setEditingCollaborator(c); setIsCollaboratorFormOpen(true); }} className="p-2 text-emerald-400" title="Editar"><Edit3 size={18} /></button>
+                            <button onClick={() => setViewingCollaborator(c)} className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors" title="Visualizar"><Eye size={18} /></button>
+                            <button onClick={() => { setEditingCollaborator(c); setIsCollaboratorFormOpen(true); }} className="p-2 text-blue-400 hover:bg-blue-50 rounded-lg transition-colors" title="Editar"><Edit3 size={18} /></button>
+                            <button
+                              onClick={() => {
+                                if (window.confirm("ATENÇÃO: A exclusão é irreversível. Deseja realmente excluir este colaborador?")) {
+                                  deleteCollaborator(c.id);
+                                }
+                              }}
+                              className="p-2 text-red-400 hover:bg-red-50 rounded-lg transition-colors"
+                              title="Excluir"
+                            >
+                              <Trash2 size={18} />
+                            </button>
                           </td>
                         </tr>
                       ))}
