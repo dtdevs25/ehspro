@@ -654,8 +654,20 @@ app.put('/api/collaborators/:id', async (req, res) => {
     const { id } = req.params;
     const data = req.body;
 
-    // cleanup id from body to avoid trying to update PK
-    const { id: bodyId, ...updateData } = data;
+    // cleanup id and relational objects from body
+    // Prisma .update fails if we pass the relation object itself (e.g. company: { ... })
+    const {
+      id: bodyId,
+      company,
+      branch,
+      role,
+      jobFunction,
+      medicalCertificates,
+      cipeiros,
+      createdAt,
+      updatedAt,
+      ...updateData
+    } = data;
 
     const updated = await prisma.collaborator.update({
       where: { id },
