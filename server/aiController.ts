@@ -44,8 +44,12 @@ async function robustGenerate(prompt: string, systemContext: string = "Você é 
     // 1. Try Groq (Llama 3) - User Preferred (Free Tier)
     if (GROQ_API_KEY) {
         const groqKeys = GROQ_API_KEY.includes(',') ? GROQ_API_KEY.split(',').map(k => k.trim()) : [GROQ_API_KEY];
-        // Models to try: Llama 3 70B (High Quality) -> 8B (Fast/Backup)
-        const groqModels = ['llama3-70b-8192', 'llama3-8b-8192'];
+        // Updated models as per deprecation warnings (Feb 2025)
+        const groqModels = [
+            'llama-3.3-70b-versatile', // New stable
+            'llama-3.1-8b-instant',    // New fast
+            'mixtral-8x7b-32768'       // Backup
+        ];
 
         for (const key of groqKeys) {
             if (!key) continue;
@@ -63,13 +67,14 @@ async function robustGenerate(prompt: string, systemContext: string = "Você é 
     // 2. Try Gemini (Google) - User Preferred
     if (GEMINI_API_KEY) {
         const geminiKeys = GEMINI_API_KEY.includes(',') ? GEMINI_API_KEY.split(',').map(k => k.trim()) : [GEMINI_API_KEY];
-        // Use standard names. 'gemini-pro' is 1.0. 'gemini-1.5-flash' is 1.5.
-        // If v1beta doesn't support 1.5 in this region/sdk, fallback to 1.0 (gemini-pro).
+
+        // Exhaustive list including older stable models if v1beta/1.5 fails
         const modelsToTry = [
+            'gemini-2.0-flash',       // Try 2.0 first if available
             'gemini-1.5-flash',
+            'gemini-1.5-flash-8b',    // New smaller model
             'gemini-1.5-pro',
-            'gemini-pro',       // 1.0 Pro (Standard)
-            'gemini-1.0-pro'    // Alias
+            'gemini-1.0-pro'          // Fallback legacy
         ];
 
         for (const key of geminiKeys) {
@@ -84,15 +89,12 @@ async function robustGenerate(prompt: string, systemContext: string = "Você é 
                         const response = await ai.models.generateContent({
                             model: modelName,
                             contents: `${systemContext}\n\n${prompt}`,
-                            config: {
-                                temperature: 0.7
-                            }
+                            config: { temperature: 0.7 }
                         });
 
                         const text = response.text;
                         if (text) return text;
                     } catch (e: any) {
-                        // Log warning but continue to next model
                         console.warn(`Gemini ${modelName} falhou: ${e.message?.slice(0, 150)}...`);
                     }
                 }
