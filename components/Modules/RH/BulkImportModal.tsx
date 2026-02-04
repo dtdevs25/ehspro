@@ -18,16 +18,16 @@ export const BulkImportModal: React.FC<BulkImportModalProps> = ({ onClose, onImp
 
   // Cabeçalhos para o modelo CSV
   const headers = [
-    'nome', 'cpf', 'rg', 'data_nascimento', 'cidade_nascimento', 'estado_nascimento', 
-    'nome_mae', 'nome_pai', 'escolaridade', 'estado_civil', 'genero', 'raca', 
-    'endereco', 'telefone', 'email', 'data_admissao', 'id_cargo', 'id_funcao', 
+    'nome', 'cpf', 'rg', 'data_nascimento', 'cidade_nascimento', 'estado_nascimento',
+    'nome_mae', 'nome_pai', 'escolaridade', 'estado_civil', 'genero', 'raca',
+    'endereco', 'telefone', 'email', 'data_admissao', 'id_cargo', 'id_funcao',
     'id_empresa', 'id_unidade', 'regime_trabalho', 'codigo_esocial'
   ];
 
   const downloadTemplate = () => {
     const csvContent = "data:text/csv;charset=utf-8," + headers.join(",") + "\n" +
       "Exemplo Nome,000.000.000-00,00.000.000-0,1990-01-01,Sao Paulo,SP,Mae Exemplo,Pai Exemplo,Superior Completo,Solteiro(a),Masculino,Parda,Rua Exemplo 123,11999998888,exemplo@email.com,2023-01-01,1,1,c1,b1,EFFECTIVE,S-2200-001";
-    
+
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
@@ -111,107 +111,107 @@ export const BulkImportModal: React.FC<BulkImportModalProps> = ({ onClose, onImp
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-emerald-950/60 backdrop-blur-md animate-in fade-in duration-300" onClick={onClose}></div>
-      
-      <div className="bg-white w-full max-w-2xl rounded-[3rem] shadow-2xl relative z-10 overflow-hidden flex flex-col animate-in zoom-in duration-500 border border-white/20">
-        <div className="p-8 border-b border-emerald-50 flex items-center justify-between bg-emerald-50/30">
+
+      <div className="bg-white w-full max-w-2xl max-h-[90vh] rounded-[2rem] shadow-2xl relative z-10 overflow-hidden flex flex-col animate-in zoom-in duration-500 border border-white/20">
+        <div className="p-5 border-b border-emerald-50 flex items-center justify-between bg-emerald-50/30 shrink-0">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-emerald-600 rounded-2xl flex items-center justify-center text-white">
-              <FileSpreadsheet size={24} />
+            <div className="w-10 h-10 bg-emerald-600 rounded-xl flex items-center justify-center text-white">
+              <FileSpreadsheet size={20} />
             </div>
             <div>
-              <h2 className="text-2xl font-black text-emerald-950">Importação em Massa</h2>
-              <p className="text-xs font-bold text-emerald-600/70 uppercase tracking-widest">Alimente o sistema com múltiplos prontuários</p>
+              <h2 className="text-xl font-black text-emerald-950">Importação em Massa</h2>
+              <p className="text-[10px] font-bold text-emerald-600/70 uppercase tracking-widest">Alimente o sistema com múltiplos prontuários</p>
             </div>
           </div>
           <button onClick={onClose} className="p-2 text-emerald-400 hover:bg-emerald-100 rounded-full">
-            <X size={24} />
+            <X size={20} />
           </button>
         </div>
 
-        <div className="p-10 space-y-10">
+        <div className="p-6 space-y-6 overflow-y-auto">
           {/* Passo 1: Download */}
-          <div className="flex gap-6 items-start">
-            <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 font-black shrink-0">1</div>
-            <div className="space-y-3">
-              <h4 className="font-black text-emerald-950 uppercase tracking-tight">Baixe a Planilha Modelo</h4>
-              <p className="text-sm text-emerald-600/70 font-medium">Use nosso arquivo padronizado para garantir que todos os dados sejam lidos corretamente pelo motor de inteligência EHS PRO.</p>
-              <button 
+          <div className="flex gap-4 items-start">
+            <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 font-black shrink-0 text-sm">1</div>
+            <div className="space-y-2">
+              <h4 className="font-black text-emerald-950 uppercase tracking-tight text-sm">Baixe a Planilha Modelo</h4>
+              <p className="text-xs text-emerald-600/70 font-medium">Use nosso arquivo padronizado para garantir que todos os dados sejam lidos corretamente pelo motor de inteligência EHS PRO.</p>
+              <button
                 onClick={downloadTemplate}
-                className="flex items-center gap-2 text-emerald-600 bg-white border border-emerald-200 px-5 py-2.5 rounded-xl font-black text-xs hover:bg-emerald-50 transition-all shadow-sm"
+                className="flex items-center gap-2 text-emerald-600 bg-white border border-emerald-200 px-4 py-2 rounded-lg font-black text-[10px] hover:bg-emerald-50 transition-all shadow-sm uppercase tracking-wider"
               >
-                <Download size={16} /> BAIXAR MODELO .CSV
+                <Download size={14} /> Baixar Modelo .CSV
               </button>
             </div>
           </div>
 
           {/* Passo 2: Upload */}
-          <div className="flex gap-6 items-start">
-            <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 font-black shrink-0">2</div>
-            <div className="space-y-4 flex-1">
-              <h4 className="font-black text-emerald-950 uppercase tracking-tight">Envie seu Arquivo Preenchido</h4>
-              
+          <div className="flex gap-4 items-start">
+            <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 font-black shrink-0 text-sm">2</div>
+            <div className="space-y-3 flex-1">
+              <h4 className="font-black text-emerald-950 uppercase tracking-tight text-sm">Envie seu Arquivo Preenchido</h4>
+
               {!file ? (
-                <div 
+                <div
                   onClick={() => fileInputRef.current?.click()}
-                  className="border-2 border-dashed border-emerald-200 bg-emerald-50/30 rounded-[2rem] p-10 flex flex-col items-center justify-center cursor-pointer hover:bg-emerald-50 hover:border-emerald-400 transition-all group"
+                  className="border-2 border-dashed border-emerald-200 bg-emerald-50/30 rounded-2xl p-8 flex flex-col items-center justify-center cursor-pointer hover:bg-emerald-50 hover:border-emerald-400 transition-all group"
                 >
-                  <Upload size={40} className="text-emerald-300 group-hover:text-emerald-500 transition-colors mb-4" />
-                  <p className="text-emerald-900 font-black text-sm uppercase tracking-tighter">Clique ou arraste o arquivo aqui</p>
-                  <p className="text-emerald-400 text-xs font-bold mt-1">Suporta apenas arquivos .CSV</p>
-                  <input 
-                    type="file" 
-                    ref={fileInputRef} 
-                    className="hidden" 
-                    accept=".csv" 
-                    onChange={handleFileChange} 
+                  <Upload size={32} className="text-emerald-300 group-hover:text-emerald-500 transition-colors mb-3" />
+                  <p className="text-emerald-900 font-black text-xs uppercase tracking-tighter">Clique ou arraste o arquivo aqui</p>
+                  <p className="text-emerald-400 text-[10px] font-bold mt-1">Suporta apenas arquivos .CSV</p>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    className="hidden"
+                    accept=".csv"
+                    onChange={handleFileChange}
                   />
                 </div>
               ) : (
-                <div className="bg-emerald-600 p-6 rounded-[2rem] text-white flex items-center justify-between shadow-xl shadow-emerald-200 animate-in slide-in-from-top-4">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
-                      <CheckCircle2 size={24} />
+                <div className="bg-emerald-600 p-4 rounded-xl text-white flex items-center justify-between shadow-lg shadow-emerald-200 animate-in slide-in-from-top-2">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                      <CheckCircle2 size={20} />
                     </div>
                     <div>
-                      <p className="font-black text-sm truncate max-w-[200px]">{file.name}</p>
+                      <p className="font-black text-xs truncate max-w-[200px]">{file.name}</p>
                       <p className="text-[10px] text-white/60 font-bold uppercase tracking-widest">
                         {isProcessing ? 'Processando dados...' : `${previewData.length} registros detectados`}
                       </p>
                     </div>
                   </div>
-                  <button 
+                  <button
                     onClick={() => { setFile(null); setPreviewData([]); }}
-                    className="p-2 hover:bg-white/10 rounded-lg transition-all"
+                    className="p-1.5 hover:bg-white/10 rounded-lg transition-all"
                   >
-                    <X size={20} />
+                    <X size={16} />
                   </button>
                 </div>
               )}
 
               {error && (
-                <div className="flex items-center gap-3 p-4 bg-red-50 text-red-600 rounded-2xl border border-red-100 animate-in shake duration-500">
-                  <AlertCircle size={20} />
-                  <p className="text-xs font-black uppercase tracking-tight">{error}</p>
+                <div className="flex items-center gap-3 p-3 bg-red-50 text-red-600 rounded-xl border border-red-100 animate-in shake duration-500">
+                  <AlertCircle size={16} />
+                  <p className="text-[10px] font-black uppercase tracking-tight">{error}</p>
                 </div>
               )}
             </div>
           </div>
         </div>
 
-        <div className="p-8 bg-emerald-50/50 border-t border-emerald-100 flex items-center justify-between">
+        <div className="p-5 bg-emerald-50/50 border-t border-emerald-100 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2 text-emerald-600/50">
-            <Info size={16} />
-            <span className="text-[10px] font-black uppercase tracking-widest">Matrículas geradas automaticamente a partir de {existingRegistrationCount + 1}</span>
+            <Info size={14} />
+            <span className="text-[9px] font-black uppercase tracking-widest">Matrículas a partir de {existingRegistrationCount + 1}</span>
           </div>
-          <div className="flex gap-3">
-            <button onClick={onClose} className="px-8 py-3.5 font-black text-xs text-emerald-600 uppercase tracking-widest hover:bg-emerald-50 rounded-2xl transition-all">Cancelar</button>
-            <button 
+          <div className="flex gap-2">
+            <button onClick={onClose} className="px-5 py-2.5 font-black text-[10px] text-emerald-600 uppercase tracking-widest hover:bg-emerald-50 rounded-xl transition-all">Cancelar</button>
+            <button
               disabled={!file || previewData.length === 0 || isProcessing}
               onClick={handleConfirmImport}
-              className="bg-emerald-600 text-white px-10 py-3.5 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-emerald-200 hover:bg-emerald-500 disabled:opacity-30 disabled:cursor-not-allowed transition-all flex items-center gap-2"
+              className="bg-emerald-600 text-white px-6 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-emerald-200 hover:bg-emerald-500 disabled:opacity-30 disabled:cursor-not-allowed transition-all flex items-center gap-2"
             >
-              {isProcessing ? <Loader2 size={18} className="animate-spin" /> : <Plus size={18} />}
-              Confirmar Importação
+              {isProcessing ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
+              Confirmar
             </button>
           </div>
         </div>
