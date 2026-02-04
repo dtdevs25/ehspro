@@ -14,22 +14,24 @@ async function generateWithOpenAICompatible(apiKey: string, baseUrl: string, mod
     if (systemPrompt) messages.push({ role: 'system', content: systemPrompt });
     messages.push({ role: 'user', content: prompt });
 
+    const body = {
+        model: model,
+        messages: messages,
+        temperature: 0.7
+    };
+
     const response = await fetch(`${baseUrl}/chat/completions`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${apiKey}`
         },
-        body: JSON.stringify({
-            messages,
-            model: model,
-            temperature: 0.7,
-            max_tokens: 1024
-        })
+        body: JSON.stringify(body)
     });
 
     if (!response.ok) {
-        throw new Error(`API Error: ${response.statusText} (${response.status})`);
+        const errorText = await response.text();
+        throw new Error(`API Error: ${response.status} - ${errorText}`); // Detailed error for debugging
     }
 
     const data: any = await response.json();
@@ -42,8 +44,8 @@ async function robustGenerate(prompt: string, systemContext: string = "Você é 
     // 1. Try Groq (Llama 3) - User Preferred (Free Tier)
     if (GROQ_API_KEY) {
         const groqKeys = GROQ_API_KEY.includes(',') ? GROQ_API_KEY.split(',').map(k => k.trim()) : [GROQ_API_KEY];
-        // Models to try: Llama 3 70B (High Quality) -> 8B (Fast/Backup) -> Mixtral (Backup)
-        const groqModels = ['llama3-70b-8192', 'llama3-8b-8192', 'mixtral-8x7b-32768'];
+        // Models to try: Llama 3 70B (High Quality) -> 8B (Fast/Backup)
+        const groqModels = ['llama3-70b-8192', 'llama3-8b-8192'];
 
         for (const key of groqKeys) {
             if (!key) continue;
@@ -61,16 +63,13 @@ async function robustGenerate(prompt: string, systemContext: string = "Você é 
     // 2. Try Gemini (Google) - User Preferred
     if (GEMINI_API_KEY) {
         const geminiKeys = GEMINI_API_KEY.includes(',') ? GEMINI_API_KEY.split(',').map(k => k.trim()) : [GEMINI_API_KEY];
-        // Exhaustive list of Gemini models to bypass 404s and 429s
+        // Use standard names. 'gemini-pro' is 1.0. 'gemini-1.5-flash' is 1.5.
+        // If v1beta doesn't support 1.5 in this region/sdk, fallback to 1.0 (gemini-pro).
         const modelsToTry = [
             'gemini-1.5-flash',
-            'gemini-1.5-flash-latest',
-            'gemini-1.5-flash-001',
-            'gemini-2.0-flash-exp', // Experimental 2.0
             'gemini-1.5-pro',
-            'gemini-1.5-pro-latest',
-            'gemini-1.0-pro',
-            'gemini-pro'
+            'gemini-pro',       // 1.0 Pro (Standard)
+            'gemini-1.0-pro'    // Alias
         ];
 
         for (const key of geminiKeys) {
@@ -84,12 +83,14 @@ async function robustGenerate(prompt: string, systemContext: string = "Você é 
                         console.log(`Tentando Gemini (${modelName}) (Key ...${key.slice(-4)})...`);
                         const response = await ai.models.generateContent({
                             model: modelName,
-                            contents: `${systemContext}\n\n${prompt}`
+                            contents: `${systemContext}\n\n${prompt}`,
+                            config: {
+                                temperature: 0.7
+                            }
                         });
 
                         const text = response.text;
                         if (text) return text;
-                        throw new Error("Resposta vazia.");
                     } catch (e: any) {
                         // Log warning but continue to next model
                         console.warn(`Gemini ${modelName} falhou: ${e.message?.slice(0, 150)}...`);
