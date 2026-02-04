@@ -655,11 +655,7 @@ const App: React.FC = () => {
                             <button onClick={() => setViewingCollaborator(c)} className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors" title="Visualizar"><Eye size={18} /></button>
                             <button onClick={() => { setEditingCollaborator(c); setIsCollaboratorFormOpen(true); }} className="p-2 text-blue-400 hover:bg-blue-50 rounded-lg transition-colors" title="Editar"><Edit3 size={18} /></button>
                             <button
-                              onClick={() => {
-                                if (window.confirm("ATENÇÃO: A exclusão é irreversível. Deseja realmente excluir este colaborador?")) {
-                                  deleteCollaborator(c.id);
-                                }
-                              }}
+                              onClick={() => requestDeleteCollaborator(c.id)}
                               className="p-2 text-red-400 hover:bg-red-50 rounded-lg transition-colors"
                               title="Excluir"
                             >
@@ -763,10 +759,10 @@ const App: React.FC = () => {
         onConfirm={() => {
           if (deleteConfirmation.id) deleteCollaborator(deleteConfirmation.id);
         }}
-        title="Excluir Colaborador"
-        message="Esta ação é irreversível. O registro do colaborador será permanentemente removido do sistema. Deseja continuar?"
-        confirmText="Sim, Excluir"
-        cancelText="Cancelar"
+        title="Excluir Permanente?"
+        message="Esta ação não pode ser desfeita."
+        confirmText="SIM, EXCLUIR"
+        cancelText="CANCELAR"
       />
     </div>
   );
