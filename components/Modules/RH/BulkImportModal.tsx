@@ -27,7 +27,8 @@ export const BulkImportModal: React.FC<BulkImportModalProps> = ({ onClose, onImp
   ];
 
   const downloadTemplate = () => {
-    let csvContent = "data:text/csv;charset=utf-8," + headers.join(",") + "\n";
+    // Delimitador ; para Excel BR
+    let csvContent = headers.join(";") + "\n";
 
     // Add existing data if available
     if (currentData.length > 0) {
@@ -37,21 +38,18 @@ export const BulkImportModal: React.FC<BulkImportModalProps> = ({ onClose, onImp
           c.motherName, c.fatherName, c.education, c.maritalStatus, c.gender, c.race,
           c.address, c.phone, c.email, c.admissionDate, c.roleId, c.functionId,
           c.companyId, c.branchId, c.workRegime, c.eSocialCode
-        ].map(v => `"${v || ''}"`).join(","); // Quote fields to handle commas
+        ].map(v => `"${(v || '').replace(/"/g, '""')}"`).join(";"); // Escape quotes and use semicolon
       }).join("\n");
-      // Add a newline if we added rows, though usually just appending example is fine.
-      // But user wants to download *the data*. 
-      // I will NOT add the example row if we have real data, or maybe append it at the end?
-      // Usually "Download Template" with data acts as an export.
-      // Let's just dump the real data.
     } else {
-      // Add example row only if no data
-      csvContent += "Exemplo Nome,000.000.000-00,00.000.000-0,1990-01-01,Sao Paulo,SP,Mae Exemplo,Pai Exemplo,Superior Completo,Solteiro(a),Masculino,Parda,Rua Exemplo 123,11999998888,exemplo@email.com,2023-01-01,1,1,c1,b1,EFFECTIVE,S-2200-001\n";
+      // Add example row
+      csvContent += "Exemplo Nome;000.000.000-00;00.000.000-0;1990-01-01;Sao Paulo;SP;Mae Exemplo;Pai Exemplo;Superior Completo;Solteiro(a);Masculino;Parda;Rua Exemplo 123;11999998888;exemplo@email.com;2023-01-01;1;1;c1;b1;EFFECTIVE;S-2200-001\n";
     }
 
-    const encodedUri = encodeURI(csvContent);
+    // Blob with BOM for UTF-8 Excel support
+    const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
+    link.href = url;
     link.setAttribute("download", "dados_colaboradores.csv");
     document.body.appendChild(link);
     link.click();
@@ -82,9 +80,12 @@ export const BulkImportModal: React.FC<BulkImportModalProps> = ({ onClose, onImp
         const dataRows = rows.slice(1); // Remove header
 
         const parsedData = dataRows.map((row, index) => {
-          // Handle quoted CSV values if necessary (simple split for now, robust parser recommended for prod)
-          // For now assuming simple CSV without internal commas in fields
-          const values = row.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g)?.map(v => v.replace(/^"|"$/g, '').trim()) || row.split(',').map(v => v.trim());
+          // Detect separator
+          const separator = row.includes(';') ? ';' : ',';
+
+          // Robust split for quoted CSV (simple fallback if complex quotes exist)
+          // For now, simple split + cleanup quotes
+          const values = row.split(separator).map(v => v.trim().replace(/^"|"$/g, '').replace(/""/g, '"'));
 
           return {
             id: Math.random().toString(36).substr(2, 9),

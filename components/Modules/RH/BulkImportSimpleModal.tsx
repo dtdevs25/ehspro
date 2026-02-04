@@ -26,25 +26,28 @@ export const BulkImportSimpleModal: React.FC<BulkImportSimpleModalProps> = ({ on
     : ['nome', 'cbo', 'descricao'];
 
   const downloadTemplate = () => {
-    let csvContent = "data:text/csv;charset=utf-8," + headers.join(",") + "\n";
+    // Usando Ponto e Vírgula (;) para melhor compatibilidade
+    let csvContent = headers.join(";") + "\n";
 
     if (currentItems.length > 0) {
       csvContent += currentItems.map(item => {
         if (isRoles) {
-          return `"${item.name}","${item.description || ''}"`;
+          return `"${item.name}";"${item.description || ''}"`;
         } else {
-          return `"${item.name}","${item.cbo || ''}","${item.description || ''}"`;
+          return `"${item.name}";"${item.cbo || ''}";"${item.description || ''}"`;
         }
       }).join("\n");
     } else {
       csvContent += (isRoles
-        ? "Exemplo Cargo,Descricao Exemplo"
-        : "Exemplo Funcao,0000-00,Descricao Exemplo") + "\n";
+        ? "Exemplo Cargo;Descricao Exemplo"
+        : "Exemplo Funcao;0000-00;Descricao Exemplo") + "\n";
     }
 
-    const encodedUri = encodeURI(csvContent);
+    // Create Blob with BOM for Excel UTF-8 support
+    const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
+    link.href = url;
     link.setAttribute("download", `dados_${type.toLowerCase()}.csv`);
     document.body.appendChild(link);
     link.click();
@@ -74,8 +77,12 @@ export const BulkImportSimpleModal: React.FC<BulkImportSimpleModalProps> = ({ on
         const dataRows = rows.slice(1);
 
         const parsedData = dataRows.map((row, index) => {
-          // Handle quotes roughly
-          const values = row.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g)?.map(v => v.replace(/^"|"$/g, '').trim()) || row.split(',').map(v => v.trim());
+          // Detect separator
+          const separator = row.includes(';') ? ';' : ',';
+
+          // Split by separator, handling potential quotes if simple
+          // For now, simple split + cleanup quotes
+          const values = row.split(separator).map(v => v.trim().replace(/^"|"$/g, ''));
 
           const item: any = {
             id: `bulk-${Math.random().toString(36).substr(2, 9)}`,
