@@ -1,0 +1,15 @@
+
+-- Fix missing columns in DB that are present in Prisma Schema
+ALTER TABLE "empresas" ADD COLUMN IF NOT EXISTS "cep" TEXT;
+ALTER TABLE "empresas" ADD COLUMN IF NOT EXISTS "logradouro" TEXT;
+ALTER TABLE "empresas" ADD COLUMN IF NOT EXISTS "numero" TEXT;
+ALTER TABLE "empresas" ADD COLUMN IF NOT EXISTS "bairro" TEXT;
+ALTER TABLE "empresas" ADD COLUMN IF NOT EXISTS "cidade" TEXT;
+ALTER TABLE "empresas" ADD COLUMN IF NOT EXISTS "estado" TEXT;
+
+ALTER TABLE "filiais" ADD COLUMN IF NOT EXISTS "cep" TEXT;
+ALTER TABLE "filiais" ADD COLUMN IF NOT EXISTS "logradouro" TEXT;
+ALTER TABLE "filiais" ADD COLUMN IF NOT EXISTS "numero" TEXT;
+ALTER TABLE "filiais" ADD COLUMN IF NOT EXISTS "bairro" TEXT;
+ALTER TABLE "filiais" ADD COLUMN IF NOT EXISTS "cidade" TEXT;
+ALTER TABLE "filiais" ADD COLUMN IF NOT EXISTS "estado" TEXT;

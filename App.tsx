@@ -163,6 +163,13 @@ const App: React.FC = () => {
     }
   }, [currentUser, fetchData]);
 
+  // Auto-select first branch
+  React.useEffect(() => {
+    if (branches.length > 0 && !activeBranchId) {
+      setActiveBranchId(branches[0].id);
+    }
+  }, [branches, activeBranchId]);
+
   // ... (View Filtering remain same) ...
   // View Filtering Logic
   const activeBranch = useMemo(() => branches.find(b => b.id === activeBranchId), [activeBranchId, branches]);

@@ -117,12 +117,12 @@ model Company {
   address   String   @map("endereco") // Legacy/Computed full address
   
   // Normalized Address
-  zipCode      String?  @map("cep")
-  street       String?  @map("logradouro")
-  number       String?  @map("numero")
-  neighborhood String?  @map("bairro")
-  city         String?  @map("cidade")
-  state        String?  @map("estado")
+  // zipCode      String?  @map("cep")
+  // street       String?  @map("logradouro")
+  // number       String?  @map("numero")
+  // neighborhood String?  @map("bairro")
+  // city         String?  @map("cidade")
+  // state        String?  @map("estado")
   
   branches  Branch[]
   collaborators Collaborator[]
@@ -139,12 +139,12 @@ model Branch {
   address   String   @map("endereco")
 
   // Normalized Address
-  zipCode      String?  @map("cep")
-  street       String?  @map("logradouro")
-  number       String?  @map("numero")
-  neighborhood String?  @map("bairro")
-  city         String?  @map("cidade")
-  state        String?  @map("estado")
+  // zipCode      String?  @map("cep")
+  // street       String?  @map("logradouro")
+  // number       String?  @map("numero")
+  // neighborhood String?  @map("bairro")
+  // city         String?  @map("cidade")
+  // state        String?  @map("estado")
 
   company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
   collaborators Collaborator[]
