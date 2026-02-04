@@ -9,11 +9,13 @@ interface BulkImportModalProps {
   existingRegistrationCount: number;
 }
 
-export const BulkImportModal: React.FC<BulkImportModalProps> = ({ onClose, onImport, existingRegistrationCount }) => {
+export const BulkImportModal: React.FC<BulkImportModalProps> = ({ onClose, onImport, existingRegistrationCount, currentData = [] }) => {
   const [file, setFile] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [previewData, setPreviewData] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [importedCount, setImportedCount] = useState(0);
+  const [duplicateCount, setDuplicateCount] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Cabeçalhos para o modelo CSV
@@ -25,13 +27,32 @@ export const BulkImportModal: React.FC<BulkImportModalProps> = ({ onClose, onImp
   ];
 
   const downloadTemplate = () => {
-    const csvContent = "data:text/csv;charset=utf-8," + headers.join(",") + "\n" +
-      "Exemplo Nome,000.000.000-00,00.000.000-0,1990-01-01,Sao Paulo,SP,Mae Exemplo,Pai Exemplo,Superior Completo,Solteiro(a),Masculino,Parda,Rua Exemplo 123,11999998888,exemplo@email.com,2023-01-01,1,1,c1,b1,EFFECTIVE,S-2200-001";
+    let csvContent = "data:text/csv;charset=utf-8," + headers.join(",") + "\n";
+
+    // Add existing data if available
+    if (currentData.length > 0) {
+      csvContent += currentData.map(c => {
+        return [
+          c.name, c.cpf, c.rg, c.birthDate, c.birthPlace, c.birthState,
+          c.motherName, c.fatherName, c.education, c.maritalStatus, c.gender, c.race,
+          c.address, c.phone, c.email, c.admissionDate, c.roleId, c.functionId,
+          c.companyId, c.branchId, c.workRegime, c.eSocialCode
+        ].map(v => `"${v || ''}"`).join(","); // Quote fields to handle commas
+      }).join("\n");
+      // Add a newline if we added rows, though usually just appending example is fine.
+      // But user wants to download *the data*. 
+      // I will NOT add the example row if we have real data, or maybe append it at the end?
+      // Usually "Download Template" with data acts as an export.
+      // Let's just dump the real data.
+    } else {
+      // Add example row only if no data
+      csvContent += "Exemplo Nome,000.000.000-00,00.000.000-0,1990-01-01,Sao Paulo,SP,Mae Exemplo,Pai Exemplo,Superior Completo,Solteiro(a),Masculino,Parda,Rua Exemplo 123,11999998888,exemplo@email.com,2023-01-01,1,1,c1,b1,EFFECTIVE,S-2200-001\n";
+    }
 
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", "modelo_importacao_colaboradores.csv");
+    link.setAttribute("download", "dados_colaboradores.csv");
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -40,6 +61,7 @@ export const BulkImportModal: React.FC<BulkImportModalProps> = ({ onClose, onImp
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (selectedFile) {
+      // Basic CSV check
       if (selectedFile.type !== "text/csv" && !selectedFile.name.endsWith('.csv')) {
         setError("Por favor, selecione um arquivo no formato CSV.");
         return;
@@ -60,8 +82,10 @@ export const BulkImportModal: React.FC<BulkImportModalProps> = ({ onClose, onImp
         const dataRows = rows.slice(1); // Remove header
 
         const parsedData = dataRows.map((row, index) => {
-          const values = row.split(',').map(v => v.trim());
-          // Mapeamento simples baseado na ordem dos headers
+          // Handle quoted CSV values if necessary (simple split for now, robust parser recommended for prod)
+          // For now assuming simple CSV without internal commas in fields
+          const values = row.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g)?.map(v => v.replace(/^"|"$/g, '').trim()) || row.split(',').map(v => v.trim());
+
           return {
             id: Math.random().toString(36).substr(2, 9),
             registration: (existingRegistrationCount + index + 1).toString(),
@@ -91,7 +115,12 @@ export const BulkImportModal: React.FC<BulkImportModalProps> = ({ onClose, onImp
             isDisabled: false,
             nationality: 'Brasileira'
           };
-        });
+        }).filter(item => item.name && item.cpf); // Basic validity check
+
+        // Check for duplicates in PREVIEW compared to CURRENT DATA
+        const duplicates = parsedData.filter(d => currentData.some(c => c.cpf === d.cpf));
+        setDuplicateCount(duplicates.length);
+        setImportedCount(parsedData.length - duplicates.length);
 
         setPreviewData(parsedData);
         setIsProcessing(false);
@@ -104,7 +133,17 @@ export const BulkImportModal: React.FC<BulkImportModalProps> = ({ onClose, onImp
   };
 
   const handleConfirmImport = () => {
-    onImport(previewData);
+    // Filter out duplicates before importing
+    const newItems = previewData.filter(d => !currentData.some(c => c.cpf === d.cpf));
+
+    if (newItems.length > 0) {
+      onImport(newItems);
+    }
+
+    if (duplicateCount > 0) {
+      alert(`${duplicateCount} registros ignorados pois já existem no sistema.`);
+    }
+
     onClose();
   };
 
@@ -134,12 +173,16 @@ export const BulkImportModal: React.FC<BulkImportModalProps> = ({ onClose, onImp
             <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 font-black shrink-0 text-sm">1</div>
             <div className="space-y-2">
               <h4 className="font-black text-emerald-950 uppercase tracking-tight text-sm">Baixe a Planilha Modelo</h4>
-              <p className="text-xs text-emerald-600/70 font-medium">Use nosso arquivo padronizado para garantir que todos os dados sejam lidos corretamente pelo motor de inteligência EHS PRO.</p>
+              <p className="text-xs text-emerald-600/70 font-medium">
+                {currentData.length > 0
+                  ? "Baixe o arquivo contendo todos os registros atuais para edição ou referência."
+                  : "Use nosso arquivo padronizado para garantir que todos os dados sejam lidos corretamente."}
+              </p>
               <button
                 onClick={downloadTemplate}
                 className="flex items-center gap-2 text-emerald-600 bg-white border border-emerald-200 px-4 py-2 rounded-lg font-black text-[10px] hover:bg-emerald-50 transition-all shadow-sm uppercase tracking-wider"
               >
-                <Download size={14} /> Baixar Modelo .CSV
+                <Download size={14} /> {currentData.length > 0 ? "Exportar Dados (.CSV)" : "Baixar Modelo .CSV"}
               </button>
             </div>
           </div>
@@ -149,6 +192,7 @@ export const BulkImportModal: React.FC<BulkImportModalProps> = ({ onClose, onImp
             <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 font-black shrink-0 text-sm">2</div>
             <div className="space-y-3 flex-1">
               <h4 className="font-black text-emerald-950 uppercase tracking-tight text-sm">Envie seu Arquivo Preenchido</h4>
+              <p className="text-xs text-emerald-500 font-medium">O sistema validará automaticamente duplicatas pelo CPF.</p>
 
               {!file ? (
                 <div
@@ -167,24 +211,33 @@ export const BulkImportModal: React.FC<BulkImportModalProps> = ({ onClose, onImp
                   />
                 </div>
               ) : (
-                <div className="bg-emerald-600 p-4 rounded-xl text-white flex items-center justify-between shadow-lg shadow-emerald-200 animate-in slide-in-from-top-2">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
-                      <CheckCircle2 size={20} />
+                <div className="space-y-2">
+                  <div className="bg-emerald-600 p-4 rounded-xl text-white flex items-center justify-between shadow-lg shadow-emerald-200 animate-in slide-in-from-top-2">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                        <CheckCircle2 size={20} />
+                      </div>
+                      <div>
+                        <p className="font-black text-xs truncate max-w-[200px]">{file.name}</p>
+                        <p className="text-[10px] text-white/60 font-bold uppercase tracking-widest">
+                          {isProcessing ? 'Processando...' : `${previewData.length} lidos • ${importedCount} novos`}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-black text-xs truncate max-w-[200px]">{file.name}</p>
-                      <p className="text-[10px] text-white/60 font-bold uppercase tracking-widest">
-                        {isProcessing ? 'Processando dados...' : `${previewData.length} registros detectados`}
-                      </p>
-                    </div>
+                    <button
+                      onClick={() => { setFile(null); setPreviewData([]); setDuplicateCount(0); }}
+                      className="p-1.5 hover:bg-white/10 rounded-lg transition-all"
+                    >
+                      <X size={16} />
+                    </button>
                   </div>
-                  <button
-                    onClick={() => { setFile(null); setPreviewData([]); }}
-                    className="p-1.5 hover:bg-white/10 rounded-lg transition-all"
-                  >
-                    <X size={16} />
-                  </button>
+
+                  {duplicateCount > 0 && (
+                    <div className="bg-amber-100 text-amber-700 p-3 rounded-lg text-[10px] font-bold border border-amber-200 flex items-center gap-2">
+                      <AlertCircle size={14} />
+                      {duplicateCount} registro(s) já existem e serão ignorados.
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -201,12 +254,12 @@ export const BulkImportModal: React.FC<BulkImportModalProps> = ({ onClose, onImp
         <div className="p-5 bg-emerald-50/50 border-t border-emerald-100 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2 text-emerald-600/50">
             <Info size={14} />
-            <span className="text-[9px] font-black uppercase tracking-widest">Matrículas a partir de {existingRegistrationCount + 1}</span>
+            <span className="text-[9px] font-black uppercase tracking-widest">Registros Novos: {importedCount}</span>
           </div>
           <div className="flex gap-2">
             <button onClick={onClose} className="px-5 py-2.5 font-black text-[10px] text-emerald-600 uppercase tracking-widest hover:bg-emerald-50 rounded-xl transition-all">Cancelar</button>
             <button
-              disabled={!file || previewData.length === 0 || isProcessing}
+              disabled={!file || importedCount === 0 || isProcessing}
               onClick={handleConfirmImport}
               className="bg-emerald-600 text-white px-6 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-emerald-200 hover:bg-emerald-500 disabled:opacity-30 disabled:cursor-not-allowed transition-all flex items-center gap-2"
             >

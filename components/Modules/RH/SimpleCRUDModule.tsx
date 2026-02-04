@@ -284,6 +284,7 @@ export const SimpleCRUDModule: React.FC<SimpleCRUDModuleProps> = ({ title, items
           onClose={() => setIsBulkImportOpen(false)}
           onImport={handleBulkImport}
           existingCount={items.length}
+          currentItems={items}
         />
       )}
 

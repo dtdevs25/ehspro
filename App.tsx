@@ -596,6 +596,7 @@ const App: React.FC = () => {
           onClose={() => setIsImportModalOpen(false)}
           onImport={handleCollaboratorImport}
           existingRegistrationCount={collaborators.length}
+          currentData={collaborators}
         />
       )}
     </div>
