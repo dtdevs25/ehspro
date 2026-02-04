@@ -77,9 +77,10 @@ export const SimpleCRUDModule: React.FC<SimpleCRUDModuleProps> = ({ title, items
 
   const handleBulkImport = (data: any[]) => {
     data.forEach(item => {
-      onSave(item);
+      // Remove ID to ensure create logic is triggered instead of update
+      const { id, ...newItem } = item;
+      onSave(newItem);
     });
-    setIsBulkImportOpen(false);
   };
 
   const confirmDelete = () => {

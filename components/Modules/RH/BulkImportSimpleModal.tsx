@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from 'react';
 import { X, Download, Upload, FileSpreadsheet, CheckCircle2, AlertCircle, Loader2, Info, Plus } from 'lucide-react';
 
@@ -10,6 +11,7 @@ interface BulkImportSimpleModalProps {
 }
 
 export const BulkImportSimpleModal: React.FC<BulkImportSimpleModalProps> = ({ onClose, onImport, type, existingCount, currentItems = [] }) => {
+  const [step, setStep] = useState<'upload' | 'summary'>('upload');
   const [file, setFile] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [previewData, setPreviewData] = useState<any[]>([]);
@@ -120,10 +122,11 @@ export const BulkImportSimpleModal: React.FC<BulkImportSimpleModalProps> = ({ on
     if (newItems.length > 0) {
       onImport(newItems);
     }
-    if (duplicateCount > 0) {
-      alert(`${duplicateCount} registros ignorados pois já existem.`);
-    }
-    onClose();
+
+    // Update counts and show summary
+    setImportedCount(newItems.length);
+    setDuplicateCount(previewData.length - newItems.length);
+    setStep('summary');
   };
 
   return (
@@ -131,14 +134,20 @@ export const BulkImportSimpleModal: React.FC<BulkImportSimpleModalProps> = ({ on
       <div className="absolute inset-0 bg-emerald-950/60 backdrop-blur-md animate-in fade-in duration-300" onClick={onClose}></div>
 
       <div className="bg-white w-full max-w-xl max-h-[90vh] rounded-[2rem] shadow-2xl relative z-10 overflow-hidden flex flex-col animate-in zoom-in duration-500 border border-white/20">
+
+        {/* Header */}
         <div className="p-5 border-b border-emerald-50 flex items-center justify-between bg-emerald-50/30 shrink-0">
           <div className="flex items-center gap-4">
-            <div className="w-10 h-10 bg-emerald-600 rounded-xl flex items-center justify-center text-white">
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white ${step === 'summary' ? 'bg-emerald-500' : 'bg-emerald-600'}`}>
               <FileSpreadsheet size={20} />
             </div>
             <div>
-              <h2 className="text-xl font-black text-emerald-950">Importar {type}</h2>
-              <p className="text-[10px] font-bold text-emerald-600/70 uppercase tracking-widest">Carga de dados em massa</p>
+              <h2 className="text-xl font-black text-emerald-950">
+                {step === 'upload' ? `Importar ${type}` : 'Resumo da Importação'}
+              </h2>
+              <p className="text-[10px] font-bold text-emerald-600/70 uppercase tracking-widest">
+                {step === 'upload' ? 'Carga de dados em massa' : 'Processo finalizado'}
+              </p>
             </div>
           </div>
           <button onClick={onClose} className="p-2 text-emerald-400 hover:bg-emerald-100 rounded-full">
@@ -146,75 +155,113 @@ export const BulkImportSimpleModal: React.FC<BulkImportSimpleModalProps> = ({ on
           </button>
         </div>
 
-        <div className="p-6 space-y-6 overflow-y-auto">
-          <div className="space-y-3">
-            <h4 className="font-black text-emerald-950 text-xs uppercase tracking-tight">1. Baixe o Modelo / Dados Atuais</h4>
-            <p className="text-[10px] text-emerald-600/70 font-medium">Você pode baixar os dados já cadastrados para editar ou usar como modelo.</p>
-            <button
-              onClick={downloadTemplate}
-              className="flex items-center gap-2 text-emerald-600 bg-white border border-emerald-200 px-4 py-2 rounded-lg font-black text-[10px] hover:bg-emerald-50 transition-all shadow-sm uppercase tracking-wider"
-            >
-              <Download size={14} /> {currentItems.length > 0 ? "Exportar Dados Atuais" : "Baixar Modelo .CSV"}
-            </button>
-          </div>
-
-          <div className="space-y-4">
-            <h4 className="font-black text-emerald-950 text-xs uppercase tracking-tight">2. Selecione o Arquivo</h4>
-            <p className="text-[10px] text-emerald-500 font-medium">Duplicatas de nome serão ignoradas.</p>
-            {!file ? (
-              <div
-                onClick={() => fileInputRef.current?.click()}
-                className="border-2 border-dashed border-emerald-200 bg-emerald-50/20 rounded-2xl p-8 flex flex-col items-center justify-center cursor-pointer hover:bg-emerald-50 hover:border-emerald-400 transition-all group"
-              >
-                <Upload size={32} className="text-emerald-300 mb-3" />
-                <p className="text-emerald-900 font-black text-xs uppercase">Carregar arquivo .CSV</p>
-                <input type="file" ref={fileInputRef} className="hidden" accept=".csv" onChange={handleFileChange} />
+        {step === 'upload' ? (
+          <>
+            <div className="p-6 space-y-6 overflow-y-auto">
+              <div className="space-y-3">
+                <h4 className="font-black text-emerald-950 text-xs uppercase tracking-tight">1. Baixe o Modelo / Dados Atuais</h4>
+                <p className="text-[10px] text-emerald-600/70 font-medium">Você pode baixar os dados já cadastrados para editar ou usar como modelo.</p>
+                <button
+                  onClick={downloadTemplate}
+                  className="flex items-center gap-2 text-emerald-600 bg-white border border-emerald-200 px-4 py-2 rounded-lg font-black text-[10px] hover:bg-emerald-50 transition-all shadow-sm uppercase tracking-wider"
+                >
+                  <Download size={14} /> {currentItems.length > 0 ? "Exportar Dados Atuais" : "Baixar Modelo .CSV"}
+                </button>
               </div>
-            ) : (
-              <div className="space-y-2">
-                <div className="bg-emerald-600 p-4 rounded-xl text-white flex items-center justify-between shadow-lg shadow-emerald-200 animate-in slide-in-from-top-2">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
-                      <CheckCircle2 size={20} />
-                    </div>
-                    <div>
-                      <p className="font-black text-xs truncate max-w-[200px]">{file.name}</p>
-                      <p className="text-[10px] text-white/60 font-bold uppercase tracking-widest">
-                        {isProcessing ? 'Processando...' : `${previewData.length} lidos • ${importedCount} novos`}
-                      </p>
-                    </div>
+
+              <div className="space-y-4">
+                <h4 className="font-black text-emerald-950 text-xs uppercase tracking-tight">2. Selecione o Arquivo</h4>
+                <p className="text-[10px] text-emerald-500 font-medium">Duplicatas de nome serão ignoradas.</p>
+                {!file ? (
+                  <div
+                    onClick={() => fileInputRef.current?.click()}
+                    className="border-2 border-dashed border-emerald-200 bg-emerald-50/20 rounded-2xl p-8 flex flex-col items-center justify-center cursor-pointer hover:bg-emerald-50 hover:border-emerald-400 transition-all group"
+                  >
+                    <Upload size={32} className="text-emerald-300 mb-3" />
+                    <p className="text-emerald-900 font-black text-xs uppercase">Carregar arquivo .CSV</p>
+                    <input type="file" ref={fileInputRef} className="hidden" accept=".csv" onChange={handleFileChange} />
                   </div>
-                  <button onClick={() => { setFile(null); setPreviewData([]); setDuplicateCount(0); }} className="p-1.5 hover:bg-white/10 rounded-lg transition-all"><X size={16} /></button>
-                </div>
-                {duplicateCount > 0 && (
-                  <div className="bg-amber-100 text-amber-700 p-3 rounded-lg text-[10px] font-bold border border-amber-200 flex items-center gap-2">
-                    <AlertCircle size={14} />
-                    {duplicateCount} duplicatas ignoradas
+                ) : (
+                  <div className="space-y-2">
+                    <div className="bg-emerald-600 p-4 rounded-xl text-white flex items-center justify-between shadow-lg shadow-emerald-200 animate-in slide-in-from-top-2">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                          <CheckCircle2 size={20} />
+                        </div>
+                        <div>
+                          <p className="font-black text-xs truncate max-w-[200px]">{file.name}</p>
+                          <p className="text-[10px] text-white/60 font-bold uppercase tracking-widest">
+                            {isProcessing ? 'Processando...' : `${previewData.length} lidos • ${importedCount} novos`}
+                          </p>
+                        </div>
+                      </div>
+                      <button onClick={() => { setFile(null); setPreviewData([]); setDuplicateCount(0); }} className="p-1.5 hover:bg-white/10 rounded-lg transition-all"><X size={16} /></button>
+                    </div>
+                    {duplicateCount > 0 && (
+                      <div className="bg-amber-100 text-amber-700 p-3 rounded-lg text-[10px] font-bold border border-amber-200 flex items-center gap-2">
+                        <AlertCircle size={14} />
+                        {duplicateCount} duplicatas ignoradas
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
-            )}
-          </div>
 
-          {error && (
-            <div className="flex items-center gap-3 p-3 bg-red-50 text-red-600 rounded-xl border border-red-100 animate-in shake duration-500">
-              <AlertCircle size={16} />
-              <p className="text-[10px] font-black uppercase tracking-tight">{error}</p>
+              {error && (
+                <div className="flex items-center gap-3 p-3 bg-red-50 text-red-600 rounded-xl border border-red-100 animate-in shake duration-500">
+                  <AlertCircle size={16} />
+                  <p className="text-[10px] font-black uppercase tracking-tight">{error}</p>
+                </div>
+              )}
             </div>
-          )}
-        </div>
 
-        <div className="p-5 bg-emerald-50/50 border-t border-emerald-100 flex justify-end gap-3 shrink-0">
-          <button onClick={onClose} className="px-5 py-2.5 font-black text-[10px] text-emerald-600 uppercase tracking-widest hover:bg-emerald-50 rounded-xl transition-all">Cancelar</button>
-          <button
-            disabled={!file || importedCount === 0 || isProcessing}
-            onClick={handleConfirmImport}
-            className="bg-emerald-600 text-white px-6 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-emerald-200 hover:bg-emerald-500 disabled:opacity-30 transition-all flex items-center gap-2"
-          >
-            {isProcessing ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
-            Confirmar
-          </button>
-        </div>
+            <div className="p-5 bg-emerald-50/50 border-t border-emerald-100 flex justify-end gap-3 shrink-0">
+              <button onClick={onClose} className="px-5 py-2.5 font-black text-[10px] text-emerald-600 uppercase tracking-widest hover:bg-emerald-50 rounded-xl transition-all">Cancelar</button>
+              <button
+                disabled={!file || importedCount === 0 || isProcessing}
+                onClick={handleConfirmImport}
+                className="bg-emerald-600 text-white px-6 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-emerald-200 hover:bg-emerald-500 disabled:opacity-30 transition-all flex items-center gap-2"
+              >
+                {isProcessing ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
+                Confirmar
+              </button>
+            </div>
+          </>
+        ) : (
+          /* SUMMARY STEP */
+          <div className="flex flex-col items-center justify-center p-12 text-center space-y-6 animate-in fade-in zoom-in duration-300">
+            <div className="w-24 h-24 bg-emerald-100 rounded-full flex items-center justify-center mb-2">
+              <CheckCircle2 size={48} className="text-emerald-600" />
+            </div>
+
+            <div className="space-y-2">
+              <h3 className="text-2xl font-black text-emerald-950">Sucesso!</h3>
+              <p className="text-emerald-600/70 font-medium max-w-xs mx-auto">
+                Importação concluída. Veja abaixo os detalhes.
+              </p>
+            </div>
+
+            <div className="flex gap-4 w-full justify-center">
+              <div className="bg-emerald-50 border border-emerald-100 p-4 rounded-2xl w-32">
+                <p className="text-3xl font-black text-emerald-600">{importedCount}</p>
+                <p className="text-[9px] font-bold text-emerald-400 uppercase tracking-widest">Adicionados</p>
+              </div>
+              {duplicateCount > 0 && (
+                <div className="bg-amber-50 border border-amber-100 p-4 rounded-2xl w-32">
+                  <p className="text-3xl font-black text-amber-500">{duplicateCount}</p>
+                  <p className="text-[9px] font-bold text-amber-400 uppercase tracking-widest">Duplicados</p>
+                </div>
+              )}
+            </div>
+
+            <button
+              onClick={onClose}
+              className="mt-6 bg-emerald-600 text-white px-10 py-3 rounded-xl font-black uppercase tracking-widest shadow-lg shadow-emerald-200 hover:bg-emerald-500 transition-all"
+            >
+              Concluir
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

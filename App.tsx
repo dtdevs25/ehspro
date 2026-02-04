@@ -224,24 +224,27 @@ const App: React.FC = () => {
 
   const handleCollaboratorImport = (data: Collaborator[]) => {
     setCollaborators(prev => [...prev, ...data]);
-    setIsImportModalOpen(false);
   };
 
   // ... (rest of CRUD handlers)
   const saveRole = (data: Partial<Role>) => {
-    if (data.id) {
-      setRoles(roles.map(r => r.id === data.id ? { ...r, ...data } as Role : r));
-    } else {
-      setRoles([...roles, { ...data, id: `r-${Date.now()}` } as Role]);
-    }
+    setRoles(prevRoles => {
+      if (data.id) {
+        return prevRoles.map(r => r.id === data.id ? { ...r, ...data } as Role : r);
+      } else {
+        return [...prevRoles, { ...data, id: `r-${Date.now()}-${Math.random().toString(36).substr(2, 9)}` } as Role];
+      }
+    });
   };
 
   const saveFunction = (data: Partial<JobFunction>) => {
-    if (data.id) {
-      setFunctions(functions.map(f => f.id === data.id ? { ...f, ...data } as JobFunction : f));
-    } else {
-      setFunctions([...functions, { ...data, id: `f-${Date.now()}` } as JobFunction]);
-    }
+    setFunctions(prevFunctions => {
+      if (data.id) {
+        return prevFunctions.map(f => f.id === data.id ? { ...f, ...data } as JobFunction : f);
+      } else {
+        return [...prevFunctions, { ...data, id: `f-${Date.now()}-${Math.random().toString(36).substr(2, 9)}` } as JobFunction];
+      }
+    });
   };
 
   // CRUD Handlers - Connected to API
