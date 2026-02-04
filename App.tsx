@@ -49,6 +49,7 @@ import {
   GraduationCap
 } from 'lucide-react';
 import { TrainingIntegration } from './components/Modules/Training/TrainingIntegration';
+import { CollaboratorDetailsModal } from './components/Modules/RH/CollaboratorDetailsModal';
 
 // Cadastros de Demonstração (Enriquecidos com Unidades Diferentes)
 const DEMO_COLLABORATORS: Collaborator[] = [
@@ -598,6 +599,7 @@ const App: React.FC = () => {
                       <tr className="bg-emerald-50/50 text-left text-xs text-emerald-400 font-black uppercase border-b border-emerald-100">
                         <th className="px-8 py-6">Matrícula</th>
                         <th className="px-8 py-6">Colaborador</th>
+                        <th className="px-8 py-6">Função</th>
                         <th className="px-8 py-6">Status</th>
                         <th className="px-8 py-6 text-right">Ações</th>
                       </tr>
@@ -607,6 +609,7 @@ const App: React.FC = () => {
                         <tr key={c.id} className="hover:bg-emerald-50/30 transition-colors group">
                           <td className="px-8 py-5 font-black text-xs text-emerald-600">{c.registration}</td>
                           <td className="px-8 py-5 font-black text-emerald-950">{c.name}</td>
+                          <td className="px-8 py-5 text-sm text-emerald-800 font-medium">{functions.find(f => f.id === c.functionId)?.name || '-'}</td>
                           <td className="px-8 py-5"><span className="bg-emerald-100 text-emerald-700 text-[10px] font-black px-3 py-1 rounded-full uppercase">{c.status}</span></td>
                           <td className="px-8 py-5 text-right opacity-0 group-hover:opacity-100">
                             <button onClick={() => setViewingCollaborator(c)} className="p-2 text-emerald-600" title="Visualizar"><Eye size={18} /></button>
@@ -689,6 +692,16 @@ const App: React.FC = () => {
           onImport={handleCollaboratorImport}
           existingRegistrationCount={collaborators.length}
           currentData={filteredCollaboratorsByUnit} // Use only filtered data for the current unit
+        />
+      )}
+      {viewingCollaborator && (
+        <CollaboratorDetailsModal
+          collaborator={viewingCollaborator}
+          onClose={() => setViewingCollaborator(null)}
+          roles={roles}
+          functions={functions}
+          companies={companies}
+          branches={branches}
         />
       )}
     </div>

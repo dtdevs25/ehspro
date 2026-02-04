@@ -1,18 +1,18 @@
 
 import React, { useState, useEffect } from 'react';
-import { 
-  Save, 
-  User as UserIcon, 
-  Calendar, 
-  MapPin, 
-  Briefcase, 
-  Mail, 
-  Phone, 
-  Info, 
-  UserPlus, 
-  Heart, 
-  BookOpen, 
-  ShieldCheck, 
+import {
+  Save,
+  User as UserIcon,
+  Calendar,
+  MapPin,
+  Briefcase,
+  Mail,
+  Phone,
+  Info,
+  UserPlus,
+  Heart,
+  BookOpen,
+  ShieldCheck,
   X,
   CreditCard,
   FileText,
@@ -34,10 +34,10 @@ interface CollaboratorFormProps {
   nextRegistration: string;
 }
 
-export const CollaboratorForm: React.FC<CollaboratorFormProps> = ({ 
-  onSave, 
-  onCancel, 
-  roles, 
+export const CollaboratorForm: React.FC<CollaboratorFormProps> = ({
+  onSave,
+  onCancel,
+  roles,
   functions,
   companies,
   branches,
@@ -102,10 +102,10 @@ export const CollaboratorForm: React.FC<CollaboratorFormProps> = ({
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target as HTMLInputElement;
     if (type === 'checkbox') {
-        const checked = (e.target as HTMLInputElement).checked;
-        setFormData(prev => ({ ...prev, [name]: checked }));
+      const checked = (e.target as HTMLInputElement).checked;
+      setFormData(prev => ({ ...prev, [name]: checked }));
     } else {
-        setFormData(prev => ({ ...prev, [name]: value }));
+      setFormData(prev => ({ ...prev, [name]: value }));
     }
   };
 
@@ -119,9 +119,9 @@ export const CollaboratorForm: React.FC<CollaboratorFormProps> = ({
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-emerald-950/60 backdrop-blur-md animate-in fade-in duration-300" onClick={onCancel}></div>
-      
+
       <div className="bg-white w-full max-w-4xl h-full max-h-[90vh] rounded-[2.5rem] shadow-2xl relative z-10 overflow-hidden flex flex-col animate-in zoom-in duration-500 border border-white/20">
-        
+
         <div className="bg-emerald-50/50 p-6 border-b border-emerald-100 flex justify-between items-center shrink-0">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 bg-emerald-600 rounded-xl flex items-center justify-center text-white shadow-lg">
@@ -133,7 +133,7 @@ export const CollaboratorForm: React.FC<CollaboratorFormProps> = ({
                 <span className="text-[10px] font-black text-emerald-600/70 uppercase tracking-widest">Matrícula: {formData.registration}</span>
                 <div className="w-1 h-1 bg-emerald-200 rounded-full" />
                 <span className={`text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest ${formData.status === 'ACTIVE' ? 'bg-emerald-500/10 text-emerald-600' : 'bg-red-500/10 text-red-600'}`}>
-                   {formData.status === 'ACTIVE' ? 'Ativo' : 'Inativo'}
+                  {formData.status === 'ACTIVE' ? 'Ativo' : 'Inativo'}
                 </span>
               </div>
             </div>
@@ -153,11 +153,10 @@ export const CollaboratorForm: React.FC<CollaboratorFormProps> = ({
               key={tab.id}
               type="button"
               onClick={() => setActiveTab(tab.id as any)}
-              className={`flex items-center gap-2 px-6 py-4 border-b-4 transition-all whitespace-nowrap ${
-                activeTab === tab.id 
-                  ? 'border-emerald-600 text-emerald-950 font-black' 
+              className={`flex items-center gap-2 px-6 py-4 border-b-4 transition-all whitespace-nowrap ${activeTab === tab.id
+                  ? 'border-emerald-600 text-emerald-950 font-black'
                   : 'border-transparent text-emerald-400 font-bold hover:text-emerald-600'
-              }`}
+                }`}
             >
               <tab.icon size={16} />
               <span className="text-xs uppercase tracking-widest">{tab.label}</span>
@@ -222,18 +221,18 @@ export const CollaboratorForm: React.FC<CollaboratorFormProps> = ({
                   <div className="col-span-full bg-orange-50/30 p-6 rounded-3xl border border-orange-100 space-y-4">
                     <h4 className="text-xs font-black text-orange-800 uppercase tracking-widest">Saúde e Inclusão</h4>
                     <div className="flex gap-4 items-start">
-                        <label className="flex items-center gap-3 cursor-pointer">
-                          <input type="checkbox" name="isDisabled" checked={formData.isDisabled} onChange={handleChange} className="w-5 h-5 rounded border-orange-300 text-orange-600" />
-                          <span className="text-sm font-bold text-orange-950">PCD</span>
-                        </label>
-                        {formData.isDisabled && (
-                          <input name="disabilityType" value={formData.disabilityType} onChange={handleChange} className="flex-1 bg-white border border-orange-100 p-2 rounded-lg font-bold text-orange-950 text-xs" placeholder="Tipo" />
-                        )}
-                        <div className="flex-1 space-y-1">
-                           <select name="race" value={formData.race} onChange={handleChange} className="w-full bg-white border border-orange-100 p-2 rounded-lg font-bold text-orange-950 text-xs">
-                             {RACES.map(r => <option key={r} value={r}>{r}</option>)}
-                           </select>
-                        </div>
+                      <label className="flex items-center gap-3 cursor-pointer">
+                        <input type="checkbox" name="isDisabled" checked={formData.isDisabled} onChange={handleChange} className="w-5 h-5 rounded border-orange-300 text-orange-600" />
+                        <span className="text-sm font-bold text-orange-950">PCD</span>
+                      </label>
+                      {formData.isDisabled && (
+                        <input name="disabilityType" value={formData.disabilityType} onChange={handleChange} className="flex-1 bg-white border border-orange-100 p-2 rounded-lg font-bold text-orange-950 text-xs" placeholder="Tipo" />
+                      )}
+                      <div className="flex-1 space-y-1">
+                        <select name="race" value={formData.race} onChange={handleChange} className="w-full bg-white border border-orange-100 p-2 rounded-lg font-bold text-orange-950 text-xs">
+                          {RACES.map(r => <option key={r} value={r}>{r}</option>)}
+                        </select>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -270,7 +269,7 @@ export const CollaboratorForm: React.FC<CollaboratorFormProps> = ({
                     </div>
                     <div className="space-y-1 col-span-full">
                       <label className="text-[10px] font-black text-emerald-800/60 uppercase tracking-widest">Matrícula eSocial</label>
-                      <input required name="eSocialCode" value={formData.eSocialCode} onChange={handleChange} className="w-full bg-white border border-emerald-200 p-3 rounded-xl font-bold text-emerald-950 text-sm" placeholder="S-2200..." />
+                      <input name="eSocialCode" value={formData.eSocialCode} onChange={handleChange} className="w-full bg-white border border-emerald-200 p-3 rounded-xl font-bold text-emerald-950 text-sm" placeholder="S-2200..." />
                     </div>
                   </div>
                 </div>
@@ -280,10 +279,10 @@ export const CollaboratorForm: React.FC<CollaboratorFormProps> = ({
         </form>
 
         <div className="p-6 border-t border-emerald-50 bg-emerald-50/20 shrink-0 flex justify-end gap-3">
-           <button type="button" onClick={onCancel} className="px-6 py-3 font-black text-xs text-emerald-600 uppercase tracking-widest hover:bg-emerald-100 rounded-xl transition-all">Cancelar</button>
-           <button form="collabForm" type="submit" className="bg-emerald-600 hover:bg-emerald-500 text-white px-10 py-3 rounded-xl flex items-center justify-center gap-2 font-black text-xs uppercase tracking-widest shadow-lg transition-all">
-             <Save size={18} /> {initialData ? 'Atualizar' : 'Salvar'}
-           </button>
+          <button type="button" onClick={onCancel} className="px-6 py-3 font-black text-xs text-emerald-600 uppercase tracking-widest hover:bg-emerald-100 rounded-xl transition-all">Cancelar</button>
+          <button form="collabForm" type="submit" className="bg-emerald-600 hover:bg-emerald-500 text-white px-10 py-3 rounded-xl flex items-center justify-center gap-2 font-black text-xs uppercase tracking-widest shadow-lg transition-all">
+            <Save size={18} /> {initialData ? 'Atualizar' : 'Salvar'}
+          </button>
         </div>
       </div>
     </div>
