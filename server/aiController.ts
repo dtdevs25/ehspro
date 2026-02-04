@@ -123,7 +123,7 @@ export const generateProfessionalSummary = async (data: any) => {
 
 export const generateRoleDescription = async (roleName: string, cbo: string) => {
     return robustGenerate(
-        `Descreva as principais responsabilidades e requisitos para o cargo de "${roleName}" que possui o CBO "${cbo}". Seja técnico e objetivo. Use no máximo 4 parágrafos.`
+        `Descreva sucintamente (máximo 3 frases) as principais atribuições e requisitos para o cargo de "${roleName}" (CBO "${cbo}"). Seja direto e técnico.`
     );
 };
 
