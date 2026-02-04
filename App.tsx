@@ -123,9 +123,10 @@ const App: React.FC = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   // Data State
-  const [collaborators, setCollaborators] = useState<Collaborator[]>(DEMO_COLLABORATORS);
-  const [roles, setRoles] = useState<Role[]>(INITIAL_ROLES);
-  const [functions, setFunctions] = useState<JobFunction[]>(INITIAL_FUNCTIONS);
+  // Data State
+  const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
+  const [roles, setRoles] = useState<Role[]>([]);
+  const [functions, setFunctions] = useState<JobFunction[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
   const [certificates, setCertificates] = useState<MedicalCertificate[]>([]);
@@ -134,22 +135,22 @@ const App: React.FC = () => {
   // Fetch initial data
   const fetchData = React.useCallback(async () => {
     try {
-      const [companiesRes, branchesRes, usersRes] = await Promise.all([
+      const [companiesRes, branchesRes, usersRes, rolesRes, functionsRes, collaboratorsRes] = await Promise.all([
         fetch('/api/companies'),
         fetch('/api/branches'),
-        fetch('/api/users')
+        fetch('/api/users'),
+        fetch('/api/roles'),
+        fetch('/api/functions'),
+        fetch('/api/collaborators')
       ]);
 
       if (companiesRes.ok && branchesRes.ok) {
-        const companiesData = await companiesRes.json();
-        const branchesData = await branchesRes.json();
-        setCompanies(companiesData);
-        setBranches(branchesData);
-
-        if (usersRes.ok) {
-          const usersData = await usersRes.json();
-          setAllUsers(usersData);
-        }
+        setCompanies(await companiesRes.json());
+        setBranches(await branchesRes.json());
+        if (usersRes.ok) setAllUsers(await usersRes.json());
+        if (rolesRes.ok) setRoles(await rolesRes.json());
+        if (functionsRes.ok) setFunctions(await functionsRes.json());
+        if (collaboratorsRes.ok) setCollaborators(await collaboratorsRes.json());
       }
     } catch (error) {
       console.error("Failed to load initial data", error);
@@ -162,6 +163,7 @@ const App: React.FC = () => {
     }
   }, [currentUser, fetchData]);
 
+  // ... (View Filtering remain same) ...
   // View Filtering Logic
   const activeBranch = useMemo(() => branches.find(b => b.id === activeBranchId), [activeBranchId, branches]);
   const activeCompany = useMemo(() => companies.find(c => c.id === activeBranch?.companyId), [activeBranch, companies]);
@@ -177,7 +179,7 @@ const App: React.FC = () => {
     }),
     [certificates, collaborators, activeBranchId]);
 
-  // UI Handlers
+  // UI Handlers (remain same)
   const [isCollaboratorFormOpen, setIsCollaboratorFormOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [editingCollaborator, setEditingCollaborator] = useState<Collaborator | null>(null);
@@ -202,49 +204,129 @@ const App: React.FC = () => {
   };
 
   // CRUD Handlers
-  const saveCollaborator = (data: Partial<Collaborator>) => {
-    if (editingCollaborator) {
-      setCollaborators(collaborators.map(c => c.id === editingCollaborator.id ? { ...c, ...data } as Collaborator : c));
-    } else {
-      const nextReg = (collaborators.length > 0
-        ? Math.max(...collaborators.map(c => parseInt(c.registration) || 0)) + 1
-        : 1).toString();
+  const saveCollaborator = async (data: Partial<Collaborator>) => {
+    try {
+      let savedCollaborator;
+      // Strip temporary ID if it exists and is generating a new one
+      const payload = { ...data };
+      if (!data.id || data.id.startsWith('demo-')) delete payload.id;
 
-      const newCollaborator = {
-        ...data,
-        id: Math.random().toString(36).substr(2, 9),
-        registration: nextReg,
-        branchId: activeBranchId
-      } as Collaborator;
-      setCollaborators([...collaborators, newCollaborator]);
+      // If we are editing, we expect a valid UUID ID
+      if (editingCollaborator && editingCollaborator.id) {
+        const res = await fetch(`/api/collaborators/${editingCollaborator.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+          savedCollaborator = await res.json();
+          setCollaborators(prev => prev.map(c => c.id === savedCollaborator.id ? savedCollaborator : c));
+        }
+      } else {
+        // Create
+        // Auto-generate registration if missing (simple fallback)
+        if (!payload.registration) {
+          const maxReg = Math.max(...collaborators.map(c => parseInt(c.registration) || 0), 0);
+          payload.registration = (maxReg + 1).toString();
+        }
+
+        const res = await fetch('/api/collaborators', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+          savedCollaborator = await res.json();
+          setCollaborators(prev => [...prev, savedCollaborator]);
+        }
+      }
+      setIsCollaboratorFormOpen(false);
+      setEditingCollaborator(null);
+    } catch (err) {
+      console.error("Error saving collaborator:", err);
+      alert("Erro ao salvar colaborador. Verifique o console.");
     }
-    setIsCollaboratorFormOpen(false);
-    setEditingCollaborator(null);
   };
 
-  const handleCollaboratorImport = (data: Collaborator[]) => {
-    setCollaborators(prev => [...prev, ...data]);
+  const handleCollaboratorImport = async (data: Collaborator[]) => {
+    // Bulk create via API loop (since no bulk endpoint yet)
+    // We filter out logic moved to backend, but here we just iterate
+    const createdItems: Collaborator[] = [];
+
+    for (const item of data) {
+      try {
+        const { id, ...cleanItem } = item; // Remove temporary ID from modal
+        const res = await fetch('/api/collaborators', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(cleanItem)
+        });
+        if (res.ok) {
+          createdItems.push(await res.json());
+        }
+      } catch (e) {
+        console.error("Failed to import item", item, e);
+      }
+    }
+
+    if (createdItems.length > 0) {
+      setCollaborators(prev => [...prev, ...createdItems]);
+    }
   };
 
   // ... (rest of CRUD handlers)
-  const saveRole = (data: Partial<Role>) => {
-    setRoles(prevRoles => {
-      if (data.id) {
-        return prevRoles.map(r => r.id === data.id ? { ...r, ...data } as Role : r);
-      } else {
-        return [...prevRoles, { ...data, id: `r-${Date.now()}-${Math.random().toString(36).substr(2, 9)}` } as Role];
+  const saveRole = async (data: Partial<Role>) => {
+    try {
+      let savedRole;
+      if (data.id && !data.id.startsWith('r-')) { // Update existing
+        const res = await fetch(`/api/roles/${data.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        if (res.ok) {
+          savedRole = await res.json();
+          setRoles(prev => prev.map(r => r.id === savedRole.id ? savedRole : r));
+        }
+      } else { // Create
+        const res = await fetch('/api/roles', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        if (res.ok) {
+          savedRole = await res.json();
+          setRoles(prev => [...prev, savedRole]);
+        }
       }
-    });
+    } catch (e) { console.error("Error saving role", e); }
   };
 
-  const saveFunction = (data: Partial<JobFunction>) => {
-    setFunctions(prevFunctions => {
-      if (data.id) {
-        return prevFunctions.map(f => f.id === data.id ? { ...f, ...data } as JobFunction : f);
-      } else {
-        return [...prevFunctions, { ...data, id: `f-${Date.now()}-${Math.random().toString(36).substr(2, 9)}` } as JobFunction];
+  const saveFunction = async (data: Partial<JobFunction>) => {
+    try {
+      let savedFunction;
+      if (data.id && !data.id.startsWith('f-')) { // Update existing
+        const res = await fetch(`/api/functions/${data.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        if (res.ok) {
+          savedFunction = await res.json();
+          setFunctions(prev => prev.map(f => f.id === savedFunction.id ? savedFunction : f));
+        }
+      } else { // Create
+        const res = await fetch('/api/functions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        if (res.ok) {
+          savedFunction = await res.json();
+          setFunctions(prev => [...prev, savedFunction]);
+        }
       }
-    });
+    } catch (e) { console.error("Error saving function", e); }
   };
 
   // CRUD Handlers - Connected to API

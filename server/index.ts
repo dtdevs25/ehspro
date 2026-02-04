@@ -469,6 +469,106 @@ app.delete('/api/branches/:id', async (req, res) => {
   }
 });
 
+// --- FUNCTIONS (Funções) ---
+app.get('/api/functions', async (req, res) => {
+  try {
+    const functions = await prisma.jobFunction.findMany();
+    res.json(functions);
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao buscar funções' });
+  }
+});
+
+app.post('/api/functions', async (req, res) => {
+  try {
+    const { name, cbo, description, registration } = req.body;
+    // Auto-generate registration if not provided
+    const nextReg = registration || `F${Date.now()}`;
+
+    const newFunction = await prisma.jobFunction.create({
+      data: { name, cbo, description: description || '', registration: nextReg }
+    });
+    res.json(newFunction);
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao criar função' });
+  }
+});
+
+app.put('/api/functions/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, cbo, description, registration } = req.body;
+    const updatedFunction = await prisma.jobFunction.update({
+      where: { id },
+      data: { name, cbo, description, registration }
+    });
+    res.json(updatedFunction);
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao atualizar função' });
+  }
+});
+
+app.delete('/api/functions/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    await prisma.jobFunction.delete({ where: { id } });
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao excluir função' });
+  }
+});
+
+// --- ROLES (Cargos) ---
+app.get('/api/roles', async (req, res) => {
+  try {
+    const roles = await prisma.role.findMany({
+      include: { jobFunction: true } // Include linked function details
+    });
+    res.json(roles);
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao buscar cargos' });
+  }
+});
+
+app.post('/api/roles', async (req, res) => {
+  try {
+    const { name, description, functionId, registration } = req.body;
+    // Auto-generate registration if not provided
+    const nextReg = registration || `C${Date.now()}`;
+
+    const newRole = await prisma.role.create({
+      data: { name, description: description || '', functionId, registration: nextReg }
+    });
+    res.json(newRole);
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao criar cargo' });
+  }
+});
+
+app.put('/api/roles/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, description, functionId, registration } = req.body;
+    const updatedRole = await prisma.role.update({
+      where: { id },
+      data: { name, description, functionId, registration }
+    });
+    res.json(updatedRole);
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao atualizar cargo' });
+  }
+});
+
+app.delete('/api/roles/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    await prisma.role.delete({ where: { id } });
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao excluir cargo' });
+  }
+});
+
 // Core Data Routes - GET
 app.get('/api/companies', async (req, res) => {
   try {
@@ -492,13 +592,96 @@ app.get('/api/branches', async (req, res) => {
   }
 });
 
-// Example: Get all collaborators
+// --- COLLABORATORS ---
 app.get('/api/collaborators', async (req, res) => {
   try {
-    const collaborators = await prisma.collaborator.findMany();
+    const collaborators = await prisma.collaborator.findMany({
+      include: {
+        company: true,
+        branch: true,
+        role: true,
+        jobFunction: true
+      },
+      orderBy: { name: 'asc' }
+    });
     res.json(collaborators);
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch collaborators' });
+    console.error("Error fetching collaborators:", error);
+    res.status(500).json({ error: 'Erro ao buscar colaboradores' });
+  }
+});
+
+app.post('/api/collaborators', async (req, res) => {
+  try {
+    const data = req.body;
+
+    // Ensure unique fields don't clash or handle error gracefully
+    const exists = await prisma.collaborator.findFirst({
+      where: {
+        OR: [
+          { cpf: data.cpf },
+          { registration: data.registration }
+        ]
+      }
+    });
+
+    if (exists) {
+      return res.status(400).json({ error: 'Colaborador já existe (CPF ou Matrícula duplicados).' });
+    }
+
+    const { id, ...cleanData } = data; // specific cleanup if needed
+
+    const newCollaborator = await prisma.collaborator.create({
+      data: {
+        ...cleanData,
+        // Ensure dates are Date objects if passed as strings
+        birthDate: new Date(data.birthDate),
+        admissionDate: new Date(data.admissionDate),
+        terminationDate: data.terminationDate ? new Date(data.terminationDate) : null,
+        // Ensure defaults if missing
+        status: data.status || 'ACTIVE',
+        isDisabled: data.isDisabled || false,
+      }
+    });
+    res.json(newCollaborator);
+  } catch (error) {
+    console.error("Error creating collaborator:", error);
+    res.status(500).json({ error: 'Erro ao criar colaborador' });
+  }
+});
+
+app.put('/api/collaborators/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const data = req.body;
+
+    // cleanup id from body to avoid trying to update PK
+    const { id: bodyId, ...updateData } = data;
+
+    const updated = await prisma.collaborator.update({
+      where: { id },
+      data: {
+        ...updateData,
+        birthDate: updateData.birthDate ? new Date(updateData.birthDate) : undefined,
+        admissionDate: updateData.admissionDate ? new Date(updateData.admissionDate) : undefined,
+        terminationDate: updateData.terminationDate ? new Date(updateData.terminationDate) : null,
+      }
+    });
+    res.json(updated);
+  } catch (error) {
+    console.error("Error updating collaborator:", error);
+    res.status(500).json({ error: 'Erro ao atualizar colaborador' });
+  }
+});
+
+app.delete('/api/collaborators/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    await prisma.collaborator.delete({ where: { id } });
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Error deleting collaborator:", error);
+    res.status(500).json({ error: 'Erro ao excluir colaborador' });
   }
 });
 
