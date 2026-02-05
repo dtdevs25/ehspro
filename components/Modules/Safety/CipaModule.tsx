@@ -65,7 +65,9 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
   const [isMemberModalOpen, setIsMemberModalOpen] = useState(false);
   const [isMeetingModalOpen, setIsMeetingModalOpen] = useState(false);
   const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
+  const [isTermModalOpen, setIsTermModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<any>(null);
+  const [editingTerm, setEditingTerm] = useState<CipaTerm | null>(null);
 
   // Document Data States
   const [sindicatoName, setSindicatoName] = useState('');
@@ -294,24 +296,12 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
     e.preventDefault();
     const data = new FormData(e.currentTarget);
     const payload = {
-      meetingId: data.get('meetingId'), // Ensure this input exists or is set
+      meetingId: data.get('meetingId'),
       description: data.get('description'),
       deadline: data.get('deadline'),
       responsibleId: data.get('responsibleId'),
       status: 'PENDING'
     };
-    // Note: meetingId must be selected in the modal or inferred. 
-    // The current modal doesn't show meeting selection if called from a generic button?
-    // Wait, the modal has `meetingId` input?
-    // Checking `isPlanModalOpen` section... it DOES NOT have meetingId input.
-    // It assumes we know the meeting? Or maybe we should add it?
-    // Let's check below.
-    // The mock implementation didn't strictly require meetingId.
-    // I should add meetingId selection to the Plan Modal.
-    // For now I will keep the fetch logic generic, but I need to fix the modal too.
-
-    // Actually, looking at the mock `savePlan`: `meetingId: data.get('meetingId')`.
-    // So the input MUST be there. I need to add it to the form if missing.
 
     try {
       if (editingItem) {
@@ -332,6 +322,30 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
       setEditingItem(null);
     } catch (error) {
       alert("Erro ao salvar plano");
+    }
+  };
+
+  const updateTerm = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingTerm) return;
+    const data = new FormData(e.currentTarget);
+
+    try {
+      await fetch(`/api/cipa/terms/${editingTerm.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          year: data.get('year'),
+          startDate: data.get('startDate'),
+          endDate: data.get('endDate'),
+          status: data.get('status')
+        })
+      });
+      refreshTerms();
+      setIsTermModalOpen(false);
+      setEditingTerm(null);
+    } catch (e) {
+      alert("Erro ao atualizar gestão");
     }
   };
 
@@ -424,9 +438,14 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
                 <p className="text-xs font-bold text-emerald-400 uppercase tracking-widest mb-6">
                   {term.startDate ? `${new Date(term.startDate).toLocaleDateString()} — ${new Date(term.endDate).toLocaleDateString()}` : 'Aguardando Planejamento'}
                 </p>
-                <button onClick={() => setSelectedTermId(term.id)} className="mt-auto flex items-center justify-center gap-2 bg-emerald-50 text-emerald-700 p-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-emerald-600 hover:text-white transition-all shadow-sm">
-                  Gerenciar <ChevronRight size={14} />
-                </button>
+                <div className="flex gap-2">
+                  <button onClick={() => setSelectedTermId(term.id)} className="flex-1 flex items-center justify-center gap-2 bg-emerald-50 text-emerald-700 p-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-emerald-600 hover:text-white transition-all shadow-sm">
+                    Gerenciar <ChevronRight size={14} />
+                  </button>
+                  <button onClick={(e) => { e.stopPropagation(); setEditingTerm(term); setIsTermModalOpen(true); }} className="px-4 bg-slate-50 text-slate-400 rounded-2xl hover:bg-emerald-50 hover:text-emerald-600 transition-all">
+                    <Edit3 size={20} />
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -548,6 +567,9 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
               </button>
               <button onClick={() => setTermToDelete(selectedTerm!)} className="p-3 text-red-400 hover:bg-red-50 rounded-2xl transition-all" title="Excluir Gestão">
                 <Trash2 size={24} />
+              </button>
+              <button onClick={() => { setEditingTerm(selectedTerm!); setIsTermModalOpen(true); }} className="p-3 text-emerald-400 hover:bg-emerald-50 rounded-2xl transition-all" title="Editar Gestão">
+                <Edit3 size={24} />
               </button>
             </div>
           </div>
@@ -797,6 +819,40 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
                 }
               }} className="flex-1 bg-red-600 text-white py-3 rounded-xl font-black text-[10px] uppercase shadow-lg tracking-widest">Sim, Excluir</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {isTermModalOpen && editingTerm && (
+        <div className="fixed inset-0 z-[400] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-emerald-950/40 backdrop-blur-sm" onClick={() => setIsTermModalOpen(false)}></div>
+          <div className="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl relative z-10 p-8 animate-in zoom-in border border-emerald-100">
+            <h2 className="text-xl font-black mb-6 uppercase">Editar Gestão</h2>
+            <form onSubmit={updateTerm} className="space-y-6">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-emerald-400 uppercase tracking-widest ml-1">Referência (Ano/Gestão)</label>
+                <input required name="year" defaultValue={editingTerm.year} className="w-full bg-emerald-50 p-4 rounded-xl font-black text-emerald-950 outline-none" placeholder="Ex: 2024/2025" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-emerald-400 uppercase tracking-widest ml-1">Início da Gestão</label>
+                  <input type="date" required name="startDate" defaultValue={editingTerm.startDate ? new Date(editingTerm.startDate).toISOString().split('T')[0] : ''} className="w-full bg-emerald-50 p-4 rounded-xl font-black text-emerald-950 outline-none" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-emerald-400 uppercase tracking-widest ml-1">Fim da Gestão</label>
+                  <input type="date" required name="endDate" defaultValue={editingTerm.endDate ? new Date(editingTerm.endDate).toISOString().split('T')[0] : ''} className="w-full bg-emerald-50 p-4 rounded-xl font-black text-emerald-950 outline-none" />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-emerald-400 uppercase tracking-widest ml-1">Status do Processo</label>
+                <select name="status" defaultValue={editingTerm.status} className="w-full bg-emerald-50 p-4 rounded-xl font-black text-emerald-950 outline-none">
+                  <option value="ELECTION">Em Eleição</option>
+                  <option value="ACTIVE">Vigente (Ativo)</option>
+                  <option value="FINISHED">Encerrada</option>
+                </select>
+              </div>
+              <button type="submit" className="w-full bg-emerald-600 text-white py-4 rounded-2xl font-black uppercase shadow-xl hover:bg-emerald-500 transition-all">Salvar Alterações</button>
+            </form>
           </div>
         </div>
       )}
