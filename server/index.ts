@@ -698,6 +698,272 @@ app.delete('/api/collaborators/:id', async (req, res) => {
 
 // Serve static files from the React app (after build)
 // In production (Docker), we serve files from 'dist'
+// --- CIPA ROUTES ---
+
+// 1. CIPA Terms (Mandatos)
+app.get('/api/cipa/terms', async (req, res) => {
+  try {
+    const { branchId } = req.query;
+    const where: any = {};
+    if (branchId) where.branchId = String(branchId);
+
+    const terms = await prisma.cipaTerm.findMany({
+      where,
+      orderBy: { startDate: 'desc' },
+      include: {
+        meetings: true,
+        cipeiros: true
+      }
+    });
+    res.json(terms);
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao buscar mandatos CIPA' });
+  }
+});
+
+app.post('/api/cipa/terms', async (req, res) => {
+  try {
+    const { year, startDate, endDate, branchId, status } = req.body;
+    const newTerm = await prisma.cipaTerm.create({
+      data: {
+        year,
+        startDate: new Date(startDate),
+        endDate: new Date(endDate),
+        branchId,
+        status: status || 'ELECTION'
+      }
+    });
+    res.json(newTerm);
+  } catch (error) {
+    console.error("Error creating term:", error);
+    res.status(500).json({ error: 'Erro ao criar mandato CIPA' });
+  }
+});
+
+app.put('/api/cipa/terms/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { year, startDate, endDate, status } = req.body;
+    const updated = await prisma.cipaTerm.update({
+      where: { id },
+      data: {
+        year,
+        startDate: startDate ? new Date(startDate) : undefined,
+        endDate: endDate ? new Date(endDate) : undefined,
+        status
+      }
+    });
+    res.json(updated);
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao atualizar mandato' });
+  }
+});
+
+app.delete('/api/cipa/terms/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    await prisma.cipaTerm.delete({ where: { id } });
+    res.json({ success: true });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Erro ao excluir mandato. Verifique dependências.' });
+  }
+});
+
+// 2. CIPA Members (Membros/Cipeiros)
+app.get('/api/cipa/members', async (req, res) => {
+  try {
+    const { termId } = req.query;
+    const where: any = {};
+    if (termId) where.termId = String(termId);
+
+    const members = await prisma.cipeiro.findMany({
+      where,
+      include: { collaborator: true }
+    });
+    res.json(members);
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao buscar membros' });
+  }
+});
+
+app.post('/api/cipa/members', async (req, res) => {
+  try {
+    const { termId, collaboratorId, cipaRole, origin, votes } = req.body;
+    const newMember = await prisma.cipeiro.create({
+      data: {
+        termId,
+        collaboratorId,
+        cipaRole,
+        origin,
+        votes: Number(votes) || 0
+      }
+    });
+    res.json(newMember);
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao adicionar membro' });
+  }
+});
+
+app.put('/api/cipa/members/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { cipaRole, origin, votes } = req.body;
+    const updated = await prisma.cipeiro.update({
+      where: { id },
+      data: { cipaRole, origin, votes: Number(votes) }
+    });
+    res.json(updated);
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao atualizar membro' });
+  }
+});
+
+app.delete('/api/cipa/members/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    await prisma.cipeiro.delete({ where: { id } });
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao remover membro' });
+  }
+});
+
+// 3. CIPA Meetings (Reuniões)
+app.get('/api/cipa/meetings', async (req, res) => {
+  try {
+    const { termId } = req.query;
+    const where: any = {};
+    if (termId) where.termId = String(termId);
+
+    const meetings = await prisma.cipaMeeting.findMany({
+      where,
+      orderBy: { date: 'desc' }
+    });
+    res.json(meetings);
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao buscar reuniões' });
+  }
+});
+
+app.post('/api/cipa/meetings', async (req, res) => {
+  try {
+    const { termId, date, title, description, type } = req.body;
+    const newMeeting = await prisma.cipaMeeting.create({
+      data: {
+        termId,
+        date: new Date(date),
+        title,
+        description,
+        type
+      }
+    });
+    res.json(newMeeting);
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao criar reunião' });
+  }
+});
+
+app.put('/api/cipa/meetings/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { date, title, description, type } = req.body;
+    const updated = await prisma.cipaMeeting.update({
+      where: { id },
+      data: {
+        date: date ? new Date(date) : undefined,
+        title,
+        description,
+        type
+      }
+    });
+    res.json(updated);
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao atualizar reunião' });
+  }
+});
+
+app.delete('/api/cipa/meetings/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    await prisma.cipaMeeting.delete({ where: { id } });
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao excluir reunião' });
+  }
+});
+
+// 4. Action Plans (Planos de Ação)
+app.get('/api/cipa/plans', async (req, res) => {
+  try {
+    const { meetingId, termId } = req.query;
+
+    let where: any = {};
+    if (meetingId) {
+      where.meetingId = String(meetingId);
+    } else if (termId) {
+      const meetings = await prisma.cipaMeeting.findMany({ where: { termId: String(termId) }, select: { id: true } });
+      const meetingIds = meetings.map(m => m.id);
+      where.meetingId = { in: meetingIds };
+    }
+
+    const plans = await prisma.cipaActionPlan.findMany({
+      where,
+      orderBy: { deadline: 'asc' }
+    });
+    res.json(plans);
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao buscar planos de ação' });
+  }
+});
+
+app.post('/api/cipa/plans', async (req, res) => {
+  try {
+    const { meetingId, description, deadline, responsibleId, status } = req.body;
+    const newPlan = await prisma.cipaActionPlan.create({
+      data: {
+        meetingId,
+        description,
+        deadline: new Date(deadline),
+        responsibleId,
+        status: status || 'PENDING'
+      }
+    });
+    res.json(newPlan);
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao criar plano de ação' });
+  }
+});
+
+app.put('/api/cipa/plans/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { description, deadline, responsibleId, status } = req.body;
+    const updated = await prisma.cipaActionPlan.update({
+      where: { id },
+      data: {
+        description,
+        deadline: deadline ? new Date(deadline) : undefined,
+        responsibleId,
+        status
+      }
+    });
+    res.json(updated);
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao atualizar plano de ação' });
+  }
+});
+
+app.delete('/api/cipa/plans/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    await prisma.cipaActionPlan.delete({ where: { id } });
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao excluir plano de ação' });
+  }
+});
+
 const distPath = path.join(__dirname, '..', '..', 'dist'); // Go up to /app/dist
 
 // Serve static assets
