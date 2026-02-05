@@ -566,9 +566,10 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
               }),
               // Rows for signatures
               ...Array(10).fill(0).map(() => new docx.TableRow({
+                height: { value: 600, rule: docx.HeightRule.ATLEAST },
                 children: [
-                  new docx.TableCell({ children: [new docx.Paragraph({})], height: { value: 600, rule: docx.HeightRule.AT_LEAST } }),
-                  new docx.TableCell({ children: [new docx.Paragraph({})], height: { value: 600, rule: docx.HeightRule.AT_LEAST } }),
+                  new docx.TableCell({ children: [new docx.Paragraph({})] }),
+                  new docx.TableCell({ children: [new docx.Paragraph({})] }),
                 ]
               }))
             ],
@@ -1046,6 +1047,105 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
 
                 <div className="pt-20 space-y-24">
                   <p className="text-right font-black text-slate-900">{formatarDataLonga(calendarItems.find(i => i.id === 'ev2')?.date || '')}</p>
+                  <div className="flex justify-between items-start gap-12">
+                    <div className="flex-1 space-y-4 text-center">
+                      <input value={repEmpresaName} onChange={e => setRepEmpresaName(e.target.value)} className="w-full border-b border-slate-900 bg-transparent text-center font-black outline-none print:border-none" />
+                      <p className="text-[10px] font-black text-slate-500 uppercase">Representante Empresa</p>
+                    </div>
+                    <div className="flex-1 space-y-4 text-center">
+                      <input value={presCipaName} onChange={e => setPresCipaName(e.target.value)} className="w-full border-b border-slate-900 bg-transparent text-center font-black outline-none print:border-none" />
+                      <p className="text-[10px] font-black text-slate-500 uppercase">Presidente CIPA Atual</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : activeStepView === 'ev3' ? (
+        <div className="animate-in slide-in-from-right-12 duration-500">
+          <div className="bg-white rounded-[3rem] border border-emerald-100 shadow-2xl overflow-hidden flex flex-col min-h-[85vh]">
+            <div className="p-8 border-b border-emerald-50 bg-emerald-50/30 flex items-center justify-between print:hidden">
+              <button onClick={() => setActiveStepView(null)} className="flex items-center gap-2 text-emerald-600 font-black text-xs uppercase hover:text-emerald-800 transition-all">
+                <ArrowLeft size={18} /> Voltar ao Calendário
+              </button>
+              <div className="flex items-center gap-4">
+                <button onClick={generateStep3List} className="bg-emerald-100 text-emerald-700 px-6 py-3 rounded-xl font-black text-xs uppercase flex items-center gap-3 shadow-sm hover:bg-emerald-200 transition-all">
+                  <List size={18} /> Lista de Presença
+                </button>
+                <button onClick={generateStep3Word} className="bg-emerald-600 text-white px-8 py-3 rounded-xl font-black text-xs uppercase flex items-center gap-3 shadow-lg hover:bg-emerald-500 transition-all">
+                  <FileDown size={18} /> Gerar Ata (.docx)
+                </button>
+              </div>
+            </div>
+
+            <div className="flex-1 p-10 md:p-20 overflow-y-auto bg-slate-50/50 print:bg-white print:p-0">
+              <div className="max-w-4xl mx-auto bg-white border border-slate-200 shadow-2xl p-16 space-y-12 min-h-[1100px] relative text-slate-800 print:shadow-none print:border-none print:p-0">
+                <div className="flex items-center gap-10 border-b border-slate-100 pb-10">
+                  <div className="w-32 h-32 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-300 font-bold border border-slate-100 shrink-0 uppercase italic">Logo</div>
+                  <div className="text-center flex-1 pr-32">
+                    <h2 className="text-3xl font-black text-emerald-700 uppercase">Ata da Comissão Eleitoral</h2>
+                    <p className="text-base font-bold text-slate-400 uppercase tracking-widest mt-1">CIPA Gestão {selectedTerm?.year}</p>
+                  </div>
+                </div>
+
+                <div className="space-y-8 leading-[1.8] text-base">
+                  <div className="bg-emerald-50/50 p-8 rounded-2xl border border-emerald-100 space-y-6 print:hidden mb-8">
+                    <h4 className="font-black text-emerald-900 uppercase text-sm border-b border-emerald-200 pb-2 mb-4">Dados da Reunião</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Vice-Presidente (Atual)</label>
+                        <select
+                          value={vicePresidenteName}
+                          onChange={(e) => setVicePresidenteName(e.target.value)}
+                          className="w-full bg-white border-b-2 border-emerald-200 p-2 font-black text-emerald-950 outline-none focus:border-emerald-500 transition-all"
+                        >
+                          <option value="">Selecione...</option>
+                          {collaborators.map(collab => (
+                            <option key={collab.id} value={collab.name}>{collab.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Secretário(a) da Mesa</label>
+                        <select
+                          value={secretarioName}
+                          onChange={(e) => setSecretarioName(e.target.value)}
+                          className="w-full bg-white border-b-2 border-emerald-200 p-2 font-black text-emerald-950 outline-none focus:border-emerald-500 transition-all"
+                        >
+                          <option value="">Selecione...</option>
+                          {collaborators.map(collab => (
+                            <option key={collab.id} value={collab.name}>{collab.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Horário da Reunião</label>
+                        <input
+                          type="time"
+                          value={reuniaoTime}
+                          onChange={(e) => setReuniaoTime(e.target.value)}
+                          className="w-full bg-white border-b-2 border-emerald-200 p-2 font-black text-emerald-950 outline-none focus:border-emerald-500 transition-all"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <p className="text-justify">
+                    Reuniram-se os representantes da Comissão Interna de Prevenção de Acidentes e de Assédio (CIPA) da gestão atual e representantes da Empresa <span className="font-black">{activeCompany.name}</span> para a formação da Comissão Eleitoral (CE) da nova Gestão {selectedTerm?.year}, em conformidade com a Norma Regulamentadora nº 5 (NR-5).
+                  </p>
+
+                  <p className="text-justify">
+                    Durante a reunião, o(a) Sr(a) <strong>{presCipaName}</strong>, Presidente da CIPA em curso, e o(a) Sr(a) <strong>{vicePresidenteName || '__________________'}</strong>, Vice-Presidente, foram nomeados membros da Comissão Eleitoral. O(a) Sr(a) <strong>{presCipaName}</strong> assumirá a função de Presidente da Mesa Eleitoral, e o(a) Sr(a) <strong>{secretarioName || '__________________'}</strong> exercerá a função de Secretário(a).
+                  </p>
+
+                  <p className="text-justify">
+                    A reunião foi realizada no dia <strong>{calendarItems.find(i => i.id === 'ev3') ? formatarDataLonga(calendarItems.find(i => i.id === 'ev3')!.date) : '...'}</strong>, às <strong>{reuniaoTime || '...'}</strong>, ocasião em que foram discutidos o processo eleitoral e as responsabilidades da Comissão.
+                  </p>
+                </div>
+
+                <div className="pt-20 space-y-24">
+                  <p className="text-right font-black text-slate-900">{formatarDataLonga(calendarItems.find(i => i.id === 'ev3')?.date || '')}</p>
                   <div className="flex justify-between items-start gap-12">
                     <div className="flex-1 space-y-4 text-center">
                       <input value={repEmpresaName} onChange={e => setRepEmpresaName(e.target.value)} className="w-full border-b border-slate-900 bg-transparent text-center font-black outline-none print:border-none" />
