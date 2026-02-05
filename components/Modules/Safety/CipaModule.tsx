@@ -721,15 +721,15 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
                           {calendarItems.map((ev) => {
                             const isDone = completedSteps.includes(ev.id);
                             return (
-                              <tr key={ev.id} className={`transition-all ${isDone ? 'bg-emerald-50/30' : ''}`}>
+                              <tr key={ev.id} className={`transition-all ${isDone ? 'bg-emerald-50 opacity-60' : 'hover:bg-emerald-50/50'}`}>
                                 <td className="px-8 py-4 print:hidden">
                                   <button onClick={() => toggleStep(ev.id)} className={`w-8 h-8 rounded-xl border-2 flex items-center justify-center transition-all ${isDone ? 'bg-emerald-500 border-emerald-500 text-white shadow-lg' : 'border-emerald-100 hover:border-emerald-300'}`}>
                                     <Check size={18} />
                                   </button>
                                 </td>
-                                <td className={`px-8 py-4 font-black text-xs ${isDone ? 'text-emerald-700' : 'text-emerald-950'}`}>{ev.item}</td>
-                                <td className="px-8 py-4 text-center font-bold text-xs text-emerald-600">{new Date(ev.date).toLocaleDateString()}</td>
-                                <td className="px-8 py-4 text-center text-[10px] font-black text-emerald-400 uppercase tracking-tighter">{ev.weekDay}</td>
+                                <td className={`px-8 py-4 font-black text-xs ${isDone ? 'text-emerald-800 line-through' : 'text-emerald-950'}`}>{ev.item}</td>
+                                <td className={`px-8 py-4 text-center font-bold text-xs ${isDone ? 'text-emerald-800 line-through' : 'text-emerald-600'}`}>{new Date(ev.date).toLocaleDateString()}</td>
+                                <td className={`px-8 py-4 text-center text-[10px] font-black uppercase tracking-tighter ${isDone ? 'text-emerald-800 line-through' : 'text-emerald-400'}`}>{ev.weekDay}</td>
                                 <td className="px-8 py-4 text-center print:hidden">
                                   <button onClick={() => ev.id === 'ev1' && setActiveStepView('ev1')} className={`p-2.5 rounded-xl transition-all ${ev.id === 'ev1' ? 'text-emerald-600 bg-emerald-50 hover:bg-emerald-100 shadow-sm' : 'text-emerald-100 cursor-not-allowed'}`}>
                                     <Edit3 size={18} />
