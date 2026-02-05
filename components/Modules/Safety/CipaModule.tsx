@@ -1501,58 +1501,58 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
               </div>
             </div>
           </div>
-          ) : activeStepView === 'ev5' ? (
-          <div className="animate-in slide-in-from-right-12 duration-500">
-            <div className="bg-white rounded-[3rem] border border-emerald-100 shadow-2xl overflow-hidden flex flex-col min-h-[85vh]">
-              <div className="p-8 border-b border-emerald-50 bg-emerald-50/30 flex items-center justify-between print:hidden">
-                <button onClick={() => setActiveStepView(null)} className="flex items-center gap-2 text-emerald-600 font-black text-xs uppercase hover:text-emerald-800 transition-all">
-                  <ArrowLeft size={18} /> Voltar ao Calendário
-                </button>
-                <button onClick={generateStep5Word} className="bg-emerald-600 text-white px-8 py-3 rounded-xl font-black text-xs uppercase flex items-center gap-3 shadow-lg hover:bg-emerald-500 transition-all">
-                  <FileDown size={18} /> Gerar Word (.docx)
-                </button>
-              </div>
+        </div>
+      ) : activeStepView === 'ev5' ? (
+        <div className="animate-in slide-in-from-right-12 duration-500">
+          <div className="bg-white rounded-[3rem] border border-emerald-100 shadow-2xl overflow-hidden flex flex-col min-h-[85vh]">
+            <div className="p-8 border-b border-emerald-50 bg-emerald-50/30 flex items-center justify-between print:hidden">
+              <button onClick={() => setActiveStepView(null)} className="flex items-center gap-2 text-emerald-600 font-black text-xs uppercase hover:text-emerald-800 transition-all">
+                <ArrowLeft size={18} /> Voltar ao Calendário
+              </button>
+              <button onClick={generateStep5Word} className="bg-emerald-600 text-white px-8 py-3 rounded-xl font-black text-xs uppercase flex items-center gap-3 shadow-lg hover:bg-emerald-500 transition-all">
+                <FileDown size={18} /> Gerar Word (.docx)
+              </button>
+            </div>
 
-              <div className="flex-1 p-10 md:p-20 overflow-y-auto bg-slate-50/50 print:bg-white print:p-0">
-                <div className="max-w-4xl mx-auto bg-white border border-slate-200 shadow-2xl p-16 space-y-12 min-h-[1100px] relative text-slate-800 print:shadow-none print:border-none print:p-0">
-                  <div className="flex items-center gap-10 border-b border-slate-100 pb-10">
-                    <div className="w-32 h-32 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-300 font-bold border border-slate-100 shrink-0 uppercase italic">Logo</div>
-                    <div className="text-center flex-1 pr-32">
-                      <h2 className="text-3xl font-black text-emerald-700 uppercase">Edital de Divulgação de Inscritos</h2>
-                      <p className="text-base font-bold text-slate-400 uppercase tracking-widest mt-1">CIPA Gestão {selectedTerm?.year}</p>
-                    </div>
+            <div className="flex-1 p-10 md:p-20 overflow-y-auto bg-slate-50/50 print:bg-white print:p-0">
+              <div className="max-w-4xl mx-auto bg-white border border-slate-200 shadow-2xl p-16 space-y-12 min-h-[1100px] relative text-slate-800 print:shadow-none print:border-none print:p-0">
+                <div className="flex items-center gap-10 border-b border-slate-100 pb-10">
+                  <div className="w-32 h-32 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-300 font-bold border border-slate-100 shrink-0 uppercase italic">Logo</div>
+                  <div className="text-center flex-1 pr-32">
+                    <h2 className="text-3xl font-black text-emerald-700 uppercase">Edital de Divulgação de Inscritos</h2>
+                    <p className="text-base font-bold text-slate-400 uppercase tracking-widest mt-1">CIPA Gestão {selectedTerm?.year}</p>
                   </div>
+                </div>
 
-                  <div className="space-y-8 leading-[1.8] text-base">
-                    <p className="text-justify">
-                      A Empresa <span className="font-black">{activeCompany.name}</span>, em cumprimento ao item 5.5.3, alínea "e" da Norma Regulamentadora nº 5 (NR-5), torna público a relação dos candidatos inscritos para a eleição da Comissão Interna de Prevenção de Acidentes e de Assédio (CIPA).
-                    </p>
+                <div className="space-y-8 leading-[1.8] text-base">
+                  <p className="text-justify">
+                    A Empresa <span className="font-black">{activeCompany.name}</span>, em cumprimento ao item 5.5.3, alínea "e" da Norma Regulamentadora nº 5 (NR-5), torna público a relação dos candidatos inscritos para a eleição da Comissão Interna de Prevenção de Acidentes e de Assédio (CIPA).
+                  </p>
 
-                    <div className="bg-emerald-50/50 p-8 rounded-2xl border border-emerald-100 space-y-6">
-                      <h4 className="font-black text-emerald-900 uppercase text-sm border-b border-emerald-200 pb-2 mb-4">Candidatos Inscritos</h4>
-                      {candidates.length > 0 ? (
-                        <ul className="list-disc list-inside space-y-2">
-                          {candidates.map(c => (
-                            <li key={c.id} className="font-bold text-emerald-900">{c.name}</li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <p className="text-slate-500 italic">Nenhum candidato inscrito.</p>
-                      )}
-                    </div>
+                  <div className="bg-emerald-50/50 p-8 rounded-2xl border border-emerald-100 space-y-6">
+                    <h4 className="font-black text-emerald-900 uppercase text-sm border-b border-emerald-200 pb-2 mb-4">Candidatos Inscritos</h4>
+                    {candidates.length > 0 ? (
+                      <ul className="list-disc list-inside space-y-2">
+                        {candidates.map(c => (
+                          <li key={c.id} className="font-bold text-emerald-900">{c.name}</li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-slate-500 italic">Nenhum candidato inscrito.</p>
+                    )}
                   </div>
+                </div>
 
-                  <div className="pt-20 space-y-24">
-                    <p className="text-right font-black text-slate-900">{formatarDataLonga(calendarItems.find(i => i.id === 'ev5')?.date || '')}</p>
-                    <div className="flex justify-between items-start gap-12">
-                      <div className="flex-1 space-y-4 text-center">
-                        <input value={repEmpresaName} onChange={e => setRepEmpresaName(e.target.value)} className="w-full border-b border-slate-900 bg-transparent text-center font-black outline-none print:border-none" />
-                        <p className="text-[10px] font-black text-slate-500 uppercase">Representante Empresa</p>
-                      </div>
-                      <div className="flex-1 space-y-4 text-center">
-                        <input value={presCipaName} onChange={e => setPresCipaName(e.target.value)} className="w-full border-b border-slate-900 bg-transparent text-center font-black outline-none print:border-none" />
-                        <p className="text-[10px] font-black text-slate-500 uppercase">Presidente CIPA Atual</p>
-                      </div>
+                <div className="pt-20 space-y-24">
+                  <p className="text-right font-black text-slate-900">{formatarDataLonga(calendarItems.find(i => i.id === 'ev5')?.date || '')}</p>
+                  <div className="flex justify-between items-start gap-12">
+                    <div className="flex-1 space-y-4 text-center">
+                      <input value={repEmpresaName} onChange={e => setRepEmpresaName(e.target.value)} className="w-full border-b border-slate-900 bg-transparent text-center font-black outline-none print:border-none" />
+                      <p className="text-[10px] font-black text-slate-500 uppercase">Representante Empresa</p>
+                    </div>
+                    <div className="flex-1 space-y-4 text-center">
+                      <input value={presCipaName} onChange={e => setPresCipaName(e.target.value)} className="w-full border-b border-slate-900 bg-transparent text-center font-black outline-none print:border-none" />
+                      <p className="text-[10px] font-black text-slate-500 uppercase">Presidente CIPA Atual</p>
                     </div>
                   </div>
                 </div>
