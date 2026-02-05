@@ -498,6 +498,7 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
                     </td>
                     <td className="px-8 py-5 text-right flex items-center justify-end gap-2">
                       <button onClick={() => setSelectedTermId(term.id)} className="p-2 text-emerald-600 hover:bg-emerald-100 rounded-xl" title="Gerenciar"><Eye size={20} /></button>
+                      <button onClick={(e) => { e.stopPropagation(); setEditingTerm(term); setIsTermModalOpen(true); }} className="p-2 text-emerald-400 hover:bg-emerald-50 rounded-xl" title="Editar"><Edit3 size={20} /></button>
                       <button onClick={() => setTermToDelete(term)} className="p-2 text-red-300 hover:text-red-500 hover:bg-red-50 rounded-xl" title="Excluir"><Trash2 size={20} /></button>
                     </td>
                   </tr>
@@ -505,67 +506,72 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
               </tbody>
             </table>
           </div>
-        )}
+        )
+        }
 
-        {termToDelete && (
-          <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 print:hidden">
-            <div className="absolute inset-0 bg-red-950/40 backdrop-blur-sm" onClick={() => setTermToDelete(null)}></div>
-            <div className="bg-white w-full max-w-sm rounded-[2.5rem] p-10 text-center space-y-4 relative z-10 border border-red-50 shadow-2xl animate-in zoom-in">
-              <div className="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center mx-auto text-red-500 mb-2 shadow-inner"><AlertTriangle size={32} /></div>
-              <h3 className="text-xl font-black text-red-950">Excluir Gestão {termToDelete.year}?</h3>
-              <p className="text-xs text-red-900/60 font-medium leading-relaxed">Isso removerá permanentemente todos os dados vinculados a este pleito. <strong>Esta ação não poderá ser desfeita.</strong></p>
-              <div className="flex gap-2 pt-4">
-                <button onClick={() => setTermToDelete(null)} className="flex-1 py-3 font-black text-[10px] text-red-600 uppercase tracking-widest">Cancelar</button>
-                <button onClick={async () => {
-                  if (!termToDelete) return;
-                  try {
-                    await fetch(`/api/cipa/terms/${termToDelete.id}`, { method: 'DELETE' });
-                    refreshTerms();
-                    setTermToDelete(null);
-                    if (selectedTermId === termToDelete.id) setSelectedTermId(null);
-                  } catch (e) {
-                    alert("Erro ao excluir");
-                  }
-                }} className="flex-1 bg-red-600 text-white py-3 rounded-xl font-black text-[10px] uppercase shadow-lg tracking-widest">Sim, Excluir</button>
+        {
+          termToDelete && (
+            <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 print:hidden">
+              <div className="absolute inset-0 bg-red-950/40 backdrop-blur-sm" onClick={() => setTermToDelete(null)}></div>
+              <div className="bg-white w-full max-w-sm rounded-[2.5rem] p-10 text-center space-y-4 relative z-10 border border-red-50 shadow-2xl animate-in zoom-in">
+                <div className="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center mx-auto text-red-500 mb-2 shadow-inner"><AlertTriangle size={32} /></div>
+                <h3 className="text-xl font-black text-red-950">Excluir Gestão {termToDelete.year}?</h3>
+                <p className="text-xs text-red-900/60 font-medium leading-relaxed">Isso removerá permanentemente todos os dados vinculados a este pleito. <strong>Esta ação não poderá ser desfeita.</strong></p>
+                <div className="flex gap-2 pt-4">
+                  <button onClick={() => setTermToDelete(null)} className="flex-1 py-3 font-black text-[10px] text-red-600 uppercase tracking-widest">Cancelar</button>
+                  <button onClick={async () => {
+                    if (!termToDelete) return;
+                    try {
+                      await fetch(`/api/cipa/terms/${termToDelete.id}`, { method: 'DELETE' });
+                      refreshTerms();
+                      setTermToDelete(null);
+                      if (selectedTermId === termToDelete.id) setSelectedTermId(null);
+                    } catch (e) {
+                      alert("Erro ao excluir");
+                    }
+                  }} className="flex-1 bg-red-600 text-white py-3 rounded-xl font-black text-[10px] uppercase shadow-lg tracking-widest">Sim, Excluir</button>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )
+        }
 
-        {isTermModalOpen && editingTerm && (
-          <div className="fixed inset-0 z-[400] flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-emerald-950/40 backdrop-blur-sm" onClick={() => setIsTermModalOpen(false)}></div>
-            <div className="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl relative z-10 p-8 animate-in zoom-in border border-emerald-100">
-              <h2 className="text-xl font-black mb-6 uppercase">Editar Gestão</h2>
-              <form onSubmit={updateTerm} className="space-y-6">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-emerald-400 uppercase tracking-widest ml-1">Referência (Ano/Gestão)</label>
-                  <input required name="year" defaultValue={editingTerm.year} className="w-full bg-emerald-50 p-4 rounded-xl font-black text-emerald-950 outline-none" placeholder="Ex: 2024/2025" />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
+        {
+          isTermModalOpen && editingTerm && (
+            <div className="fixed inset-0 z-[400] flex items-center justify-center p-4">
+              <div className="absolute inset-0 bg-emerald-950/40 backdrop-blur-sm" onClick={() => setIsTermModalOpen(false)}></div>
+              <div className="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl relative z-10 p-8 animate-in zoom-in border border-emerald-100">
+                <h2 className="text-xl font-black mb-6 uppercase">Editar Gestão</h2>
+                <form onSubmit={updateTerm} className="space-y-6">
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black text-emerald-400 uppercase tracking-widest ml-1">Início da Gestão</label>
-                    <input type="date" required name="startDate" defaultValue={editingTerm.startDate ? new Date(editingTerm.startDate).toISOString().split('T')[0] : ''} className="w-full bg-emerald-50 p-4 rounded-xl font-black text-emerald-950 outline-none" />
+                    <label className="text-[10px] font-black text-emerald-400 uppercase tracking-widest ml-1">Referência (Ano/Gestão)</label>
+                    <input required name="year" defaultValue={editingTerm.year} className="w-full bg-emerald-50 p-4 rounded-xl font-black text-emerald-950 outline-none" placeholder="Ex: 2024/2025" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-emerald-400 uppercase tracking-widest ml-1">Início da Gestão</label>
+                      <input type="date" required name="startDate" defaultValue={editingTerm.startDate ? new Date(editingTerm.startDate).toISOString().split('T')[0] : ''} className="w-full bg-emerald-50 p-4 rounded-xl font-black text-emerald-950 outline-none" />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-emerald-400 uppercase tracking-widest ml-1">Fim da Gestão</label>
+                      <input type="date" required name="endDate" defaultValue={editingTerm.endDate ? new Date(editingTerm.endDate).toISOString().split('T')[0] : ''} className="w-full bg-emerald-50 p-4 rounded-xl font-black text-emerald-950 outline-none" />
+                    </div>
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black text-emerald-400 uppercase tracking-widest ml-1">Fim da Gestão</label>
-                    <input type="date" required name="endDate" defaultValue={editingTerm.endDate ? new Date(editingTerm.endDate).toISOString().split('T')[0] : ''} className="w-full bg-emerald-50 p-4 rounded-xl font-black text-emerald-950 outline-none" />
+                    <label className="text-[10px] font-black text-emerald-400 uppercase tracking-widest ml-1">Status do Processo</label>
+                    <select name="status" defaultValue={editingTerm.status} className="w-full bg-emerald-50 p-4 rounded-xl font-black text-emerald-950 outline-none">
+                      <option value="ELECTION">Em Eleição</option>
+                      <option value="ACTIVE">Vigente (Ativo)</option>
+                      <option value="FINISHED">Encerrada</option>
+                    </select>
                   </div>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-emerald-400 uppercase tracking-widest ml-1">Status do Processo</label>
-                  <select name="status" defaultValue={editingTerm.status} className="w-full bg-emerald-50 p-4 rounded-xl font-black text-emerald-950 outline-none">
-                    <option value="ELECTION">Em Eleição</option>
-                    <option value="ACTIVE">Vigente (Ativo)</option>
-                    <option value="FINISHED">Encerrada</option>
-                  </select>
-                </div>
-                <button type="submit" className="w-full bg-emerald-600 text-white py-4 rounded-2xl font-black uppercase shadow-xl hover:bg-emerald-500 transition-all">Salvar Alterações</button>
-              </form>
+                  <button type="submit" className="w-full bg-emerald-600 text-white py-4 rounded-2xl font-black uppercase shadow-xl hover:bg-emerald-500 transition-all">Salvar Alterações</button>
+                </form>
+              </div>
             </div>
-          </div>
-        )}
-      </div>
+          )
+        }
+      </div >
     );
   }
 
