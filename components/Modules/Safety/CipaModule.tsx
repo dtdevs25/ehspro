@@ -716,7 +716,7 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
 
 
 
-  const generateStep5Word = async () => {
+  const generateStep6Word = async () => {
     if (candidates.length === 0) {
       alert("Não há candidatos inscritos para gerar o edital.");
       return;
@@ -769,7 +769,7 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
           new docx.Paragraph({ text: "", spacing: { after: 800 } }),
 
           new docx.Paragraph({
-            children: [new docx.TextRun({ text: formatarDataLonga(calendarItems.find(i => i.id === 'ev5')?.date || ''), size: 24 })],
+            children: [new docx.TextRun({ text: formatarDataLonga(calendarItems.find(i => i.id === 'ev6')?.date || ''), size: 24 })],
             alignment: docx.AlignmentType.RIGHT,
             spacing: { after: 600 }
           }),
@@ -1502,14 +1502,14 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
             </div>
           </div>
         </div>
-      ) : activeStepView === 'ev5' ? (
+      ) : activeStepView === 'ev6' ? (
         <div className="animate-in slide-in-from-right-12 duration-500">
           <div className="bg-white rounded-[3rem] border border-emerald-100 shadow-2xl overflow-hidden flex flex-col min-h-[85vh]">
             <div className="p-8 border-b border-emerald-50 bg-emerald-50/30 flex items-center justify-between print:hidden">
               <button onClick={() => setActiveStepView(null)} className="flex items-center gap-2 text-emerald-600 font-black text-xs uppercase hover:text-emerald-800 transition-all">
                 <ArrowLeft size={18} /> Voltar ao Calendário
               </button>
-              <button onClick={generateStep5Word} className="bg-emerald-600 text-white px-8 py-3 rounded-xl font-black text-xs uppercase flex items-center gap-3 shadow-lg hover:bg-emerald-500 transition-all">
+              <button onClick={generateStep6Word} className="bg-emerald-600 text-white px-8 py-3 rounded-xl font-black text-xs uppercase flex items-center gap-3 shadow-lg hover:bg-emerald-500 transition-all">
                 <FileDown size={18} /> Gerar Word (.docx)
               </button>
             </div>
@@ -1544,7 +1544,7 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
                 </div>
 
                 <div className="pt-20 space-y-24">
-                  <p className="text-right font-black text-slate-900">{formatarDataLonga(calendarItems.find(i => i.id === 'ev5')?.date || '')}</p>
+                  <p className="text-right font-black text-slate-900">{formatarDataLonga(calendarItems.find(i => i.id === 'ev6')?.date || '')}</p>
                   <div className="flex justify-between items-start gap-12">
                     <div className="flex-1 space-y-4 text-center">
                       <input value={repEmpresaName} onChange={e => setRepEmpresaName(e.target.value)} className="w-full border-b border-slate-900 bg-transparent text-center font-black outline-none print:border-none" />
@@ -1660,10 +1660,9 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
                                     if (ev.id === 'ev1') setActiveStepView('ev1');
                                     if (ev.id === 'ev2') setActiveStepView('ev2');
                                     if (ev.id === 'ev3') setActiveStepView('ev3');
-                                    if (ev.id === 'ev3') setActiveStepView('ev3');
                                     if (ev.id === 'ev4') setActiveStepView('ev4');
-                                    if (ev.id === 'ev5') setActiveStepView('ev5');
-                                  }} className={`p-2.5 rounded-xl transition-all ${['ev1', 'ev2', 'ev3', 'ev4', 'ev5'].includes(ev.id) ? 'text-emerald-600 bg-emerald-50 hover:bg-emerald-100 shadow-sm' : 'text-emerald-100 cursor-not-allowed'}`}>
+                                    if (ev.id === 'ev6') setActiveStepView('ev6');
+                                  }} className={`p-2.5 rounded-xl transition-all ${['ev1', 'ev2', 'ev3', 'ev4', 'ev6'].includes(ev.id) ? 'text-emerald-600 bg-emerald-50 hover:bg-emerald-100 shadow-sm' : 'text-emerald-100 cursor-not-allowed'}`}>
                                     <Edit3 size={18} />
                                   </button>
                                 </td>
