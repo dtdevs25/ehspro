@@ -78,6 +78,11 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
   const [electionTimeRange, setElectionTimeRange] = useState('');
   const [electionLocation, setElectionLocation] = useState('');
 
+  // Step 3 Data States
+  const [vicePresidenteName, setVicePresidenteName] = useState('');
+  const [secretarioName, setSecretarioName] = useState('');
+  const [reuniaoTime, setReuniaoTime] = useState('');
+
   // Data States
   const [terms, setTerms] = useState<CipaTerm[]>([]);
 
@@ -396,6 +401,188 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
     const a = document.createElement("a");
     a.href = url;
     a.download = `Edital_Convocacao_${selectedTerm?.year.replace('/', '-')}.docx`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
+  const generateStep3Word = async () => {
+    const ev3Data = calendarItems.find(i => i.id === 'ev3'); // Formação Comissão
+    if (!ev3Data) return;
+
+    if (!vicePresidenteName || !secretarioName || !reuniaoTime) {
+      alert("Por favor, preencha os dados da reunião (Vice-Presidente, Secretário, Horário) antes de gerar.");
+      return;
+    }
+
+    const doc = new docx.Document({
+      sections: [{
+        children: [
+          new docx.Paragraph({
+            children: [
+              new docx.TextRun({ text: "ATA DE FORMAÇÃO DA COMISSÃO ELEITORAL", bold: true, size: 36, color: "008000" })
+            ],
+            alignment: docx.AlignmentType.CENTER,
+            spacing: { after: 100 }
+          }),
+          new docx.Paragraph({
+            children: [
+              new docx.TextRun({ text: `CIPA Gestão ${selectedTerm?.year}`, size: 24, color: "555555" })
+            ],
+            alignment: docx.AlignmentType.CENTER,
+            spacing: { after: 600 }
+          }),
+          new docx.Paragraph({
+            children: [
+              new docx.TextRun({
+                text: `Reuniram-se os representantes da Comissão Interna de Prevenção de Acidentes e de Assédio (CIPA) da gestão atual e representantes da Empresa ${activeCompany.name} para a formação da Comissão Eleitoral (CE) da nova Gestão ${selectedTerm?.year}, em conformidade com a Norma Regulamentadora nº 5 (NR-5).`,
+                size: 24
+              })
+            ],
+            spacing: { after: 400 },
+            alignment: docx.AlignmentType.JUSTIFIED
+          }),
+          new docx.Paragraph({
+            children: [
+              new docx.TextRun({
+                text: `Durante a reunião, o(a) Sr(a) ${presCipaName}, Presidente da CIPA em curso, e o(a) Sr(a) ${vicePresidenteName}, Vice-Presidente da CIPA em curso, foram nomeados membros da Comissão Eleitoral, conforme previsto na NR-5. O(a) Sr(a) ${presCipaName} assumirá a função de Presidente da Mesa Eleitoral, e o(a) Sr(a) ${secretarioName} exercerá a função de Secretário(a) da Mesa.`,
+                size: 24
+              })
+            ],
+            spacing: { after: 400 },
+            alignment: docx.AlignmentType.JUSTIFIED
+          }),
+          new docx.Paragraph({
+            children: [
+              new docx.TextRun({
+                text: `A reunião foi realizada no dia ${formatarDataLonga(ev3Data.date)}, às ${reuniaoTime}, ocasião em que foram discutidos o processo eleitoral, os aspectos legais envolvidos e a responsabilidade da Comissão Eleitoral na fiscalização, orientação e controle de todo o processo.`,
+                size: 24
+              })
+            ],
+            spacing: { after: 400 },
+            alignment: docx.AlignmentType.JUSTIFIED
+          }),
+          new docx.Paragraph({
+            children: [
+              new docx.TextRun({
+                text: "Não havendo outros assuntos a tratar, a reunião foi declarada encerrada. Para registro e divulgação, lavrou-se a presente Ata, que será disponibilizada para ciência de todos os colaboradores.",
+                size: 24
+              })
+            ],
+            spacing: { after: 800 },
+            alignment: docx.AlignmentType.JUSTIFIED
+          }),
+          new docx.Paragraph({
+            children: [new docx.TextRun({ text: formatarDataLonga(ev3Data.date), size: 24 })],
+            alignment: docx.AlignmentType.RIGHT,
+            spacing: { after: 1200 }
+          }),
+          new docx.Table({
+            rows: [
+              new docx.TableRow({
+                children: [
+                  new docx.TableCell({
+                    width: { size: 50, type: docx.WidthType.PERCENTAGE },
+                    children: [
+                      new docx.Paragraph({
+                        children: [new docx.TextRun({ text: "____________________", size: 24 })],
+                        alignment: docx.AlignmentType.CENTER,
+                      }),
+                      new docx.Paragraph({
+                        children: [new docx.TextRun({ text: repEmpresaName, size: 24 })],
+                        alignment: docx.AlignmentType.CENTER,
+                      }),
+                      new docx.Paragraph({
+                        children: [new docx.TextRun({ text: "Representante da Empresa", size: 20 })],
+                        alignment: docx.AlignmentType.CENTER,
+                      })
+                    ],
+                    borders: { top: { style: docx.BorderStyle.NONE }, bottom: { style: docx.BorderStyle.NONE }, left: { style: docx.BorderStyle.NONE }, right: { style: docx.BorderStyle.NONE } }
+                  }),
+                  new docx.TableCell({
+                    width: { size: 50, type: docx.WidthType.PERCENTAGE },
+                    children: [
+                      new docx.Paragraph({
+                        children: [new docx.TextRun({ text: "____________________", size: 24 })],
+                        alignment: docx.AlignmentType.CENTER,
+                      }),
+                      new docx.Paragraph({
+                        children: [new docx.TextRun({ text: presCipaName, size: 24 })],
+                        alignment: docx.AlignmentType.CENTER,
+                      }),
+                      new docx.Paragraph({
+                        children: [new docx.TextRun({ text: "Presidente da CIPA Atual", size: 20 })],
+                        alignment: docx.AlignmentType.CENTER,
+                      })
+                    ],
+                    borders: { top: { style: docx.BorderStyle.NONE }, bottom: { style: docx.BorderStyle.NONE }, left: { style: docx.BorderStyle.NONE }, right: { style: docx.BorderStyle.NONE } }
+                  })
+                ]
+              })
+            ],
+            width: { size: 100, type: docx.WidthType.PERCENTAGE }
+          })
+        ]
+      }]
+    });
+
+    const blob = await docx.Packer.toBlob(doc);
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `Ata_Comissao_Eleitoral_${selectedTerm?.year.replace('/', '-')}.docx`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
+  const generateStep3List = async () => {
+    const ev3Data = calendarItems.find(i => i.id === 'ev3');
+    if (!ev3Data) return;
+
+    const doc = new docx.Document({
+      sections: [{
+        children: [
+          new docx.Paragraph({
+            children: [
+              new docx.TextRun({ text: "LISTA DE PRESENÇA - FORMAÇÃO DA COMISSÃO ELEITORAL", bold: true, size: 32 })
+            ],
+            alignment: docx.AlignmentType.CENTER,
+            spacing: { after: 400 }
+          }),
+          new docx.Paragraph({
+            children: [
+              new docx.TextRun({ text: `Data: ${formatarDataLonga(ev3Data.date)}`, size: 24 }),
+              new docx.TextRun({ text: `   Horário: ${reuniaoTime || '___________'}`, size: 24 }),
+            ],
+            alignment: docx.AlignmentType.CENTER,
+            spacing: { after: 600 }
+          }),
+          new docx.Table({
+            rows: [
+              new docx.TableRow({
+                children: [
+                  new docx.TableCell({ children: [new docx.Paragraph({ children: [new docx.TextRun({ text: "NOME", bold: true })] })], width: { size: 60, type: docx.WidthType.PERCENTAGE } }),
+                  new docx.TableCell({ children: [new docx.Paragraph({ children: [new docx.TextRun({ text: "ASSINATURA", bold: true })] })], width: { size: 40, type: docx.WidthType.PERCENTAGE } }),
+                ]
+              }),
+              // Rows for signatures
+              ...Array(10).fill(0).map(() => new docx.TableRow({
+                children: [
+                  new docx.TableCell({ children: [new docx.Paragraph({})], height: { value: 600, rule: docx.HeightRule.AT_LEAST } }),
+                  new docx.TableCell({ children: [new docx.Paragraph({})], height: { value: 600, rule: docx.HeightRule.AT_LEAST } }),
+                ]
+              }))
+            ],
+            width: { size: 100, type: docx.WidthType.PERCENTAGE }
+          })
+        ]
+      }]
+    });
+
+    const blob = await docx.Packer.toBlob(doc);
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `Lista_Presenca_Comissao_${selectedTerm?.year.replace('/', '-')}.docx`;
     a.click();
     window.URL.revokeObjectURL(url);
   };
@@ -973,7 +1160,8 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
                                   <button onClick={() => {
                                     if (ev.id === 'ev1') setActiveStepView('ev1');
                                     if (ev.id === 'ev2') setActiveStepView('ev2');
-                                  }} className={`p-2.5 rounded-xl transition-all ${['ev1', 'ev2'].includes(ev.id) ? 'text-emerald-600 bg-emerald-50 hover:bg-emerald-100 shadow-sm' : 'text-emerald-100 cursor-not-allowed'}`}>
+                                    if (ev.id === 'ev3') setActiveStepView('ev3');
+                                  }} className={`p-2.5 rounded-xl transition-all ${['ev1', 'ev2', 'ev3'].includes(ev.id) ? 'text-emerald-600 bg-emerald-50 hover:bg-emerald-100 shadow-sm' : 'text-emerald-100 cursor-not-allowed'}`}>
                                     <Edit3 size={18} />
                                   </button>
                                 </td>
