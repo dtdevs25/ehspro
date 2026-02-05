@@ -115,11 +115,28 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
 
   // Sync data and signatory defaults
   useEffect(() => {
-    if (selectedTermId) {
+    if (selectedTermId && selectedTerm) {
       setRepEmpresaName(activeBranch.name + " Resp.");
       setPresCipaName("Presidente da Gestão Atual");
+
+      // Auto-set baseDate for calendar based on Term's Start Date
+      // The generator adds 1 year to baseDate to find target.
+      // So we set baseDate = startDate - 1 year.
+      if (selectedTerm.startDate) {
+        const startDate = new Date(selectedTerm.startDate);
+        // Adjust to Brasilia Timezone logic for calculation
+        // We want the 'baseDate' input to represent 1 year before startDate.
+
+        const prevYearDate = new Date(startDate);
+        prevYearDate.setFullYear(prevYearDate.getFullYear() - 1);
+
+        // Format to YYYY-MM-DD
+        const formatted = prevYearDate.toISOString().split('T')[0];
+        setBaseDate(formatted);
+        setIsCalendarGenerated(true);
+      }
     }
-  }, [selectedTermId]);
+  }, [selectedTermId, selectedTerm, activeBranch]);
 
   const toggleStep = (id: string) => {
     setCompletedSteps(prev =>
@@ -128,6 +145,7 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
   };
 
   const handleCreateElection = () => {
+    // Legacy manual trigger, kept for fallback
     if (!baseDate) return;
     setIsCalendarGenerated(true);
   };
@@ -138,7 +156,8 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
 
   const formatarDataLonga = (dateStr: string) => {
     if (!dateStr) return '';
-    const data = new Date(dateStr);
+    // Force timezone interpretation as local/Brasilia if needed, or just append T12:00:00 to avoid UTC rollover
+    const data = new Date(dateStr + 'T12:00:00');
     const meses = [
       'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
       'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
