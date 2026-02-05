@@ -83,6 +83,186 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
   const [secretarioName, setSecretarioName] = useState('');
   const [reuniaoTime, setReuniaoTime] = useState('');
 
+  // Step 4 Data States
+  const [candidates, setCandidates] = useState<{
+    id: string;
+    name: string;
+    nickname: string;
+    sector: string;
+    role: string;
+    date: string;
+    time: string;
+  }[]>([]);
+  const [selectedCandidateCollaborator, setSelectedCandidateCollaborator] = useState('');
+
+  const handleRegisterCandidate = () => {
+    if (!selectedCandidateCollaborator) {
+      alert("Selecione um colaborador para registrar.");
+      return;
+    }
+
+    const collaborator = collaborators.find(c => c.name === selectedCandidateCollaborator);
+    if (!collaborator) return;
+
+    // Check if already registered
+    if (candidates.some(c => c.name === collaborator.name)) {
+      alert("Este colaborador já está inscrito como candidato.");
+      return;
+    }
+
+    const now = new Date();
+    const newCandidate = {
+      id: Math.random().toString(36).substr(2, 9),
+      name: collaborator.name,
+      nickname: collaborator.name.split(' ')[0], // Simple nickname logic
+      sector: collaborator.sector || 'Operacional',
+      role: collaborator.jobTitle || 'Colaborador',
+      date: new Date().toLocaleDateString(),
+      time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+    };
+
+    setCandidates([...candidates, newCandidate]);
+    setSelectedCandidateCollaborator('');
+    alert("Candidatura confirmada com sucesso!");
+  };
+
+  const generateStep4Word = async (candidateId?: string) => {
+    const candidateToPrint = candidateId
+      ? candidates.find(c => c.id === candidateId)
+      : candidates[candidates.length - 1]; // Default to last if not specified
+
+    if (!candidateToPrint) {
+      alert("Nenhum candidato selecionado para gerar a ficha.");
+      return;
+    }
+
+    const doc = new docx.Document({
+      sections: [{
+        properties: {
+          page: {
+            margin: {
+              top: 1000,
+              right: 1000,
+              bottom: 1000,
+              left: 1000,
+            },
+          },
+        },
+        children: [
+          // 1ª VIA - CANDIDATO
+          new docx.Paragraph({
+            children: [
+              new docx.TextRun({ text: "FICHA DE INSCRIÇÃO DE CANDIDATOS", bold: true, size: 28 }),
+            ],
+            alignment: docx.AlignmentType.CENTER,
+            spacing: { after: 200 }
+          }),
+          new docx.Paragraph({
+            children: [new docx.TextRun({ text: `CIPA Gestão ${selectedTerm?.year}`, size: 24 })],
+            alignment: docx.AlignmentType.CENTER,
+            spacing: { after: 400 }
+          }),
+
+          // Table Form 1
+          new docx.Table({
+            width: { size: 100, type: docx.WidthType.PERCENTAGE },
+            rows: [
+              new docx.TableRow({ children: [new docx.TableCell({ children: [new docx.Paragraph({ text: "Candidato:" })], width: { size: 20, type: docx.WidthType.PERCENTAGE } }), new docx.TableCell({ children: [new docx.Paragraph({ text: candidateToPrint.name, bold: true })] })] }),
+              new docx.TableRow({ children: [new docx.TableCell({ children: [new docx.Paragraph({ text: "Apelido:" })] }), new docx.TableCell({ children: [new docx.Paragraph({ text: candidateToPrint.nickname })] })] }),
+              new docx.TableRow({ children: [new docx.TableCell({ children: [new docx.Paragraph({ text: "Setor:" })] }), new docx.TableCell({ children: [new docx.Paragraph({ text: candidateToPrint.sector })] })] }),
+              new docx.TableRow({ children: [new docx.TableCell({ children: [new docx.Paragraph({ text: "Função:" })] }), new docx.TableCell({ children: [new docx.Paragraph({ text: candidateToPrint.role })] })] }),
+              new docx.TableRow({ children: [new docx.TableCell({ children: [new docx.Paragraph({ text: "Data:" })] }), new docx.TableCell({ children: [new docx.Paragraph({ text: candidateToPrint.date + " - " + candidateToPrint.time })] })] }),
+            ]
+          }),
+
+          new docx.Paragraph({ text: "", spacing: { after: 800 } }), // Space for signatures
+
+          new docx.Paragraph({
+            children: [
+              new docx.TextRun({ text: "__________________________________          __________________________________" })
+            ],
+            alignment: docx.AlignmentType.CENTER,
+          }),
+          new docx.Paragraph({
+            children: [
+              new docx.TextRun({ text: `${presCipaName}                                    ${candidateToPrint.name}` })
+            ],
+            alignment: docx.AlignmentType.CENTER,
+          }),
+          new docx.Paragraph({
+            children: [
+              new docx.TextRun({ text: "Presidente da CIPA Atual                                          Candidato" })
+            ],
+            alignment: docx.AlignmentType.CENTER,
+            spacing: { after: 200 }
+          }),
+          new docx.Paragraph({ text: "1ª Via - Candidato", alignment: docx.AlignmentType.RIGHT, spacing: { after: 600 } }),
+
+          new docx.Paragraph({
+            children: [new docx.TextRun({ text: "- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -", color: "CCCCCC" })],
+            alignment: docx.AlignmentType.CENTER,
+            spacing: { after: 600 }
+          }),
+
+          // 2ª VIA - EMPRESA (Copy of above)
+          new docx.Paragraph({
+            children: [
+              new docx.TextRun({ text: "FICHA DE INSCRIÇÃO DE CANDIDATOS", bold: true, size: 28 }),
+            ],
+            alignment: docx.AlignmentType.CENTER,
+            spacing: { after: 200 }
+          }),
+          new docx.Paragraph({
+            children: [new docx.TextRun({ text: `CIPA Gestão ${selectedTerm?.year}`, size: 24 })],
+            alignment: docx.AlignmentType.CENTER,
+            spacing: { after: 400 }
+          }),
+          new docx.Table({
+            width: { size: 100, type: docx.WidthType.PERCENTAGE },
+            rows: [
+              new docx.TableRow({ children: [new docx.TableCell({ children: [new docx.Paragraph({ text: "Candidato:" })], width: { size: 20, type: docx.WidthType.PERCENTAGE } }), new docx.TableCell({ children: [new docx.Paragraph({ text: candidateToPrint.name, bold: true })] })] }),
+              new docx.TableRow({ children: [new docx.TableCell({ children: [new docx.Paragraph({ text: "Apelido:" })] }), new docx.TableCell({ children: [new docx.Paragraph({ text: candidateToPrint.nickname })] })] }),
+              new docx.TableRow({ children: [new docx.TableCell({ children: [new docx.Paragraph({ text: "Setor:" })] }), new docx.TableCell({ children: [new docx.Paragraph({ text: candidateToPrint.sector })] })] }),
+              new docx.TableRow({ children: [new docx.TableCell({ children: [new docx.Paragraph({ text: "Função:" })] }), new docx.TableCell({ children: [new docx.Paragraph({ text: candidateToPrint.role })] })] }),
+              new docx.TableRow({ children: [new docx.TableCell({ children: [new docx.Paragraph({ text: "Data:" })] }), new docx.TableCell({ children: [new docx.Paragraph({ text: candidateToPrint.date + " - " + candidateToPrint.time })] })] }),
+            ]
+          }),
+
+          new docx.Paragraph({ text: "", spacing: { after: 800 } }),
+
+          new docx.Paragraph({
+            children: [
+              new docx.TextRun({ text: "__________________________________          __________________________________" })
+            ],
+            alignment: docx.AlignmentType.CENTER,
+          }),
+          new docx.Paragraph({
+            children: [
+              new docx.TextRun({ text: `${presCipaName}                                    ${candidateToPrint.name}` })
+            ],
+            alignment: docx.AlignmentType.CENTER,
+          }),
+          new docx.Paragraph({
+            children: [
+              new docx.TextRun({ text: "Presidente da CIPA Atual                                          Candidato" })
+            ],
+            alignment: docx.AlignmentType.CENTER,
+            spacing: { after: 200 }
+          }),
+          new docx.Paragraph({ text: "2ª Via - Empresa", alignment: docx.AlignmentType.RIGHT }),
+        ]
+      }]
+    });
+
+    const blob = await docx.Packer.toBlob(doc);
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `Ficha_Inscricao_${candidateToPrint.name.replace(/ /g, '_')}.docx`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
   // Data States
   const [terms, setTerms] = useState<CipaTerm[]>([]);
 
@@ -1161,6 +1341,75 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
             </div>
           </div>
         </div>
+      ) : activeStepView === 'ev4' ? (
+        <div className="animate-in slide-in-from-right-12 duration-500">
+          <div className="bg-white rounded-[3rem] border border-emerald-100 shadow-2xl overflow-hidden flex flex-col min-h-[85vh]">
+            <div className="p-8 border-b border-emerald-50 bg-emerald-50/30 flex items-center justify-between print:hidden">
+              <button onClick={() => setActiveStepView(null)} className="flex items-center gap-2 text-emerald-600 font-black text-xs uppercase hover:text-emerald-800 transition-all">
+                <ArrowLeft size={18} /> Voltar ao Calendário
+              </button>
+            </div>
+
+            <div className="flex-1 p-10 md:p-20 overflow-y-auto bg-slate-50/50">
+              <div className="max-w-5xl mx-auto space-y-8">
+                {/* Registration Area */}
+                <div className="bg-white rounded-[2.5rem] p-10 shadow-xl border border-emerald-100 flex flex-col md:flex-row gap-8 items-end">
+                  <div className="flex-1 space-y-4 w-full">
+                    <label className="text-sm font-black text-emerald-900 uppercase tracking-widest flex items-center gap-2"><Plus size={18} /> Nova Inscrição</label>
+                    <select
+                      value={selectedCandidateCollaborator}
+                      onChange={(e) => setSelectedCandidateCollaborator(e.target.value)}
+                      className="w-full bg-emerald-50 border-b-2 border-emerald-200 p-4 rounded-xl font-black text-emerald-950 outline-none focus:border-emerald-500 transition-all"
+                    >
+                      <option value="">Selecione um Colaborador...</option>
+                      {collaborators.map(c => (
+                        <option key={c.id} value={c.name}>{c.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <button onClick={handleRegisterCandidate} className="bg-emerald-600 text-white px-8 py-4 rounded-xl font-black text-xs uppercase shadow-lg hover:bg-emerald-500 transition-all shrink-0">
+                    Confirmar Candidatura
+                  </button>
+                </div>
+
+                {/* Registered Candidates List */}
+                <div className="bg-white rounded-[2.5rem] p-10 shadow-xl border border-emerald-100">
+                  <h3 className="text-xl font-black text-emerald-950 uppercase mb-8 flex items-center gap-2"><Users2 size={24} /> Candidatos Inscritos ({candidates.length})</h3>
+                  <div className="overflow-hidden rounded-2xl border border-emerald-50">
+                    <table className="w-full text-left">
+                      <thead className="bg-emerald-50/50 text-[10px] font-black text-emerald-900 uppercase tracking-widest">
+                        <tr>
+                          <th className="p-6">Nome</th>
+                          <th className="p-6">Setor</th>
+                          <th className="p-6">Data Inscrição</th>
+                          <th className="p-6 text-right">Ação</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-emerald-50">
+                        {candidates.length === 0 ? (
+                          <tr><td colSpan={4} className="p-8 text-center text-slate-400 font-bold uppercase text-xs">Nenhum candidato inscrito ainda.</td></tr>
+                        ) : (
+                          candidates.map(candidate => (
+                            <tr key={candidate.id} className="hover:bg-emerald-50/30 transition-all">
+                              <td className="p-6 font-bold text-emerald-950">{candidate.name}</td>
+                              <td className="p-6 text-sm text-slate-500">{candidate.sector}</td>
+                              <td className="p-6 text-sm font-bold text-emerald-600">{candidate.date} - {candidate.time}</td>
+                              <td className="p-6 text-right">
+                                <button onClick={() => generateStep4Word(candidate.id)} className="text-emerald-600 bg-emerald-50 hover:bg-emerald-100 p-2 rounded-lg transition-all" title="Gerar Ficha">
+                                  <FileDown size={18} />
+                                </button>
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       ) : (
         <>
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-[2.5rem] border border-emerald-100 shadow-xl print:hidden">
@@ -1261,7 +1510,8 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
                                     if (ev.id === 'ev1') setActiveStepView('ev1');
                                     if (ev.id === 'ev2') setActiveStepView('ev2');
                                     if (ev.id === 'ev3') setActiveStepView('ev3');
-                                  }} className={`p-2.5 rounded-xl transition-all ${['ev1', 'ev2', 'ev3'].includes(ev.id) ? 'text-emerald-600 bg-emerald-50 hover:bg-emerald-100 shadow-sm' : 'text-emerald-100 cursor-not-allowed'}`}>
+                                    if (ev.id === 'ev4') setActiveStepView('ev4');
+                                  }} className={`p-2.5 rounded-xl transition-all ${['ev1', 'ev2', 'ev3', 'ev4'].includes(ev.id) ? 'text-emerald-600 bg-emerald-50 hover:bg-emerald-100 shadow-sm' : 'text-emerald-100 cursor-not-allowed'}`}>
                                     <Edit3 size={18} />
                                   </button>
                                 </td>
