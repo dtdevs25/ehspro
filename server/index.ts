@@ -475,6 +475,33 @@ app.delete('/api/branches/:id', async (req, res) => {
   }
 });
 
+// --- Image Proxy (Bypass CORS) ---
+import fetch from 'node-fetch'; // Ensure node-fetch is available (or use built-in fetch in Node 18+)
+// Since we are in an unknown environment, let's try assuming native fetch or use axios if installed?
+// Actually, 'axios' is likely installed or I can use dynamic import.
+// For now, let's use a simple http implementation or check if fetch exists.
+
+app.get('/api/proxy-image', async (req, res) => {
+  const { url } = req.query;
+  if (!url || typeof url !== 'string') {
+    return res.status(400).send('URL missing');
+  }
+
+  try {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`Failed to fetch image: ${response.statusText}`);
+
+    const arrayBuffer = await response.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
+    res.setHeader('Content-Type', response.headers.get('content-type') || 'image/png');
+    res.send(buffer);
+  } catch (error) {
+    console.error("Proxy Error:", error);
+    res.status(500).send("Error fetching image");
+  }
+});
+
 // --- FUNCTIONS (Funções) ---
 app.get('/api/functions', async (req, res) => {
   try {

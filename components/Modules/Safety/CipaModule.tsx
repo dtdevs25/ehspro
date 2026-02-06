@@ -97,7 +97,9 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
 
   const getImageArrayBuffer = async (url: string): Promise<ArrayBuffer | null> => {
     try {
-      const response = await fetch(url, { mode: 'cors' });
+      // Use proxy to avoid CORS
+      const proxyUrl = `/api/proxy-image?url=${encodeURIComponent(url)}`;
+      const response = await fetch(proxyUrl);
       if (!response.ok) return null;
       return await response.arrayBuffer();
     } catch (error) {
