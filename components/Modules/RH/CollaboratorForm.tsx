@@ -112,6 +112,31 @@ export const CollaboratorForm: React.FC<CollaboratorFormProps> = ({
     }
   };
 
+  const handleFileUpload = async (file: File) => {
+    const formDataUpload = new FormData();
+    formDataUpload.append('file', file);
+    formDataUpload.append('type', 'collaborator');
+
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/upload`, {
+        method: 'POST',
+        body: formDataUpload,
+      });
+      const data = await response.json();
+      if (data.url) {
+        setFormData(prev => ({ ...prev, photoUrl: data.url }));
+        return data.url;
+      } else {
+        alert('Erro ao fazer upload da imagem.');
+        return null;
+      }
+    } catch (error) {
+      console.error('Upload Error:', error);
+      alert('Erro ao conectar com servidor de upload.');
+      return null;
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSave(formData);
@@ -127,8 +152,25 @@ export const CollaboratorForm: React.FC<CollaboratorFormProps> = ({
 
         <div className="bg-emerald-50/50 p-6 border-b border-emerald-100 flex justify-between items-center shrink-0">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-emerald-600 rounded-xl flex items-center justify-center text-white shadow-lg">
-              <UserPlus size={24} />
+            <div className="w-12 h-12 bg-emerald-600 rounded-xl flex items-center justify-center text-white shadow-lg overflow-hidden relative group cursor-pointer">
+              {formData.photoUrl ? (
+                <img src={formData.photoUrl} alt="Foto" className="w-full h-full object-cover" />
+              ) : (
+                <UserIcon size={24} />
+              )}
+              <input
+                type="file"
+                accept="image/*"
+                className="absolute inset-0 opacity-0 cursor-pointer"
+                onChange={async (e) => {
+                  if (e.target.files && e.target.files[0]) {
+                    await handleFileUpload(e.target.files[0]);
+                  }
+                }}
+              />
+              <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                <span className="text-[6px] font-black text-white uppercase">Foto</span>
+              </div>
             </div>
             <div>
               <h2 className="text-xl font-black text-emerald-950">{initialData ? 'Editar Prontuário' : 'Novo Prontuário'}</h2>

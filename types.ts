@@ -56,6 +56,7 @@ export interface Company {
   neighborhood?: string;
   city?: string;
   state?: string;
+  logoUrl?: string;
 }
 
 export interface Branch {
@@ -104,6 +105,7 @@ export interface Collaborator {
   workRegime: 'EFFECTIVE' | 'THIRD_PARTY';
   thirdPartyCompanyName?: string;
   eSocialCode?: string;
+  photoUrl?: string;
 }
 
 export interface MedicalCertificate {

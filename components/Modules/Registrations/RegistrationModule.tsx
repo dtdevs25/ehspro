@@ -28,6 +28,33 @@ export const RegistrationModule: React.FC<RegistrationModuleProps> = ({
   const isCompany = type === 'companies';
 
   // Helpers
+  const handleFileUpload = async (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('type', 'company'); // or branch? User said "when registering the company". 
+    // If it's a branch, maybe we can use same bucket? Or differentiation?
+    // User said "cadastro a empresa... suba um logo". Branch is implied as part of company structure or separate entity?
+    // In this module, we have both Company and Branch. I will assume 'company' type for both for now or just generic 'company'.
+
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/upload`, {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await response.json();
+      if (data.url) {
+        return data.url;
+      } else {
+        alert('Erro ao fazer upload da imagem.');
+        return null;
+      }
+    } catch (error) {
+      console.error('Upload Error:', error);
+      alert('Erro ao conectar com servidor de upload.');
+      return null;
+    }
+  };
+
   const formatCNPJ = (v: string) => v.replace(/\D/g, '').replace(/^(\d{2})(\d)/, '$1.$2').replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3').replace(/\.(\d{3})(\d)/, '.$1/$2').replace(/(\d{4})(\d)/, '$1-$2').slice(0, 18);
   const formatCNAE = (v: string) => v.replace(/\D/g, '').replace(/^(\d{4})(\d)/, '$1-$2').replace(/(\d)(\d{2})$/, '$1/$2'); // Ajuste conforme padrão CNAE
   const validateCNPJ = (cnpj: string) => {
@@ -308,8 +335,26 @@ export const RegistrationModule: React.FC<RegistrationModuleProps> = ({
           <div className="bg-white w-full max-w-2xl rounded-[3rem] shadow-2xl relative z-10 overflow-hidden animate-in zoom-in slide-in-from-bottom-12 duration-500 border border-white/20 max-h-[90vh] flex flex-col">
             <div className="p-8 border-b border-emerald-50 flex items-center justify-between bg-emerald-50/30 flex-shrink-0">
               <div className="flex items-center gap-4">
-                <div className="w-14 h-14 bg-emerald-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-emerald-500/20">
-                  {isCompany ? <Building2 size={28} /> : <MapPin size={28} />}
+                <div className="w-14 h-14 bg-emerald-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-emerald-500/20 overflow-hidden relative group cursor-pointer">
+                  {formData.logoUrl ? (
+                    <img src={formData.logoUrl} alt="Logo" className="w-full h-full object-cover" />
+                  ) : (
+                    isCompany ? <Building2 size={28} /> : <MapPin size={28} />
+                  )}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="absolute inset-0 opacity-0 cursor-pointer"
+                    onChange={async (e) => {
+                      if (e.target.files && e.target.files[0]) {
+                        const url = await handleFileUpload(e.target.files[0]);
+                        if (url) setFormData({ ...formData, logoUrl: url });
+                      }
+                    }}
+                  />
+                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <span className="text-[8px] font-black text-white uppercase">Alterar</span>
+                  </div>
                 </div>
                 <div>
                   <h2 className="text-2xl font-black text-emerald-950">

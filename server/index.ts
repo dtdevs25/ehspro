@@ -24,6 +24,8 @@ const prisma = new PrismaClient();
     try {
       await prisma.$executeRawUnsafe(`ALTER TYPE "tipo_usuario" ADD VALUE 'GESTOR';`);
     } catch (e) { /* ignore if exists */ }
+    await prisma.$executeRawUnsafe(`ALTER TABLE "empresas" ADD COLUMN IF NOT EXISTS "logo_url" TEXT;`);
+    await prisma.$executeRawUnsafe(`ALTER TABLE "colaboradores" ADD COLUMN IF NOT EXISTS "foto_url" TEXT;`);
     console.log('[SYSTEM] Database Schema Verified.');
   } catch (e) {
     console.error('[SYSTEM] DB Fix Error:', e);
@@ -364,20 +366,25 @@ app.post('/api/ai/cid', async (req, res) => {
 app.post('/api/ai/suggest', async (req, res) => {
   const { industry } = req.body;
   const result = await suggestRolesAndFunctions(industry);
+  const result = await suggestRolesAndFunctions(industry);
   res.json(result);
 });
+
+// Upload Route
+import { uploadMiddleware, uploadFileToMinio } from './uploadController.js';
+app.post('/api/upload', uploadMiddleware.single('file'), uploadFileToMinio);
 
 // Core Data Routes - CRUD
 // --- COMPANIES ---
 app.post('/api/companies', async (req, res) => {
   try {
-    const { name, cnpj, cnae, address, zipCode, street, number, neighborhood, city, state } = req.body;
+    const { name, cnpj, cnae, address, zipCode, street, number, neighborhood, city, state, logoUrl } = req.body;
 
     // Transaction to create Company AND default Matriz Branch
     const result = await prisma.$transaction(async (prisma) => {
       // 1. Create Company
       const newCompany = await prisma.company.create({
-        data: { name, cnpj, cnae, address }
+        data: { name, cnpj, cnae, address, logoUrl }
       });
 
       // 2. Create Default Branch (Matriz)
@@ -409,10 +416,10 @@ app.post('/api/companies', async (req, res) => {
 app.put('/api/companies/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, cnpj, cnae, address } = req.body;
+    const { name, cnpj, cnae, address, logoUrl } = req.body;
     const updatedCompany = await prisma.company.update({
       where: { id },
-      data: { name, cnpj, cnae, address }
+      data: { name, cnpj, cnae, address, logoUrl }
     });
     res.json(updatedCompany);
   } catch (error) {
