@@ -37,7 +37,8 @@ export const RegistrationModule: React.FC<RegistrationModuleProps> = ({
     // In this module, we have both Company and Branch. I will assume 'company' type for both for now or just generic 'company'.
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/upload`, {
+      // Use relative URL to leverage the same origin (no CORS issues if served by same server)
+      const response = await fetch('/api/upload', {
         method: 'POST',
         body: formData,
       });

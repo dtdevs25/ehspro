@@ -119,7 +119,8 @@ export const CollaboratorForm: React.FC<CollaboratorFormProps> = ({
     formDataUpload.append('type', 'collaborator');
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/upload`, {
+      // Use relative URL
+      const response = await fetch('/api/upload', {
         method: 'POST',
         body: formDataUpload,
       });
