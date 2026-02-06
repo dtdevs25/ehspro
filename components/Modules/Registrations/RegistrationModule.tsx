@@ -37,8 +37,10 @@ export const RegistrationModule: React.FC<RegistrationModuleProps> = ({
     // In this module, we have both Company and Branch. I will assume 'company' type for both for now or just generic 'company'.
 
     try {
-      // Use relative URL to leverage the same origin (no CORS issues if served by same server)
-      const response = await fetch('/api/upload', {
+      // Determine API URL: Use localhost:3000 in dev, relative path in prod
+      const apiUrl = import.meta.env.DEV ? 'http://localhost:3000' : '';
+
+      const response = await fetch(`${apiUrl}/api/upload`, {
         method: 'POST',
         body: formData,
       });

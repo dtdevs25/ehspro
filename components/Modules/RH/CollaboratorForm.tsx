@@ -48,7 +48,20 @@ export const CollaboratorForm: React.FC<CollaboratorFormProps> = ({
   nextRegistration,
   onDelete
 }) => {
-  const [formData, setFormData] = useState<Partial<Collaborator>>(initialData || {
+  // Helper to format ISO date to YYYY-MM-DD for input fields
+  const formatDateForInput = (dateString?: string | Date) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return '';
+    return date.toISOString().split('T')[0];
+  };
+
+  const [formData, setFormData] = useState<Partial<Collaborator>>(initialData ? {
+    ...initialData,
+    birthDate: formatDateForInput(initialData.birthDate),
+    admissionDate: formatDateForInput(initialData.admissionDate),
+    terminationDate: formatDateForInput(initialData.terminationDate),
+  } : {
     registration: nextRegistration,
     name: '',
     cpf: '',
@@ -118,9 +131,11 @@ export const CollaboratorForm: React.FC<CollaboratorFormProps> = ({
     formDataUpload.append('file', file);
     formDataUpload.append('type', 'collaborator');
 
+    // Determine API URL: Use localhost:3000 in dev, relative path in prod
+    const apiUrl = import.meta.env.DEV ? 'http://localhost:3000' : '';
+
     try {
-      // Use relative URL
-      const response = await fetch('/api/upload', {
+      const response = await fetch(`${apiUrl}/api/upload`, {
         method: 'POST',
         body: formDataUpload,
       });
