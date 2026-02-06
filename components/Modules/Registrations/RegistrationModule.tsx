@@ -338,11 +338,11 @@ export const RegistrationModule: React.FC<RegistrationModuleProps> = ({
           <div className="bg-white w-full max-w-2xl rounded-[3rem] shadow-2xl relative z-10 overflow-hidden animate-in zoom-in slide-in-from-bottom-12 duration-500 border border-white/20 max-h-[90vh] flex flex-col">
             <div className="p-8 border-b border-emerald-50 flex items-center justify-between bg-emerald-50/30 flex-shrink-0">
               <div className="flex items-center gap-4">
-                <div className="w-14 h-14 bg-emerald-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-emerald-500/20 overflow-hidden relative group cursor-pointer">
+                <div className="w-24 h-24 bg-white border-2 border-emerald-100 rounded-2xl flex items-center justify-center text-emerald-600 shadow-lg shadow-emerald-500/10 overflow-hidden relative group cursor-pointer">
                   {formData.logoUrl ? (
-                    <img src={formData.logoUrl} alt="Logo" className="w-full h-full object-cover" />
+                    <img src={formData.logoUrl} alt="Logo" className="w-full h-full object-contain p-1" />
                   ) : (
-                    isCompany ? <Building2 size={28} /> : <MapPin size={28} />
+                    isCompany ? <Building2 size={32} /> : <MapPin size={32} />
                   )}
                   <input
                     type="file"

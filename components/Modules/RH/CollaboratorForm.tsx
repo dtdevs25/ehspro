@@ -169,11 +169,11 @@ export const CollaboratorForm: React.FC<CollaboratorFormProps> = ({
 
         <div className="bg-emerald-50/50 p-6 border-b border-emerald-100 flex justify-between items-center shrink-0">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-emerald-600 rounded-xl flex items-center justify-center text-white shadow-lg overflow-hidden relative group cursor-pointer">
+            <div className="w-24 h-24 bg-mid-gray-100 border-2 border-emerald-100 rounded-2xl flex items-center justify-center text-emerald-600 shadow-lg overflow-hidden relative group cursor-pointer">
               {formData.photoUrl ? (
                 <img src={formData.photoUrl} alt="Foto" className="w-full h-full object-cover" />
               ) : (
-                <UserIcon size={24} />
+                <UserIcon size={32} />
               )}
               <input
                 type="file"
