@@ -95,6 +95,17 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
   }[]>([]);
   const [selectedCandidateCollaborator, setSelectedCandidateCollaborator] = useState('');
 
+  const getImageArrayBuffer = async (url: string): Promise<ArrayBuffer | null> => {
+    try {
+      const response = await fetch(url, { mode: 'cors' });
+      if (!response.ok) return null;
+      return await response.arrayBuffer();
+    } catch (error) {
+      console.error("Error fetching logo:", error);
+      return null;
+    }
+  };
+
   const handleRegisterCandidate = () => {
     if (!selectedCandidateCollaborator) {
       alert("Selecione um colaborador para registrar.");
@@ -136,6 +147,25 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
       return;
     }
 
+    const logoUrl = activeBranch.logoUrl || activeCompany.logoUrl;
+    let logoImageParagraph = null;
+
+    if (logoUrl) {
+      const buffer = await getImageArrayBuffer(logoUrl);
+      if (buffer) {
+        logoImageParagraph = new docx.Paragraph({
+          children: [
+            new docx.ImageRun({
+              data: buffer,
+              transformation: { width: 80, height: 80 },
+            }),
+          ],
+          alignment: docx.AlignmentType.CENTER,
+          spacing: { after: 200 }
+        });
+      }
+    }
+
     const doc = new docx.Document({
       sections: [{
         properties: {
@@ -149,6 +179,7 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
           },
         },
         children: [
+          ...(logoImageParagraph ? [logoImageParagraph] : []),
           // 1ª VIA - CANDIDATO
           new docx.Paragraph({
             children: [
@@ -205,6 +236,7 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
           }),
 
           // 2ª VIA - EMPRESA (Copy of above)
+          ...(logoImageParagraph ? [logoImageParagraph] : []),
           new docx.Paragraph({
             children: [
               new docx.TextRun({ text: "FICHA DE INSCRIÇÃO DE CANDIDATOS", bold: true, size: 28 }),
@@ -395,9 +427,23 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
     const ev1Data = calendarItems.find(i => i.id === 'ev1');
     if (!ev1Data) return;
 
+    const logoUrl = activeBranch.logoUrl || activeCompany.logoUrl;
+    let logoImageParagraph = null;
+    if (logoUrl) {
+      const buffer = await getImageArrayBuffer(logoUrl);
+      if (buffer) {
+        logoImageParagraph = new docx.Paragraph({
+          children: [new docx.ImageRun({ data: buffer, transformation: { width: 80, height: 80 } })],
+          alignment: docx.AlignmentType.CENTER,
+          spacing: { after: 200 }
+        });
+      }
+    }
+
     const doc = new docx.Document({
       sections: [{
         children: [
+          ...(logoImageParagraph ? [logoImageParagraph] : []),
           new docx.Paragraph({
             children: [new docx.TextRun({ text: "COMUNICADO AO SINDICATO", bold: true, size: 32 })],
             alignment: docx.AlignmentType.CENTER,
@@ -445,6 +491,19 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
     if (!electionTimeRange || !electionLocation) {
       alert("Por favor, preencha o horário e o local da eleição antes de gerar o documento.");
       return;
+    }
+
+    const logoUrl = activeBranch.logoUrl || activeCompany.logoUrl;
+    let logoImageParagraph = null;
+    if (logoUrl) {
+      const buffer = await getImageArrayBuffer(logoUrl);
+      if (buffer) {
+        logoImageParagraph = new docx.Paragraph({
+          children: [new docx.ImageRun({ data: buffer, transformation: { width: 80, height: 80 } })],
+          alignment: docx.AlignmentType.CENTER,
+          spacing: { after: 200 }
+        });
+      }
     }
 
     const doc = new docx.Document({
@@ -594,9 +653,23 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
       return;
     }
 
+    const logoUrl = activeBranch.logoUrl || activeCompany.logoUrl;
+    let logoImageParagraph = null;
+    if (logoUrl) {
+      const buffer = await getImageArrayBuffer(logoUrl);
+      if (buffer) {
+        logoImageParagraph = new docx.Paragraph({
+          children: [new docx.ImageRun({ data: buffer, transformation: { width: 80, height: 80 } })],
+          alignment: docx.AlignmentType.CENTER,
+          spacing: { after: 200 }
+        });
+      }
+    }
+
     const doc = new docx.Document({
       sections: [{
         children: [
+          ...(logoImageParagraph ? [logoImageParagraph] : []),
           new docx.Paragraph({
             children: [
               new docx.TextRun({ text: "ATA DE FORMAÇÃO DA COMISSÃO ELEITORAL", bold: true, size: 36, color: "008000" })
@@ -722,6 +795,19 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
       return;
     }
 
+    const logoUrl = activeBranch.logoUrl || activeCompany.logoUrl;
+    let logoImageParagraph = null;
+    if (logoUrl) {
+      const buffer = await getImageArrayBuffer(logoUrl);
+      if (buffer) {
+        logoImageParagraph = new docx.Paragraph({
+          children: [new docx.ImageRun({ data: buffer, transformation: { width: 80, height: 80 } })],
+          alignment: docx.AlignmentType.CENTER,
+          spacing: { after: 200 }
+        });
+      }
+    }
+
     const doc = new docx.Document({
       sections: [{
         properties: {
@@ -735,6 +821,7 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
           },
         },
         children: [
+          ...(logoImageParagraph ? [logoImageParagraph] : []),
           new docx.Paragraph({
             children: [
               new docx.TextRun({ text: "Edital de Divulgação de Inscritos", bold: true, size: 36 }),
@@ -810,9 +897,23 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
     const ev3Data = calendarItems.find(i => i.id === 'ev3');
     if (!ev3Data) return;
 
+    const logoUrl = activeBranch.logoUrl || activeCompany.logoUrl;
+    let logoImageParagraph = null;
+    if (logoUrl) {
+      const buffer = await getImageArrayBuffer(logoUrl);
+      if (buffer) {
+        logoImageParagraph = new docx.Paragraph({
+          children: [new docx.ImageRun({ data: buffer, transformation: { width: 80, height: 80 } })],
+          alignment: docx.AlignmentType.CENTER,
+          spacing: { after: 200 }
+        });
+      }
+    }
+
     const doc = new docx.Document({
       sections: [{
         children: [
+          ...(logoImageParagraph ? [logoImageParagraph] : []),
           new docx.Paragraph({
             children: [
               new docx.TextRun({ text: "LISTA DE PRESENÇA - FORMAÇÃO DA COMISSÃO ELEITORAL", bold: true, size: 32 })
