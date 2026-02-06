@@ -59,7 +59,9 @@ export const uploadFileToMinio = async (req: Request, res: Response) => {
 
         // Construct Public URL
         // Format: https://endpoint/bucket/key
-        const publicUrl = `${process.env.MINIO_ENDPOINT}/${bucketName}/${fileName}`;
+        const endpoint = process.env.MINIO_ENDPOINT || 'https://inspecao-minio-api.manager.ehspro.com.br';
+        const cleanEndpoint = endpoint.replace(/\/$/, ''); // Remove trailing slash if exists
+        const publicUrl = `${cleanEndpoint}/${bucketName}/${fileName}`;
 
         res.json({ url: publicUrl });
 
