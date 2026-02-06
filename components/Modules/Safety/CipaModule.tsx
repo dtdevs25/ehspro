@@ -1311,7 +1311,13 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
             <div className="flex-1 p-10 md:p-20 overflow-y-auto bg-slate-50/50 print:bg-white print:p-0">
               <div className="max-w-4xl mx-auto bg-white border border-slate-200 shadow-2xl p-16 space-y-12 min-h-[1100px] relative text-slate-800 print:shadow-none print:border-none print:p-0">
                 <div className="flex items-center gap-10 border-b border-slate-100 pb-10">
-                  <div className="w-32 h-32 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-300 font-bold border border-slate-100 shrink-0 uppercase italic">Logo</div>
+                  <div className="w-32 h-32 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-300 font-bold border border-slate-100 shrink-0 uppercase italic overflow-hidden">
+                    {(activeBranch?.logoUrl || activeCompany?.logoUrl) ? (
+                      <img src={activeBranch?.logoUrl || activeCompany?.logoUrl} alt="Logo" className="w-full h-full object-contain" />
+                    ) : (
+                      "Logo"
+                    )}
+                  </div>
                   <div className="text-center flex-1 pr-32">
                     <h2 className="text-3xl font-black text-emerald-700 uppercase">Comunicado ao Sindicato</h2>
                     <p className="text-base font-bold text-slate-400 uppercase tracking-widest mt-1">CIPA Gestão {selectedTerm?.year}</p>
@@ -1368,7 +1374,13 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
             <div className="flex-1 p-10 md:p-20 overflow-y-auto bg-slate-50/50 print:bg-white print:p-0">
               <div className="max-w-4xl mx-auto bg-white border border-slate-200 shadow-2xl p-16 space-y-12 min-h-[1100px] relative text-slate-800 print:shadow-none print:border-none print:p-0">
                 <div className="flex items-center gap-10 border-b border-slate-100 pb-10">
-                  <div className="w-32 h-32 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-300 font-bold border border-slate-100 shrink-0 uppercase italic">Logo</div>
+                  <div className="w-32 h-32 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-300 font-bold border border-slate-100 shrink-0 uppercase italic overflow-hidden">
+                    {(activeBranch?.logoUrl || activeCompany?.logoUrl) ? (
+                      <img src={activeBranch?.logoUrl || activeCompany?.logoUrl} alt="Logo" className="w-full h-full object-contain" />
+                    ) : (
+                      "Logo"
+                    )}
+                  </div>
                   <div className="text-center flex-1 pr-32">
                     <h2 className="text-3xl font-black text-emerald-700 uppercase">Edital de Convocação</h2>
                     <p className="text-base font-bold text-slate-400 uppercase tracking-widest mt-1">CIPA Gestão {selectedTerm?.year}</p>
@@ -1457,7 +1469,13 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
             <div className="flex-1 p-10 md:p-20 overflow-y-auto bg-slate-50/50 print:bg-white print:p-0">
               <div className="max-w-4xl mx-auto bg-white border border-slate-200 shadow-2xl p-16 space-y-12 min-h-[1100px] relative text-slate-800 print:shadow-none print:border-none print:p-0">
                 <div className="flex items-center gap-10 border-b border-slate-100 pb-10">
-                  <div className="w-32 h-32 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-300 font-bold border border-slate-100 shrink-0 uppercase italic">Logo</div>
+                  <div className="w-32 h-32 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-300 font-bold border border-slate-100 shrink-0 uppercase italic overflow-hidden">
+                    {(activeBranch?.logoUrl || activeCompany?.logoUrl) ? (
+                      <img src={activeBranch?.logoUrl || activeCompany?.logoUrl} alt="Logo" className="w-full h-full object-contain" />
+                    ) : (
+                      "Logo"
+                    )}
+                  </div>
                   <div className="text-center flex-1 pr-32">
                     <h2 className="text-3xl font-black text-emerald-700 uppercase">Ata da Comissão Eleitoral</h2>
                     <p className="text-base font-bold text-slate-400 uppercase tracking-widest mt-1">CIPA Gestão {selectedTerm?.year}</p>
@@ -1620,7 +1638,13 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
             <div className="flex-1 p-10 md:p-20 overflow-y-auto bg-slate-50/50 print:bg-white print:p-0">
               <div className="max-w-4xl mx-auto bg-white border border-slate-200 shadow-2xl p-16 space-y-12 min-h-[1100px] relative text-slate-800 print:shadow-none print:border-none print:p-0">
                 <div className="flex items-center gap-10 border-b border-slate-100 pb-10">
-                  <div className="w-32 h-32 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-300 font-bold border border-slate-100 shrink-0 uppercase italic">Logo</div>
+                  <div className="w-32 h-32 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-300 font-bold border border-slate-100 shrink-0 uppercase italic overflow-hidden">
+                    {(activeBranch?.logoUrl || activeCompany?.logoUrl) ? (
+                      <img src={activeBranch?.logoUrl || activeCompany?.logoUrl} alt="Logo" className="w-full h-full object-contain" />
+                    ) : (
+                      "Logo"
+                    )}
+                  </div>
                   <div className="text-center flex-1 pr-32">
                     <h2 className="text-3xl font-black text-emerald-700 uppercase">Edital de Divulgação de Inscritos</h2>
                     <p className="text-base font-bold text-slate-400 uppercase tracking-widest mt-1">CIPA Gestão {selectedTerm?.year}</p>
