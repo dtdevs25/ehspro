@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Plus, Building2, MapPin, Search, Trash2, Edit3, LayoutGrid, List, X, Archive, Hash, AlertTriangle } from 'lucide-react';
+import { Plus, Building2, MapPin, Search, Trash2, Edit3, LayoutGrid, List, X, Archive, Hash, AlertTriangle, Camera } from 'lucide-react';
 import { Company, Branch } from '../../../types';
 
 interface RegistrationModuleProps {
@@ -344,6 +344,7 @@ export const RegistrationModule: React.FC<RegistrationModuleProps> = ({
                   <input
                     type="file"
                     accept="image/*"
+                    id="logo-upload-trigger"
                     className="absolute inset-0 opacity-0 cursor-pointer"
                     onChange={async (e) => {
                       if (e.target.files && e.target.files[0]) {
@@ -352,14 +353,22 @@ export const RegistrationModule: React.FC<RegistrationModuleProps> = ({
                       }
                     }}
                   />
-                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                    <span className="text-[8px] font-black text-white uppercase">Alterar</span>
+                  <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300">
+                    <Camera size={16} className="text-white mb-1" />
+                    <span className="text-[8px] font-black text-white uppercase tracking-widest text-center leading-none">Alterar<br />Logo</span>
                   </div>
                 </div>
                 <div>
                   <h2 className="text-2xl font-black text-emerald-950">
                     {editingItem ? `Editar ${isCompany ? 'Empresa' : 'Filial'}` : `Nova ${isCompany ? 'Empresa' : 'Filial'}`}
                   </h2>
+                  <button
+                    type="button"
+                    className="text-xs font-bold text-emerald-600 hover:text-emerald-800 underline mt-1 flex items-center gap-1"
+                    onClick={() => document.getElementById('logo-upload-trigger')?.click()}
+                  >
+                    <Camera size={14} /> Alterar Logo
+                  </button>
                   <p className="text-sm font-medium text-emerald-600/70">Preencha as informações cadastrais abaixo.</p>
                 </div>
               </div>

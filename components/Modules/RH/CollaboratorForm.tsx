@@ -19,6 +19,7 @@ import {
   UserCheck,
   UserMinus,
   Trash2,
+  Camera,
 } from 'lucide-react';
 import { Collaborator, Role, JobFunction, Company, Branch } from '../../../types';
 import { generateProfessionalSummary } from '../../../services/geminiService';
@@ -162,19 +163,28 @@ export const CollaboratorForm: React.FC<CollaboratorFormProps> = ({
                 type="file"
                 accept="image/*"
                 className="absolute inset-0 opacity-0 cursor-pointer"
+                id="photo-upload-trigger"
                 onChange={async (e) => {
                   if (e.target.files && e.target.files[0]) {
                     await handleFileUpload(e.target.files[0]);
                   }
                 }}
               />
-              <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                <span className="text-[6px] font-black text-white uppercase">Foto</span>
+              <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300">
+                <Camera size={14} className="text-white mb-1" />
+                <span className="text-[6px] font-black text-white uppercase tracking-widest text-center leading-none">Alterar<br />Foto</span>
               </div>
             </div>
             <div>
               <h2 className="text-xl font-black text-emerald-950">{initialData ? 'Editar Prontuário' : 'Novo Prontuário'}</h2>
-              <div className="flex items-center gap-2 mt-0.5">
+              <button
+                type="button"
+                className="text-[10px] font-bold text-emerald-600 hover:text-emerald-800 underline mt-1 flex items-center gap-1"
+                onClick={() => document.getElementById('photo-upload-trigger')?.click()}
+              >
+                <Camera size={12} /> Alterar Foto
+              </button>
+              <div className="flex items-center gap-2 mt-1">
                 <span className="text-[10px] font-black text-emerald-600/70 uppercase tracking-widest">Matrícula: {formData.registration}</span>
                 <div className="w-1 h-1 bg-emerald-200 rounded-full" />
                 <span className={`text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest ${formData.status === 'ACTIVE' ? 'bg-emerald-500/10 text-emerald-600' : 'bg-red-500/10 text-red-600'}`}>
