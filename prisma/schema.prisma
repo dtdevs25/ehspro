@@ -138,6 +138,7 @@ model Branch {
   cnpj      String   @unique @map("cnpj")
   cnae      String   @map("cnae")
   address   String   @map("endereco")
+  logoUrl   String?  @map("logo_url")
 
   // Normalized Address
   // zipCode      String?  @map("cep")

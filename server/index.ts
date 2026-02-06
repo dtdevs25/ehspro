@@ -25,6 +25,7 @@ const prisma = new PrismaClient();
       await prisma.$executeRawUnsafe(`ALTER TYPE "tipo_usuario" ADD VALUE 'GESTOR';`);
     } catch (e) { /* ignore if exists */ }
     await prisma.$executeRawUnsafe(`ALTER TABLE "empresas" ADD COLUMN IF NOT EXISTS "logo_url" TEXT;`);
+    await prisma.$executeRawUnsafe(`ALTER TABLE "filiais" ADD COLUMN IF NOT EXISTS "logo_url" TEXT;`);
     await prisma.$executeRawUnsafe(`ALTER TABLE "colaboradores" ADD COLUMN IF NOT EXISTS "foto_url" TEXT;`);
     console.log('[SYSTEM] Database Schema Verified.');
   } catch (e) {
@@ -440,9 +441,9 @@ app.delete('/api/companies/:id', async (req, res) => {
 // --- BRANCHES ---
 app.post('/api/branches', async (req, res) => {
   try {
-    const { name, cnpj, cnae, address, companyId } = req.body;
+    const { name, cnpj, cnae, address, companyId, logoUrl } = req.body;
     const newBranch = await prisma.branch.create({
-      data: { name, cnpj, cnae, address, companyId }
+      data: { name, cnpj, cnae, address, companyId, logoUrl }
     });
     res.json(newBranch);
   } catch (error) {
@@ -454,10 +455,10 @@ app.post('/api/branches', async (req, res) => {
 app.put('/api/branches/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, cnpj, cnae, address, companyId } = req.body;
+    const { name, cnpj, cnae, address, companyId, logoUrl } = req.body;
     const updatedBranch = await prisma.branch.update({
       where: { id },
-      data: { name, cnpj, cnae, address, companyId }
+      data: { name, cnpj, cnae, address, companyId, logoUrl }
     });
     res.json(updatedBranch);
   } catch (error) {

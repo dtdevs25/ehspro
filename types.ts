@@ -72,6 +72,7 @@ export interface Branch {
   neighborhood?: string;
   city?: string;
   state?: string;
+  logoUrl?: string;
 }
 
 export interface Collaborator {
