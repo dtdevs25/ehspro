@@ -367,7 +367,6 @@ app.post('/api/ai/cid', async (req, res) => {
 app.post('/api/ai/suggest', async (req, res) => {
   const { industry } = req.body;
   const result = await suggestRolesAndFunctions(industry);
-  const result = await suggestRolesAndFunctions(industry);
   res.json(result);
 });
 
