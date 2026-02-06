@@ -1871,7 +1871,12 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-emerald-950/40 backdrop-blur-sm" onClick={() => setIsMemberModalOpen(false)}></div>
             <div className="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl relative z-10 p-8 animate-in zoom-in border border-emerald-100">
-              <h2 className="text-lg font-black mb-6">Membro da CIPA</h2>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-lg font-black uppercase">Membro da CIPA</h2>
+                {(activeBranch?.logoUrl || activeCompany?.logoUrl) && (
+                  <img src={activeBranch?.logoUrl || activeCompany?.logoUrl} alt="Logo" className="h-10 w-10 object-contain" />
+                )}
+              </div>
               <form onSubmit={saveMember} className="space-y-6">
                 <select required name="collaboratorId" className="w-full bg-emerald-50 border p-4 rounded-xl font-black"><option value="">Selecionar Colaborador...</option>{collaborators.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select>
                 <div className="grid grid-cols-2 gap-4"><select name="cipaRole" className="bg-emerald-50 p-4 rounded-xl font-black"><option value="PRESIDENTE">Presidente</option><option value="VICE_PRESIDENTE">Vice</option><option value="TITULAR">Titular</option></select><select name="origin" className="bg-emerald-50 p-4 rounded-xl font-black"><option value="EMPREGADO">Eleito</option><option value="EMPREGADOR">Indicado</option></select></div>
@@ -1887,7 +1892,12 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-emerald-950/40 backdrop-blur-sm" onClick={() => setIsMeetingModalOpen(false)}></div>
             <div className="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl relative z-10 p-8 animate-in zoom-in border border-emerald-100">
-              <h2 className="text-xl font-black mb-6 uppercase">Agendar Reunião</h2>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-black uppercase">Agendar Reunião</h2>
+                {(activeBranch?.logoUrl || activeCompany?.logoUrl) && (
+                  <img src={activeBranch?.logoUrl || activeCompany?.logoUrl} alt="Logo" className="h-10 w-10 object-contain" />
+                )}
+              </div>
               <form onSubmit={saveMeeting} className="space-y-6">
                 <div className="grid grid-cols-2 gap-4"><input type="date" required name="date" className="bg-emerald-50 p-4 rounded-xl font-black" /><select name="type" className="bg-emerald-50 p-4 rounded-xl font-black"><option value="ORDINARY">Ordinária</option><option value="EXTRAORDINARY">Extraordinária</option></select></div>
                 <input required name="title" placeholder="Título da Pauta" className="w-full bg-emerald-50 p-4 rounded-xl font-black" />
@@ -1903,7 +1913,12 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-emerald-950/40 backdrop-blur-sm" onClick={() => setIsPlanModalOpen(false)}></div>
             <div className="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl relative z-10 p-8 animate-in zoom-in border border-emerald-100">
-              <h2 className="text-xl font-black mb-6 uppercase">Nova Ação</h2>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-black uppercase">Nova Ação</h2>
+                {(activeBranch?.logoUrl || activeCompany?.logoUrl) && (
+                  <img src={activeBranch?.logoUrl || activeCompany?.logoUrl} alt="Logo" className="h-10 w-10 object-contain" />
+                )}
+              </div>
               <form onSubmit={savePlan} className="space-y-4">
                 <input required name="description" placeholder="O que fazer?" className="w-full bg-emerald-50 p-4 rounded-xl font-black" />
                 <div className="grid grid-cols-2 gap-4">
@@ -1955,7 +1970,12 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
           <div className="fixed inset-0 z-[400] flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-emerald-950/40 backdrop-blur-sm" onClick={() => setIsTermModalOpen(false)}></div>
             <div className="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl relative z-10 p-8 animate-in zoom-in border border-emerald-100">
-              <h2 className="text-xl font-black mb-6 uppercase">Editar Gestão</h2>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-black uppercase">Editar Gestão</h2>
+                {(activeBranch?.logoUrl || activeCompany?.logoUrl) && (
+                  <img src={activeBranch?.logoUrl || activeCompany?.logoUrl} alt="Logo" className="h-10 w-10 object-contain" />
+                )}
+              </div>
               <form onSubmit={updateTerm} className="space-y-6">
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-emerald-400 uppercase tracking-widest ml-1">Referência (Ano/Gestão)</label>
