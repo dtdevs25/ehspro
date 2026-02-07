@@ -224,6 +224,8 @@ model Collaborator {
 
   medicalCertificates MedicalCertificate[]
   cipeiros            Cipeiro[]
+  cipaTermsAsCompanyRep CipaTerm[] @relation("CompanyRep")
+  cipaTermsAsPresident CipaTerm[] @relation("CipaPresident")
 
   createdAt     DateTime @default(now()) @map("criado_em")
   updatedAt     DateTime @updatedAt @map("atualizado_em")
@@ -256,13 +258,18 @@ model CipaTerm {
   year      String     @map("ano_vigencia")
   startDate DateTime   @map("data_inicio")
   endDate   DateTime   @map("data_fim")
-  branchId  String     @map("filial_id")
-  status    CipaStatus @map("status")
+  branchId        String     @map("filial_id")
+  status          CipaStatus @map("status")
+  companyRepId    String?    @map("representante_empresa_id")
+  cipaPresidentId String?    @map("presidente_cipa_id")
 
-  branch    Branch     @relation(fields: [branchId], references: [id])
-  elections CipaElection[]
-  cipeiros  Cipeiro[]
-  meetings  CipaMeeting[]
+  branch          Branch        @relation(fields: [branchId], references: [id])
+  companyRep      Collaborator? @relation("CompanyRep", fields: [companyRepId], references: [id])
+  cipaPresident   Collaborator? @relation("CipaPresident", fields: [cipaPresidentId], references: [id])
+  
+  elections       CipaElection[]
+  cipeiros        Cipeiro[]
+  meetings        CipaMeeting[]
 
   @@map("cipa_mandatos")
 }

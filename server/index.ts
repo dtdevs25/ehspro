@@ -777,14 +777,16 @@ app.post('/api/cipa/terms', async (req, res) => {
 app.put('/api/cipa/terms/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { year, startDate, endDate, status } = req.body;
+    const { year, startDate, endDate, status, companyRepId, cipaPresidentId } = req.body;
     const updated = await prisma.cipaTerm.update({
       where: { id },
       data: {
         year,
         startDate: startDate ? new Date(startDate) : undefined,
         endDate: endDate ? new Date(endDate) : undefined,
-        status
+        status,
+        companyRepId,
+        cipaPresidentId
       }
     });
     res.json(updated);

@@ -339,8 +339,23 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
   // Sync data and signatory defaults
   useEffect(() => {
     if (selectedTermId && selectedTerm) {
-      setRepEmpresaName(activeBranch.name + " Resp.");
-      setPresCipaName("Presidente da Gestão Atual");
+      // @ts-ignore
+      if (selectedTerm.companyRepId) {
+        // @ts-ignore
+        const c = collaborators.find(c => c.id === selectedTerm.companyRepId);
+        setRepEmpresaName(c ? c.name : activeBranch.name + " Resp.");
+      } else {
+        setRepEmpresaName(activeBranch.name + " Resp.");
+      }
+
+      // @ts-ignore
+      if (selectedTerm.cipaPresidentId) {
+        // @ts-ignore
+        const c = collaborators.find(c => c.id === selectedTerm.cipaPresidentId);
+        setPresCipaName(c ? c.name : "Presidente da Gestão Atual");
+      } else {
+        setPresCipaName("Presidente da Gestão Atual");
+      }
 
       // Auto-set baseDate for calendar based on Term's Start Date
       // The generator adds 1 year to baseDate to find target.
@@ -430,44 +445,126 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
     if (!ev1Data) return;
 
     const logoUrl = activeBranch.logoUrl || activeCompany.logoUrl;
-    let logoImageParagraph = null;
+    let logoImageRun = null;
     if (logoUrl) {
       const buffer = await getImageArrayBuffer(logoUrl);
       if (buffer) {
-        logoImageParagraph = new docx.Paragraph({
-          children: [new docx.ImageRun({ data: buffer, transformation: { width: 80, height: 80 } })],
-          alignment: docx.AlignmentType.CENTER,
-          spacing: { after: 200 }
+        logoImageRun = new docx.ImageRun({
+          data: buffer,
+          transformation: { width: 80, height: 80 }
         });
       }
     }
 
+    // Prepare Header Table
+    const headerTable = new docx.Table({
+      width: { size: 100, type: docx.WidthType.PERCENTAGE },
+      borders: docx.TableBorders.NONE, // Remove default borders if desired, or keep them
+      rows: [
+        new docx.TableRow({
+          children: [
+            new docx.TableCell({
+              width: { size: 20, type: docx.WidthType.PERCENTAGE },
+              children: [
+                logoImageRun ? new docx.Paragraph({ children: [logoImageRun] }) : new docx.Paragraph({ text: "LOGO" })
+              ],
+              verticalAlign: docx.VerticalAlign.CENTER,
+            }),
+            new docx.TableCell({
+              width: { size: 80, type: docx.WidthType.PERCENTAGE },
+              children: [
+                new docx.Paragraph({
+                  children: [new docx.TextRun({ text: "COMUNICADO AO SINDICATO", bold: true, size: 28 })],
+                  alignment: docx.AlignmentType.CENTER,
+                }),
+                new docx.Paragraph({
+                  children: [new docx.TextRun({ text: `CIPA Gestão ${selectedTerm?.year}`, size: 24 })],
+                  alignment: docx.AlignmentType.CENTER,
+                })
+              ],
+              verticalAlign: docx.VerticalAlign.CENTER,
+            })
+          ]
+        })
+      ]
+    });
+
     const doc = new docx.Document({
       sections: [{
-        children: [
-          ...(logoImageParagraph ? [logoImageParagraph] : []),
-          new docx.Paragraph({
-            children: [new docx.TextRun({ text: "COMUNICADO AO SINDICATO", bold: true, size: 32 })],
-            alignment: docx.AlignmentType.CENTER,
-            spacing: { after: 400 }
+        headers: {
+          default: new docx.Header({
+            children: [headerTable, new docx.Paragraph({ text: "", spacing: { after: 200 } })], // Add spacing after header
           }),
+        },
+        children: [
           new docx.Paragraph({
             children: [new docx.TextRun({ text: `Ao ${sindicatoName || '[Sindicato]'},`, size: 24 })],
-            spacing: { after: 400 }
+            spacing: { before: 400, after: 400 }
           }),
           new docx.Paragraph({
             children: [
               new docx.TextRun({
-                text: `Comunicamos o início do processo eleitoral da CIPA Gestão ${selectedTerm?.year} da unidade ${activeBranch.name}.`,
+                text: `A Empresa ${activeCompany.name}, inscrita sob o CNPJ ${activeBranch.cnpj}, comunica o início do processo eleitoral para a formação da Comissão Interna de Prevenção de Acidentes e de Assédio (CIPA), Gestão ${selectedTerm?.year}, em conformidade com a Norma Regulamentadora nº 5 (NR-5).`,
                 size: 24
               })
             ],
+            alignment: docx.AlignmentType.JUSTIFIED,
             spacing: { after: 400 }
           }),
           new docx.Paragraph({
+            children: [new docx.TextRun({ text: "Anexamos o edital de convocação para os devidos fins.", size: 24 })],
+            alignment: docx.AlignmentType.JUSTIFIED,
+            spacing: { after: 400 }
+          }),
+
+          new docx.Paragraph({
             children: [new docx.TextRun({ text: formatarDataLonga(ev1Data.date), size: 24 })],
             alignment: docx.AlignmentType.RIGHT,
-            spacing: { after: 800 }
+            spacing: { before: 800, after: 1200 }
+          }),
+
+          // Signatures
+          new docx.Table({
+            width: { size: 100, type: docx.WidthType.PERCENTAGE },
+            borders: docx.TableBorders.NONE,
+            rows: [
+              new docx.TableRow({
+                children: [
+                  new docx.TableCell({
+                    children: [
+                      new docx.Paragraph({
+                        children: [new docx.TextRun({ text: "__________________________________" })],
+                        alignment: docx.AlignmentType.CENTER
+                      }),
+                      new docx.Paragraph({
+                        children: [new docx.TextRun({ text: repEmpresaName || "Representante da Empresa", bold: true, size: 20 })],
+                        alignment: docx.AlignmentType.CENTER
+                      }),
+                      new docx.Paragraph({
+                        children: [new docx.TextRun({ text: "Representante da Empresa", size: 18 })],
+                        alignment: docx.AlignmentType.CENTER
+                      })
+                    ]
+                  }),
+                  new docx.TableCell({
+                    children: [
+                      new docx.Paragraph({
+                        children: [new docx.TextRun({ text: "__________________________________" })],
+                        alignment: docx.AlignmentType.CENTER
+                      }),
+                      new docx.Paragraph({
+                        children: [new docx.TextRun({ text: presCipaName || "Presidente da CIPA", bold: true, size: 20 })],
+                        alignment: docx.AlignmentType.CENTER
+                      }),
+                      new docx.Paragraph({
+                        children: [new docx.TextRun({ text: "Presidente da CIPA", size: 18 })],
+                        alignment: docx.AlignmentType.CENTER
+                      })
+                    ]
+                  })
+                ]
+              })
+            ]
           })
         ]
       }]
@@ -1346,12 +1443,78 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
                   <p className="text-right font-black text-slate-900">{formatarDataLonga(calendarItems.find(i => i.id === 'ev1')?.date || '')}</p>
                   <div className="flex justify-between items-start gap-12">
                     <div className="flex-1 space-y-4 text-center">
-                      <input value={repEmpresaName} onChange={e => setRepEmpresaName(e.target.value)} className="w-full border-b border-slate-900 bg-transparent text-center font-black outline-none print:border-none" />
+                      <select
+                        value={selectedTerm?.companyRepId || ''}
+                        onChange={async (e) => {
+                          const newId = e.target.value;
+                          const collab = collaborators.find(c => c.id === newId);
+                          if (collab) setRepEmpresaName(collab.name);
+
+                          // Update Local State immediately for responsiveness
+                          if (selectedTerm) {
+                            const updatedTerm = { ...selectedTerm, companyRepId: newId };
+                            // @ts-ignore
+                            const newTerms = terms.map(t => t.id === selectedTerm.id ? updatedTerm : t);
+                            // @ts-ignore
+                            setTerms(newTerms);
+                          }
+
+                          // Save to API
+                          try {
+                            await fetch(`/api/cipa/terms/${selectedTermId}`, {
+                              method: 'PUT',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ companyRepId: newId })
+                            });
+                          } catch (err) {
+                            console.error("Failed to save company rep", err);
+                          }
+                        }}
+                        className="w-full border-b border-slate-900 bg-transparent text-center font-black outline-none print:border-none appearance-none cursor-pointer hover:bg-slate-50"
+                      >
+                        <option value="">Selecione...</option>
+                        {collaborators.map(c => (
+                          <option key={c.id} value={c.id}>{c.name}</option>
+                        ))}
+                      </select>
                       <p className="text-[10px] font-black text-slate-500 uppercase">Representante Empresa</p>
                     </div>
                     <div className="flex-1 space-y-4 text-center">
-                      <input value={presCipaName} onChange={e => setPresCipaName(e.target.value)} className="w-full border-b border-slate-900 bg-transparent text-center font-black outline-none print:border-none" />
-                      <p className="text-[10px] font-black text-slate-500 uppercase">Presidente CIPA</p>
+                      <select
+                        value={selectedTerm?.cipaPresidentId || ''}
+                        onChange={async (e) => {
+                          const newId = e.target.value;
+                          const collab = collaborators.find(c => c.id === newId);
+                          if (collab) setPresCipaName(collab.name);
+
+                          // Update Local State
+                          if (selectedTerm) {
+                            const updatedTerm = { ...selectedTerm, cipaPresidentId: newId };
+                            // @ts-ignore
+                            const newTerms = terms.map(t => t.id === selectedTerm.id ? updatedTerm : t);
+                            // @ts-ignore
+                            setTerms(newTerms);
+                          }
+
+                          // Save to API
+                          try {
+                            await fetch(`/api/cipa/terms/${selectedTermId}`, {
+                              method: 'PUT',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ cipaPresidentId: newId })
+                            });
+                          } catch (err) {
+                            console.error("Failed to save cipa president", err);
+                          }
+                        }}
+                        className="w-full border-b border-slate-900 bg-transparent text-center font-black outline-none print:border-none appearance-none cursor-pointer hover:bg-slate-50"
+                      >
+                        <option value="">Selecione...</option>
+                        {collaborators.map(c => (
+                          <option key={c.id} value={c.id}>{c.name}</option>
+                        ))}
+                      </select>
+                      <p className="text-[10px] font-black text-slate-500 uppercase">Presidente CIPA Atual</p>
                     </div>
                   </div>
                 </div>
