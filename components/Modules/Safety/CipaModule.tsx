@@ -362,16 +362,15 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
       // So we set baseDate = startDate - 1 year.
       if (selectedTerm.startDate) {
         const startDate = new Date(selectedTerm.startDate);
-        // Adjust to Brasilia Timezone logic for calculation
-        // We want the 'baseDate' input to represent 1 year before startDate.
+        if (!isNaN(startDate.getTime())) {
+          const prevYearDate = new Date(startDate);
+          prevYearDate.setFullYear(prevYearDate.getFullYear() - 1);
 
-        const prevYearDate = new Date(startDate);
-        prevYearDate.setFullYear(prevYearDate.getFullYear() - 1);
-
-        // Format to YYYY-MM-DD
-        const formatted = prevYearDate.toISOString().split('T')[0];
-        setBaseDate(formatted);
-        setIsCalendarGenerated(true);
+          // Format to YYYY-MM-DD
+          const formatted = prevYearDate.toISOString().split('T')[0];
+          setBaseDate(formatted);
+          setIsCalendarGenerated(true);
+        }
       }
     }
   }, [selectedTermId, selectedTerm, activeBranch]);
