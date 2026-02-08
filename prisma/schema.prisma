@@ -226,6 +226,7 @@ model Collaborator {
   cipeiros            Cipeiro[]
   cipaTermsAsCompanyRep CipaTerm[] @relation("CompanyRep")
   cipaTermsAsPresident CipaTerm[] @relation("CipaPresident")
+  cipaCandidates       CipaCandidate[]
 
   createdAt     DateTime @default(now()) @map("criado_em")
   updatedAt     DateTime @updatedAt @map("atualizado_em")
@@ -269,6 +270,7 @@ model CipaTerm {
   
   elections       CipaElection[]
   cipeiros        Cipeiro[]
+  candidates      CipaCandidate[]
   meetings        CipaMeeting[]
 
   @@map("cipa_mandatos")
@@ -301,6 +303,20 @@ model Cipeiro {
   collaborator   Collaborator @relation(fields: [collaboratorId], references: [id])
 
   @@map("cipa_membros")
+}
+
+model CipaCandidate {
+  id             String   @id @default(uuid())
+  termId         String   @map("mandato_id")
+  collaboratorId String   @map("colaborador_id")
+  registrationDate DateTime @default(now()) @map("data_inscricao")
+  signatureUrl   String?  @map("url_assinatura")
+  status         String   @default("APPROVED") @map("status") // APPROVED, PENDING, REJECTED
+
+  term           CipaTerm     @relation(fields: [termId], references: [id])
+  collaborator   Collaborator @relation(fields: [collaboratorId], references: [id])
+
+  @@map("cipa_candidatos")
 }
 
 model CipaMeeting {

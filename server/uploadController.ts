@@ -70,3 +70,31 @@ export const uploadFileToMinio = async (req: Request, res: Response) => {
         res.status(500).json({ error: 'Erro ao fazer upload da imagem.' });
     }
 };
+
+export const uploadBase64ToMinio = async (base64Data: string, folder: string = 'signatures'): Promise<string> => {
+    try {
+        // Remove header if present (data:image/png;base64,)
+        const base64Image = base64Data.split(';base64,').pop();
+        if (!base64Image) throw new Error('Invalid Base64 Data');
+
+        const buffer = Buffer.from(base64Image, 'base64');
+        const fileName = `${folder}/${Date.now()}-${Math.round(Math.random() * 1e9)}.png`;
+        const bucketName = 'foto.colaborador.ehspro'; // Reuse collaborator bucket or create dedicated one? Using same for simplicity.
+
+        const command = new PutObjectCommand({
+            Bucket: bucketName,
+            Key: fileName,
+            Body: buffer,
+            ContentType: 'image/png',
+        });
+
+        await s3Client.send(command);
+
+        const endpoint = process.env.MINIO_ENDPOINT || 'https://inspecao-minio-api.manager.ehspro.com.br';
+        const cleanEndpoint = endpoint.replace(/\/$/, '');
+        return `${cleanEndpoint}/${bucketName}/${fileName}`;
+    } catch (error) {
+        console.error('MinIO Base64 Upload Error:', error);
+        throw error;
+    }
+};

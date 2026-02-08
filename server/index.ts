@@ -383,8 +383,306 @@ app.post('/api/ai/cipa-chat', async (req, res) => {
 });
 
 // Upload Route
-import { uploadMiddleware, uploadFileToMinio } from './uploadController.js';
+import { uploadMiddleware, uploadFileToMinio, uploadBase64ToMinio } from './uploadController.js';
 app.post('/api/upload', uploadMiddleware.single('file'), uploadFileToMinio);
+
+// --- CIPA CANDIDATES (Digital Registration) ---
+
+app.get('/api/cipa/candidates', async (req, res) => {
+  try {
+    const { termId } = req.query;
+    if (!termId) return res.status(400).json({ error: 'Term ID required' });
+
+    const candidates = await prisma.cipaCandidate.findMany({
+      where: { termId: String(termId) },
+      include: {
+        collaborator: {
+          include: { role: true, jobFunction: true }
+        }
+      },
+      orderBy: { registrationDate: 'desc' }
+    });
+    res.json(candidates);
+  } catch (error) {
+    console.error("Error fetching candidates:", error);
+    res.status(500).json({ error: 'Erro ao buscar candidatos' });
+  }
+});
+
+app.post('/api/cipa/candidates', async (req, res) => {
+  try {
+    const { termId, collaboratorId, signature } = req.body;
+
+    // 1. Check if already registered
+    const exists = await prisma.cipaCandidate.findFirst({
+      where: { termId, collaboratorId }
+    });
+    if (exists) {
+      return res.status(400).json({ error: 'Colaborador já inscrito neste pleito.' });
+    }
+
+    // 2. Upload Signature
+    let signatureUrl = null;
+    if (signature) {
+      try {
+        signatureUrl = await uploadBase64ToMinio(signature, 'cipa_signatures');
+      } catch (e) {
+        console.error("Signature upload failed:", e);
+        // Continue without signature or fail based on policy? User requested signature.
+        // Let's continue but warn? Or strictly fail? 
+        // Failing is safer for legal compliance.
+        return res.status(500).json({ error: 'Erro ao salvar assinatura digital.' });
+      }
+    }
+
+    // 3. Create Candidate
+    const status = signatureUrl ? 'APPROVED' : 'PENDING_SIGNATURE';
+    const newCandidate = await prisma.cipaCandidate.create({
+      data: {
+        termId,
+        collaboratorId,
+        signatureUrl,
+        status
+      },
+      include: {
+        collaborator: true,
+        term: true // To get term year for email
+      }
+    });
+
+    // 4. Send Confirmation Email (Only if signed)
+    if (newCandidate.collaborator.email && signatureUrl) {
+      const emailHtml = `
+            <div style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #ddd; border-radius: 8px; overflow: hidden;">
+                <div style="background-color: #059669; padding: 20px; text-align: center; color: white;">
+                    <h2 style="margin: 0;">Confirmação de Inscrição CIPA</h2>
+                    <p style="margin: 5px 0 0;">Gestão ${newCandidate.term.year}</p>
+                </div>
+                <div style="padding: 20px;">
+                    <p>Olá, <strong>${newCandidate.collaborator.name}</strong>!</p>
+                    <p>Sua candidatura para a Comissão Interna de Prevenção de Acidentes (CIPA) foi registrada com sucesso.</p>
+                    
+                    <div style="background-color: #f9fafb; padding: 15px; border-radius: 6px; margin: 20px 0;">
+                        <p style="margin: 5px 0;"><strong>Protocolo:</strong> ${newCandidate.id.split('-')[0].toUpperCase()}</p>
+                        <p style="margin: 5px 0;"><strong>Data:</strong> ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}</p>
+                        <p style="margin: 5px 0;"><strong>Status:</strong> Confirmado</p>
+                    </div>
+
+                    ${signatureUrl ? `
+                    <div style="margin: 20px 0;">
+                        <p style="font-size: 12px; color: #666;">Assinatura Digital Registrada:</p>
+                        <img src="${signatureUrl}" alt="Assinatura" style="max-height: 60px; border: 1px dashed #ccc; padding: 5px;" />
+                    </div>` : ''}
+
+                    <p style="font-size: 14px; color: #666;">Boa sorte no processo eleitoral!</p>
+                </div>
+                <div style="background-color: #f3f4f6; padding: 15px; text-align: center; font-size: 12px; color: #888;">
+                    Sistema EHS Pro - Segurança do Trabalho
+                </div>
+            </div>
+        `;
+
+      await transporter.sendMail({
+        from: process.env.SMTP_FROM || '"EHS Pro Security" <no-reply@ehspro.com.br>',
+        to: newCandidate.collaborator.email,
+        subject: `Comprovante de Inscrição CIPA - Gestão ${newCandidate.term.year}`,
+        html: emailHtml
+      });
+    }
+
+    res.json(newCandidate);
+
+  } catch (error) {
+    console.error("Error creating candidate:", error);
+    res.status(500).json({ error: 'Erro ao registrar candidatura' });
+  }
+});
+
+// --- CIPA MOBILE SIGNATURE (Public) ---
+
+app.get('/public/cipa-sign/:candidateId', async (req, res) => {
+  try {
+    const { candidateId } = req.params;
+    const candidate = await prisma.cipaCandidate.findUnique({
+      where: { id: candidateId },
+      include: { collaborator: true }
+    });
+
+    if (!candidate) return res.status(404).send('Candidato não encontrado');
+    if (candidate.signatureUrl) return res.send('<h1 style="text-align:center; margin-top:50px; font-family:sans-serif; color:green;">Assinatura já realizada!</h1><p style="text-align:center;">Pode fechar esta janela.</p>');
+
+    const html = `
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assinatura Digital CIPA</title>
+    <style>
+        body { font-family: sans-serif; display: flex; flex-direction: column; items-center; padding: 20px; background: #f0fdf4; color: #064e3b; }
+        .container { max-width: 600px; margin: 0 auto; background: white; padding: 20px; border-radius: 20px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); width: 100%; box-sizing: border-box; }
+        h1 { text-align: center; font-size: 1.5rem; margin-bottom: 5px; }
+        p { text-align: center; color: #64748b; margin-bottom: 20px; font-size: 0.9rem; }
+        .canvas-container { border: 2px dashed #10b981; border-radius: 15px; overflow: hidden; position: relative; height: 300px; background: white; touch-action: none; }
+        canvas { width: 100%; height: 100%; display: block; }
+        .btn { display: block; width: 100%; padding: 15px; margin-top: 15px; border: none; border-radius: 12px; font-weight: bold; font-size: 1rem; cursor: pointer; text-transform: uppercase; transition: transform 0.1s; }
+        .btn-primary { background: #059669; color: white; box-shadow: 0 4px 6px -1px rgba(5, 150, 105, 0.4); }
+        .btn-primary:active { transform: scale(0.98); }
+        .btn-secondary { background: #f1f5f9; color: #64748b; }
+        .success-msg { display: none; text-align: center; color: #059669; font-weight: bold; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container" id="signScreen">
+        <h1>Confirmação de Inscrição</h1>
+        <p>Candidato: <strong>${candidate.collaborator.name}</strong></p>
+        
+        <div class="canvas-container">
+            <canvas id="signatureCanvas"></canvas>
+            <div style="position:absolute; bottom:10px; left:0; width:100%; text-align:center; pointer-events:none; opacity:0.3; font-size:0.8rem;">Assine aqui com o dedo</div>
+        </div>
+
+        <button class="btn btn-secondary" onclick="clearCanvas()">Limpar Assinatura</button>
+        <button class="btn btn-primary" onclick="saveSignature()" id="saveBtn">Confirmar Inscrição</button>
+    </div>
+
+    <div class="container" id="successScreen" style="display:none; text-align:center;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+        <h2 style="color:#059669">Sucesso!</h2>
+        <p>Sua assinatura foi recebida.<br>Pode fechar esta janela.</p>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('signatureCanvas');
+        const ctx = canvas.getContext('2d');
+        let isDrawing = false;
+        
+        // Resize canvas to effective pixels
+        function resizeCanvas() {
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+            ctx.lineWidth = 3;
+            ctx.lineCap = 'round';
+            ctx.strokeStyle = 'black';
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        function getPos(e) {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            return {
+                x: clientX - rect.left,
+                y: clientY - rect.top
+            };
+        }
+
+        ['mousedown', 'touchstart'].forEach(ev => canvas.addEventListener(ev, (e) => {
+            isDrawing = true;
+            if(e.type === 'touchstart') e.preventDefault();
+            const pos = getPos(e);
+            ctx.beginPath();
+            ctx.moveTo(pos.x, pos.y);
+        }));
+
+        ['mousemove', 'touchmove'].forEach(ev => canvas.addEventListener(ev, (e) => {
+            if (!isDrawing) return;
+            if(e.type === 'touchmove') e.preventDefault();
+            const pos = getPos(e);
+            ctx.lineTo(pos.x, pos.y);
+            ctx.stroke();
+        }));
+
+        ['mouseup', 'touchend', 'mouseleave'].forEach(ev => canvas.addEventListener(ev, () => {
+            isDrawing = false;
+            ctx.closePath();
+        }));
+
+        function clearCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        async function saveSignature() {
+            const btn = document.getElementById('saveBtn');
+            btn.innerText = 'Enviando...';
+            btn.disabled = true;
+
+            const dataUrl = canvas.toDataURL('image/png');
+            
+            try {
+                const res = await fetch('/api/cipa/candidates/${candidateId}/sign-mobile', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ signature: dataUrl })
+                });
+
+                if (res.ok) {
+                    document.getElementById('signScreen').style.display = 'none';
+                    document.getElementById('successScreen').style.display = 'block';
+                } else {
+                    alert('Erro ao salvar. Tente novamente.');
+                    btn.innerText = 'Confirmar Inscrição';
+                    btn.disabled = false;
+                }
+            } catch (e) {
+                alert('Erro de conexão.');
+                btn.innerText = 'Confirmar Inscrição';
+                btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
+        `;
+    res.send(html);
+  } catch (e) {
+    res.status(500).send('Erro interno');
+  }
+});
+
+app.post('/api/cipa/candidates/:id/sign-mobile', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { signature } = req.body;
+
+    const signatureUrl = await uploadBase64ToMinio(signature, 'cipa_signatures');
+
+    await prisma.cipaCandidate.update({
+      where: { id },
+      data: { signatureUrl, status: 'APPROVED' } // Assuming mobile sign confirms it immediately
+    });
+
+    res.json({ success: true });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'Erro ao salvar assinatura mobile' });
+  }
+});
+
+app.get('/api/cipa/candidates/:id/check-status', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const candidate = await prisma.cipaCandidate.findUnique({
+      where: { id },
+      select: { signatureUrl: true, status: true }
+    });
+    res.json(candidate);
+  } catch (e) {
+    res.status(500).json({});
+  }
+});
+
+app.delete('/api/cipa/candidates/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    await prisma.cipaCandidate.delete({ where: { id } });
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao excluir candidato' });
+  }
+});
 
 // Core Data Routes - CRUD
 // --- COMPANIES ---
