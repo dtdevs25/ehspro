@@ -2019,11 +2019,19 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
                               <label className="text-xs font-black text-emerald-950 uppercase tracking-widest">Enquadramento (Grupo NR-5)</label>
                             </div>
 
+                            {companyCnae && (
+                              <div className="bg-emerald-100/50 p-3 rounded-lg border border-emerald-100 flex items-center gap-2 mb-2">
+                                <Award size={16} className="text-emerald-600" />
+                                <p className="text-[10px] font-black text-emerald-800 uppercase tracking-wide">
+                                  CNAE Identificado: {companyCnae} <span className="mx-1 text-emerald-400">|</span> Enquadramento: {getNr5Group(companyCnae) || 'Não identificado'}
+                                </p>
+                              </div>
+                            )}
+
                             <select
                               value={companyRiskGroup}
                               onChange={(e) => {
                                 setCompanyRiskGroup(e.target.value);
-                                // Trigger recalculation if employee count exists
                                 const countInput = document.getElementById('employee-count-input') as HTMLInputElement;
                                 if (countInput && countInput.value) {
                                   countInput.dispatchEvent(new Event('input', { bubbles: true }));
@@ -2032,28 +2040,49 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
                               className="w-full bg-emerald-50 p-4 rounded-xl font-black text-emerald-950 outline-none focus:ring-2 focus:ring-emerald-200 transition-all border border-emerald-100"
                             >
                               <option value="">Selecione o Grupo ou CNAE...</option>
-                              <optgroup label="Grupos Comuns">
+                              <optgroup label="Grupos Industriais">
                                 <option value="C-1">C-1 (Minerais)</option>
                                 <option value="C-2">C-2 (Alimentos)</option>
                                 <option value="C-3">C-3 (Têxteis)</option>
                                 <option value="C-3a">C-3a (Construção Civil)</option>
-                                <option value="C-14">C-14 (Comércio Atacadista/Varejista)</option>
-                                <option value="C-18">C-18 (Financeiros/Administrativos)</option>
-                                <option value="C-21">C-21 (Ensino)</option>
-                                <option value="C-22">C-22 (Saúde)</option>
-                                <option value="C-29">C-29 (Comércio Varejista)</option>
-                              </optgroup>
-                              <optgroup label="Outros Grupos">
                                 <option value="C-4">C-4 (Calçados)</option>
                                 <option value="C-5">C-5 (Madeira)</option>
                                 <option value="C-6">C-6 (Papel)</option>
                                 <option value="C-7">C-7 (Químicos)</option>
                                 <option value="C-8">C-8 (Farmacêuticos)</option>
-                                <option value="C-30">C-30 (Transporte Aquaviário)</option>
-                                <option value="C-31">C-31 (Transporte Aéreo)</option>
-                                <option value="C-32">C-32 (Transporte Terrestre)</option>
-                                <option value="C-34">C-34 (Correio e Telecom)</option>
-                                <option value="C-35">C-35 (Limpeza Urbana/Esgoto)</option>
+                                <option value="C-9">C-9 (Minerais Não-Metálicos)</option>
+                                <option value="C-10">C-10 (Metalurgia)</option>
+                                <option value="C-11">C-11 (Mecânica)</option>
+                                <option value="C-12">C-12 (Material Elétrico)</option>
+                                <option value="C-13">C-13 (Veículos)</option>
+                              </optgroup>
+                              <optgroup label="Serviços e Comércio">
+                                <option value="C-14">C-14 (Comércio)</option>
+                                <option value="C-15">C-15 (Eletricidade/Gás/Água)</option>
+                                <option value="C-16">C-16 (Água/Esgoto)</option>
+                                <option value="C-17">C-17 (Comercio Veículos)</option>
+                                <option value="C-18">C-18 (Financeiros)</option>
+                                <option value="C-19">C-19 (Seguros)</option>
+                                <option value="C-20">C-20 (Imobiliário)</option>
+                                <option value="C-21">C-21 (Ensino)</option>
+                                <option value="C-22">C-22 (Saúde)</option>
+                                <option value="C-23">C-23 (Serviços Sociais)</option>
+                                <option value="C-24">C-24 (Serviços Recreativos)</option>
+                                <option value="C-25">C-25 (Alojamento/Alimentação)</option>
+                                <option value="C-26">C-26 (Informática/Cinematográfica)</option>
+                                <option value="C-27">C-27 (Limpeza e Vigilância)</option>
+                                <option value="C-28">C-28 (Bancos)</option>
+                                <option value="C-29">C-29 (Comércio Varejista)</option>
+                              </optgroup>
+                              <optgroup label="Transportes">
+                                <option value="C-30">C-30 (Aquaviário)</option>
+                                <option value="C-31">C-31 (Aéreo)</option>
+                                <option value="C-32">C-32 (Terrestre)</option>
+                                <option value="C-33">C-33 (Armazenagem)</option>
+                                <option value="C-34">C-34 (Correio/Telecom)</option>
+                              </optgroup>
+                              <optgroup label="Outros">
+                                <option value="C-35">C-35 (Administração Pública/Outros)</option>
                               </optgroup>
                             </select>
                             <p className="text-[10px] text-slate-400 font-bold px-2">
