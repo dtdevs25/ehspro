@@ -56,6 +56,16 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
   const [isCalendarGenerated, setIsCalendarGenerated] = useState(false);
   const [completedSteps, setCompletedSteps] = useState<string[]>([]);
 
+  // Election Sub-View State (Menu, Dimensioning, Calendar)
+  const [eleicaoView, setEleicaoView] = useState<'menu' | 'dimensionamento' | 'calendario'>('menu');
+
+  // Dimensioning Data States
+  const [companyCnae, setCompanyCnae] = useState('');
+  const [companyRiskGroup, setCompanyRiskGroup] = useState('');
+  const [companySector, setCompanySector] = useState('');
+  const [cipaDimensioning, setCipaDimensioning] = useState<{ efetivos: number, suplentes: number }>({ efetivos: 0, suplentes: 0 });
+
+
   // Data States for the selected term
   const [cipeiros, setCipeiros] = useState<Cipeiro[]>([]);
   const [meetings, setMeetings] = useState<CipaMeeting[]>([]);
@@ -200,7 +210,7 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
           new docx.Table({
             width: { size: 100, type: docx.WidthType.PERCENTAGE },
             rows: [
-              new docx.TableRow({ children: [new docx.TableCell({ children: [new docx.Paragraph({ text: "Candidato:" })], width: { size: 20, type: docx.WidthType.PERCENTAGE } }), new docx.TableCell({ children: [new docx.Paragraph({ text: candidateToPrint.name, bold: true })] })] }),
+              new docx.TableRow({ children: [new docx.TableCell({ children: [new docx.Paragraph({ text: "Candidato:" })], width: { size: 20, type: docx.WidthType.PERCENTAGE } }), new docx.TableCell({ children: [new docx.Paragraph({ children: [new docx.TextRun({ text: candidateToPrint.name, bold: true })] })] })] }),
               new docx.TableRow({ children: [new docx.TableCell({ children: [new docx.Paragraph({ text: "Apelido:" })] }), new docx.TableCell({ children: [new docx.Paragraph({ text: candidateToPrint.nickname })] })] }),
               new docx.TableRow({ children: [new docx.TableCell({ children: [new docx.Paragraph({ text: "Setor:" })] }), new docx.TableCell({ children: [new docx.Paragraph({ text: candidateToPrint.sector })] })] }),
               new docx.TableRow({ children: [new docx.TableCell({ children: [new docx.Paragraph({ text: "Função:" })] }), new docx.TableCell({ children: [new docx.Paragraph({ text: candidateToPrint.role })] })] }),
@@ -254,7 +264,7 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
           new docx.Table({
             width: { size: 100, type: docx.WidthType.PERCENTAGE },
             rows: [
-              new docx.TableRow({ children: [new docx.TableCell({ children: [new docx.Paragraph({ text: "Candidato:" })], width: { size: 20, type: docx.WidthType.PERCENTAGE } }), new docx.TableCell({ children: [new docx.Paragraph({ text: candidateToPrint.name, bold: true })] })] }),
+              new docx.TableRow({ children: [new docx.TableCell({ children: [new docx.Paragraph({ text: "Candidato:" })], width: { size: 20, type: docx.WidthType.PERCENTAGE } }), new docx.TableCell({ children: [new docx.Paragraph({ children: [new docx.TextRun({ text: candidateToPrint.name, bold: true })] })] })] }),
               new docx.TableRow({ children: [new docx.TableCell({ children: [new docx.Paragraph({ text: "Apelido:" })] }), new docx.TableCell({ children: [new docx.Paragraph({ text: candidateToPrint.nickname })] })] }),
               new docx.TableRow({ children: [new docx.TableCell({ children: [new docx.Paragraph({ text: "Setor:" })] }), new docx.TableCell({ children: [new docx.Paragraph({ text: candidateToPrint.sector })] })] }),
               new docx.TableRow({ children: [new docx.TableCell({ children: [new docx.Paragraph({ text: "Função:" })] }), new docx.TableCell({ children: [new docx.Paragraph({ text: candidateToPrint.role })] })] }),
@@ -1890,77 +1900,231 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
           <div className="min-h-[500px]">
             {activeTab === 'eleicao' && (
               <div className="space-y-6 animate-in zoom-in duration-300">
-                {!isCalendarGenerated ? (
-                  <div className="bg-white rounded-[3rem] border border-emerald-100 shadow-2xl p-12 text-center flex flex-col items-center">
-                    <Gavel size={48} className="text-emerald-600 mb-8" />
-                    <h2 className="text-3xl font-black text-emerald-950 uppercase mb-2">Calendário Eleitoral</h2>
-                    <div className="w-full max-w-md bg-emerald-50 p-8 rounded-[2.5rem] border border-emerald-100 space-y-6">
-                      <p className="text-sm text-emerald-600 font-medium">Informe a data da posse anterior para cálculo da NR-5.</p>
-                      <input type="date" value={baseDate} onChange={(e) => setBaseDate(e.target.value)} className="w-full bg-white border border-emerald-200 p-4 rounded-xl font-black text-emerald-950 outline-none shadow-sm" />
-                      <button onClick={handleCreateElection} disabled={!baseDate} className="w-full bg-emerald-600 text-white py-4 rounded-2xl font-black text-xs uppercase shadow-xl hover:bg-emerald-500 disabled:opacity-30 transition-all">Gerar Calendário</button>
+
+                {/* MENU VIEW */}
+                {eleicaoView === 'menu' && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 py-10">
+                    <button
+                      onClick={() => setEleicaoView('dimensionamento')}
+                      className="bg-white p-12 rounded-[3rem] border border-emerald-100 shadow-xl hover:shadow-2xl hover:-translate-y-2 hover:border-emerald-300 transition-all group group text-left space-y-4"
+                    >
+                      <div className="w-20 h-20 bg-emerald-50 rounded-3xl flex items-center justify-center text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white transition-all">
+                        <Users2 size={40} />
+                      </div>
+                      <div>
+                        <h3 className="text-2xl font-black text-emerald-950 uppercase group-hover:text-emerald-700 transition-all">Dimensionamento</h3>
+                        <p className="text-sm font-bold text-slate-400 mt-2">Cálculo de integrantes da CIPA (NR-5) baseado no quadro de funcionários e CNAE.</p>
+                      </div>
+                    </button>
+
+                    <button
+                      onClick={() => setEleicaoView('calendario')}
+                      className="bg-white p-12 rounded-[3rem] border border-emerald-100 shadow-xl hover:shadow-2xl hover:-translate-y-2 hover:border-emerald-300 transition-all group text-left space-y-4"
+                    >
+                      <div className="w-20 h-20 bg-emerald-100 rounded-3xl flex items-center justify-center text-emerald-800 group-hover:bg-emerald-800 group-hover:text-white transition-all">
+                        <CalendarDays size={40} />
+                      </div>
+                      <div>
+                        <h3 className="text-2xl font-black text-emerald-950 uppercase group-hover:text-emerald-700 transition-all">Cronograma Eleitoral</h3>
+                        <p className="text-sm font-bold text-slate-400 mt-2">Gerenciamento de prazos, etapas do processo eleitoral e geração de editais.</p>
+                      </div>
+                    </button>
+                  </div>
+                )}
+
+                {/* DIMENSIONAMENTO VIEW */}
+                {eleicaoView === 'dimensionamento' && (
+                  <div className="bg-white rounded-[3rem] border border-emerald-100 shadow-xl overflow-hidden min-h-[600px] flex flex-col">
+                    <div className="p-8 border-b border-emerald-50 bg-emerald-50/30 flex items-center justify-between">
+                      <button onClick={() => setEleicaoView('menu')} className="flex items-center gap-2 text-emerald-600 font-black text-xs uppercase hover:text-emerald-800 transition-all">
+                        <ArrowLeft size={18} /> Voltar ao Menu
+                      </button>
+                    </div>
+
+                    <div className="p-12 max-w-4xl mx-auto w-full space-y-12">
+                      <div className="text-center space-y-2">
+                        <h2 className="text-3xl font-black text-emerald-950 uppercase">Dimensionamento da CIPA</h2>
+                        <p className="text-emerald-600 font-black text-sm uppercase tracking-widest">Norma Regulamentadora Nº 05 (Quadro I)</p>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                        <div className="space-y-6">
+                          <div className="space-y-2">
+                            <label className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Grupo (NR-5)</label>
+                            <select
+                              value={companyRiskGroup}
+                              onChange={(e) => setCompanyRiskGroup(e.target.value)}
+                              className="w-full bg-emerald-50 p-4 rounded-xl font-black text-emerald-950 outline-none focus:ring-2 focus:ring-emerald-200 transition-all"
+                            >
+                              <option value="">Selecione o Grupo...</option>
+                              <option value="C-1">C-1 (Minerais)</option>
+                              <option value="C-2">C-2 (Alimentos)</option>
+                              <option value="C-3">C-3 (Têxteis)</option>
+                              <option value="C-3a">C-3a (Construção Civil)</option>
+                              <option value="C-4">C-4 (Calçados)</option>
+                              <option value="C-5">C-5 (Madeira)</option>
+                              <option value="C-6">C-6 (Papel)</option>
+                              <option value="C-7">C-7 (Químicos)</option>
+                              <option value="C-14">C-14 (Comércio)</option>
+                              <option value="C-18">C-18 (Finaceiros)</option>
+                              <option value="C-21">C-21 (Ensino)</option>
+                              <option value="C-22">C-22 (Saúde)</option>
+                              <option value="C-29">C-29 (Comércio Varejista)</option>
+                              <option value="OUTROS">Outros...</option>
+                            </select>
+                            <p className="text-[10px] text-slate-400 font-bold">Consulte o Quadro I da NR-5 para identificar o grupo correto pelo CNAE.</p>
+                          </div>
+
+                          <div className="space-y-2">
+                            <label className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Número de Empregados</label>
+                            <input
+                              type="number"
+                              placeholder="Total de efetivos na unidade"
+                              className="w-full bg-emerald-50 p-4 rounded-xl font-black text-emerald-950 outline-none focus:ring-2 focus:ring-emerald-200 transition-all"
+                              onChange={(e) => {
+                                const num = parseInt(e.target.value);
+                                if (!companyRiskGroup || isNaN(num)) return;
+
+                                let efetivos = 0;
+                                let suplentes = 0;
+
+                                // Basic logic implementation for demo purposes
+                                // This should ideally be replaced with the full NR-5 table lookup
+                                if (num < 20) {
+                                  efetivos = 0; suplentes = 0;
+                                } else if (num <= 50) {
+                                  if (['C-1', 'C-2', 'C-3a'].includes(companyRiskGroup)) { efetivos = 1; suplentes = 1; }
+                                  else { efetivos = 0; suplentes = 0; }
+                                } else if (num <= 80) {
+                                  efetivos = 2; suplentes = 2;
+                                } else if (num <= 100) {
+                                  efetivos = 3; suplentes = 3;
+                                } else {
+                                  efetivos = 4; suplentes = 3;
+                                }
+
+                                if (companyRiskGroup === 'OUTROS') {
+                                  efetivos = Math.floor(num / 50);
+                                  suplentes = Math.floor(efetivos * 0.8);
+                                }
+
+                                setCipaDimensioning({ efetivos, suplentes });
+                              }}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="col-span-1 bg-emerald-900 rounded-[2rem] p-8 text-white flex flex-col justify-center relative overflow-hidden">
+                          <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/20 rounded-full blur-3xl -mr-20 -mt-20"></div>
+                          <div className="absolute bottom-0 left-0 w-32 h-32 bg-emerald-400/20 rounded-full blur-2xl -ml-10 -mb-10"></div>
+
+                          <h3 className="text-center font-black text-emerald-400 uppercase tracking-widest mb-8 relative z-10">Dimensionamento Sugerido</h3>
+
+                          <div className="flex items-center justify-around relative z-10">
+                            <div className="text-center">
+                              <span className="text-6xl font-black block mb-2">{cipaDimensioning.efetivos}</span>
+                              <span className="text-[10px] font-black uppercase tracking-widest opacity-60">Efetivos</span>
+                            </div>
+                            <div className="h-16 w-px bg-white/20"></div>
+                            <div className="text-center">
+                              <span className="text-6xl font-black block mb-2 text-emerald-400 transition-all">{cipaDimensioning.suplentes}</span>
+                              <span className="text-[10px] font-black uppercase tracking-widest opacity-60">Suplentes</span>
+                            </div>
+                          </div>
+
+                          {cipaDimensioning.efetivos === 0 && (
+                            <div className="mt-8 text-center text-xs font-bold opacity-60 bg-white/10 p-4 rounded-xl relative z-10">
+                              Com base nos dados informados, não há necessidade de formação de CIPA, apenas designação de responsável (NR-5 item 5.4.13).
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </div>
-                ) : (
-                  <div className="space-y-6 print:space-y-4">
-                    <div className="hidden print:flex items-center justify-between border-b-2 border-emerald-600 pb-4 mb-4">
-                      <div>
-                        <h2 className="text-2xl font-black text-emerald-950 uppercase">Cronograma Eleitoral</h2>
-                        <p className="text-sm font-bold text-emerald-600 uppercase tracking-widest">{activeCompany.name} - Gestão {selectedTerm?.year}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-xs font-black text-slate-900 uppercase">Unidade: {activeBranch.name}</p>
-                      </div>
+                )}
+
+                {/* CALENDARIO VIEW */}
+                {eleicaoView === 'calendario' && (
+                  <div className="animate-in slide-in-from-right-12 duration-500">
+                    <div className="mb-4">
+                      <button onClick={() => setEleicaoView('menu')} className="flex items-center gap-2 text-emerald-600 font-black text-xs uppercase hover:text-emerald-800 transition-all">
+                        <ArrowLeft size={18} /> Voltar ao Menu
+                      </button>
                     </div>
 
-                    <div className="bg-white p-8 rounded-[3rem] border border-emerald-100 shadow-xl flex items-center justify-between print:hidden">
-                      <div><h3 className="text-xl font-black text-emerald-950 uppercase flex items-center gap-2"><CheckCircle2 className="text-emerald-500" size={24} /> Progresso do Pleito</h3></div>
-                      <div className="flex items-center gap-6">
-                        <span className="text-4xl font-black text-emerald-600">{progressPercentage}%</span>
-                        <div className="w-64 h-3 bg-emerald-50 rounded-full overflow-hidden border border-emerald-100"><div className="h-full bg-emerald-500 transition-all duration-1000" style={{ width: `${progressPercentage}%` }} /></div>
+                    {!isCalendarGenerated ? (
+                      <div className="bg-white rounded-[3rem] border border-emerald-100 shadow-2xl p-12 text-center flex flex-col items-center">
+                        <Gavel size={48} className="text-emerald-600 mb-8" />
+                        <h2 className="text-3xl font-black text-emerald-950 uppercase mb-2">Calendário Eleitoral</h2>
+                        <div className="w-full max-w-md bg-emerald-50 p-8 rounded-[2.5rem] border border-emerald-100 space-y-6">
+                          <p className="text-sm text-emerald-600 font-medium">Informe a data da posse anterior para cálculo da NR-5.</p>
+                          <input type="date" value={baseDate} onChange={(e) => setBaseDate(e.target.value)} className="w-full bg-white border border-emerald-200 p-4 rounded-xl font-black text-emerald-950 outline-none shadow-sm" />
+                          <button onClick={handleCreateElection} disabled={!baseDate} className="w-full bg-emerald-600 text-white py-4 rounded-2xl font-black text-xs uppercase shadow-xl hover:bg-emerald-500 disabled:opacity-30 transition-all">Gerar Calendário</button>
+                        </div>
                       </div>
-                    </div>
+                    ) : (
+                      <div className="space-y-6 print:space-y-4">
+                        <div className="hidden print:flex items-center justify-between border-b-2 border-emerald-600 pb-4 mb-4">
+                          <div>
+                            <h2 className="text-2xl font-black text-emerald-950 uppercase">Cronograma Eleitoral</h2>
+                            <p className="text-sm font-bold text-emerald-600 uppercase tracking-widest">{activeCompany.name} - Gestão {selectedTerm?.year}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-xs font-black text-slate-900 uppercase">Unidade: {activeBranch.name}</p>
+                          </div>
+                        </div>
 
-                    <div className="bg-white rounded-[3rem] border border-emerald-100 shadow-2xl overflow-hidden print:border-none print:shadow-none">
-                      <table className="w-full text-left">
-                        <thead>
-                          <tr className="bg-emerald-50/50 text-[10px] font-black text-emerald-900 uppercase tracking-widest border-b border-emerald-100 print:bg-slate-100">
-                            <th className="px-8 py-5 w-16 print:hidden">OK</th>
-                            <th className="px-8 py-5">Item do Processo</th>
-                            <th className="px-8 py-5 text-center">Data</th>
-                            <th className="px-8 py-5 text-center">Dia da Semana</th>
-                            <th className="px-8 py-5 text-center print:hidden">Ação</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-emerald-50">
-                          {calendarItems.map((ev) => {
-                            const isDone = completedSteps.includes(ev.id);
-                            return (
-                              <tr key={ev.id} className={`transition-all ${isDone ? 'bg-emerald-50 opacity-60' : 'hover:bg-emerald-50/50'}`}>
-                                <td className="px-8 py-4 print:hidden">
-                                  <button onClick={() => toggleStep(ev.id)} className={`w-8 h-8 rounded-xl border-2 flex items-center justify-center transition-all ${isDone ? 'bg-emerald-500 border-emerald-500 text-white shadow-lg' : 'border-emerald-100 hover:border-emerald-300'}`}>
-                                    <Check size={18} />
-                                  </button>
-                                </td>
-                                <td className={`px-8 py-4 font-black text-xs ${isDone ? 'text-emerald-800 line-through' : 'text-emerald-950'}`}>{ev.item}</td>
-                                <td className={`px-8 py-4 text-center font-bold text-xs ${isDone ? 'text-emerald-800 line-through' : 'text-emerald-600'}`}>{new Date(ev.date).toLocaleDateString()}</td>
-                                <td className={`px-8 py-4 text-center text-[10px] font-black uppercase tracking-tighter ${isDone ? 'text-emerald-800 line-through' : 'text-emerald-400'}`}>{ev.weekDay}</td>
-                                <td className="px-8 py-4 text-center print:hidden">
-                                  <button onClick={() => {
-                                    if (ev.id === 'ev1') setActiveStepView('ev1');
-                                    if (ev.id === 'ev2') setActiveStepView('ev2');
-                                    if (ev.id === 'ev3') setActiveStepView('ev3');
-                                    if (ev.id === 'ev4') setActiveStepView('ev4');
-                                    if (ev.id === 'ev6') setActiveStepView('ev6');
-                                  }} className={`p-2.5 rounded-xl transition-all ${['ev1', 'ev2', 'ev3', 'ev4', 'ev6'].includes(ev.id) ? 'text-emerald-600 bg-emerald-50 hover:bg-emerald-100 shadow-sm' : 'text-emerald-100 cursor-not-allowed'}`}>
-                                    <Edit3 size={18} />
-                                  </button>
-                                </td>
+                        <div className="bg-white p-8 rounded-[3rem] border border-emerald-100 shadow-xl flex items-center justify-between print:hidden">
+                          <div><h3 className="text-xl font-black text-emerald-950 uppercase flex items-center gap-2"><CheckCircle2 className="text-emerald-500" size={24} /> Progresso do Pleito</h3></div>
+                          <div className="flex items-center gap-6">
+                            <span className="text-4xl font-black text-emerald-600">{progressPercentage}%</span>
+                            <div className="w-64 h-3 bg-emerald-50 rounded-full overflow-hidden border border-emerald-100"><div className="h-full bg-emerald-500 transition-all duration-1000" style={{ width: `${progressPercentage}%` }} /></div>
+                          </div>
+                        </div>
+
+                        <div className="bg-white rounded-[3rem] border border-emerald-100 shadow-2xl overflow-hidden print:border-none print:shadow-none">
+                          <table className="w-full text-left">
+                            <thead>
+                              <tr className="bg-emerald-50/50 text-[10px] font-black text-emerald-900 uppercase tracking-widest border-b border-emerald-100 print:bg-slate-100">
+                                <th className="px-8 py-5 w-16 print:hidden">OK</th>
+                                <th className="px-8 py-5">Item do Processo</th>
+                                <th className="px-8 py-5 text-center">Data</th>
+                                <th className="px-8 py-5 text-center">Dia da Semana</th>
+                                <th className="px-8 py-5 text-center print:hidden">Ação</th>
                               </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
+                            </thead>
+                            <tbody className="divide-y divide-emerald-50">
+                              {calendarItems.map((ev) => {
+                                const isDone = completedSteps.includes(ev.id);
+                                return (
+                                  <tr key={ev.id} className={`transition-all ${isDone ? 'bg-emerald-50 opacity-60' : 'hover:bg-emerald-50/50'}`}>
+                                    <td className="px-8 py-4 print:hidden">
+                                      <button onClick={() => toggleStep(ev.id)} className={`w-8 h-8 rounded-xl border-2 flex items-center justify-center transition-all ${isDone ? 'bg-emerald-500 border-emerald-500 text-white shadow-lg' : 'border-emerald-100 hover:border-emerald-300'}`}>
+                                        <Check size={18} />
+                                      </button>
+                                    </td>
+                                    <td className={`px-8 py-4 font-black text-xs ${isDone ? 'text-emerald-800 line-through' : 'text-emerald-950'}`}>{ev.item}</td>
+                                    <td className={`px-8 py-4 text-center font-bold text-xs ${isDone ? 'text-emerald-800 line-through' : 'text-emerald-600'}`}>{new Date(ev.date).toLocaleDateString()}</td>
+                                    <td className={`px-8 py-4 text-center text-[10px] font-black uppercase tracking-tighter ${isDone ? 'text-emerald-800 line-through' : 'text-emerald-400'}`}>{ev.weekDay}</td>
+                                    <td className="px-8 py-4 text-center print:hidden">
+                                      <button onClick={() => {
+                                        if (ev.id === 'ev1') setActiveStepView('ev1');
+                                        if (ev.id === 'ev2') setActiveStepView('ev2');
+                                        if (ev.id === 'ev3') setActiveStepView('ev3');
+                                        if (ev.id === 'ev4') setActiveStepView('ev4');
+                                        if (ev.id === 'ev6') setActiveStepView('ev6');
+                                      }} className={`p-2.5 rounded-xl transition-all ${['ev1', 'ev2', 'ev3', 'ev4', 'ev6'].includes(ev.id) ? 'text-emerald-600 bg-emerald-50 hover:bg-emerald-100 shadow-sm' : 'text-emerald-100 cursor-not-allowed'}`}>
+                                        <Edit3 size={18} />
+                                      </button>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

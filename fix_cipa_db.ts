@@ -4,11 +4,11 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 async function main() {
-    try {
-        console.log("Checking columns in cipa_mandatos...");
+  try {
+    console.log("Checking columns in cipa_mandatos...");
 
-        // Add columns if they don't exist
-        await prisma.$executeRawUnsafe(`
+    // Add columns if they don't exist
+    await prisma.$executeRawUnsafe(`
       DO $$ 
       BEGIN 
         BEGIN
@@ -24,21 +24,24 @@ async function main() {
       END $$;
     `);
 
-        console.log("Columns ensured.");
+    console.log("Columns ensured.");
 
-        // Verify
-        const result = await prisma.$queryRawUnsafe(`
+    // Verify
+    const result = await prisma.$queryRawUnsafe(`
       SELECT column_name 
       FROM information_schema.columns 
       WHERE table_name = 'cipa_mandatos';
     `);
-        console.log("Current columns:", result);
+    console.log("Current columns:", result);
 
-    } catch (e) {
-        console.error("Error:", e);
-    } finally {
-        await prisma.$disconnect();
-    }
+  } catch (e: any) {
+    console.error("Error executing DB fix:");
+    console.error(e.message || e);
+    if (e.meta) console.error("Meta:", e.meta);
+    if (e.code) console.error("Code:", e.code);
+  } finally {
+    await prisma.$disconnect();
+  }
 }
 
 main();
