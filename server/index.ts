@@ -1320,6 +1320,39 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(distPath, 'index.html'));
 });
 
-app.listen(PORT, () => {
+// Database Connection and Migration Check
+const ensureCipaTableExists = async () => {
+  try {
+    console.log('Verifying CipaCandidate table...');
+
+    await prisma.$executeRawUnsafe(`
+            CREATE TABLE IF NOT EXISTS "cipa_candidatos" (
+                "id" TEXT NOT NULL,
+                "mandato_id" TEXT NOT NULL,
+                "colaborador_id" TEXT NOT NULL,
+                "data_inscricao" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                "url_assinatura" TEXT,
+                "status" TEXT NOT NULL DEFAULT 'APPROVED',
+                CONSTRAINT "cipa_candidatos_pkey" PRIMARY KEY ("id")
+            );
+        `);
+
+    // Check if foreign keys exist, if not, add them (graceful failure if exists)
+    try {
+      await prisma.$executeRawUnsafe(`ALTER TABLE "cipa_candidatos" ADD CONSTRAINT "cipa_candidatos_mandato_id_fkey" FOREIGN KEY ("mandato_id") REFERENCES "cipa_mandatos"("id") ON DELETE RESTRICT ON UPDATE CASCADE;`);
+    } catch (e) { /* ignore if constraint exists */ }
+
+    try {
+      await prisma.$executeRawUnsafe(`ALTER TABLE "cipa_candidatos" ADD CONSTRAINT "cipa_candidatos_colaborador_id_fkey" FOREIGN KEY ("colaborador_id") REFERENCES "colaboradores"("id") ON DELETE RESTRICT ON UPDATE CASCADE;`);
+    } catch (e) { /* ignore if constraint exists */ }
+
+    console.log('CipaCandidates table verified/created.');
+  } catch (error) {
+    console.error('Error creating CipaCandidate table:', error);
+  }
+};
+
+app.listen(Number(PORT), '0.0.0.0', async () => {
   console.log(`Server is running on port ${PORT}`);
+  await ensureCipaTableExists();
 });
