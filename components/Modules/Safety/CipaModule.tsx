@@ -41,6 +41,7 @@ import {
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
+import * as docx from 'docx';
 import { Collaborator, CipaTerm, Branch, Company, Cipeiro, CipaMeeting, CipaActionPlan, CipaRole, CipaOrigin } from '../../../types';
 import { getNr5Group } from './nr5_cnae_mapping';
 
@@ -393,6 +394,19 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
 
 
 
+  const getImageArrayBuffer = async (url: string): Promise<ArrayBuffer | null> => {
+    try {
+      const proxyUrl = `/api/proxy-image?url=${encodeURIComponent(url)}`;
+      const response = await fetch(proxyUrl);
+      if (!response.ok) return null;
+      return await response.arrayBuffer();
+    } catch (error) {
+      console.error("Error fetching logo:", error);
+      return null;
+    }
+  };
+
+
   /* 
    * PDF Generation for Candidate Registration 
    * Uses jsPDF to create a clean, professional layout.
@@ -418,16 +432,6 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
     // -- Header --
     const logoUrl = activeBranch.logoUrl || activeCompany.logoUrl;
     let yPos = 20;
-
-    if (logoUrl) {
-      try {
-        // Try to add logo (might fail due to CORS if not proxied, but giving it a try or skipping)
-        // For robustness in this environment, we might skip or assume it works if same domain.
-        // Taking a simpler approach: Just text header if image fails, or use a placeholder.
-        // To properly use images in jsPDF from URL, they need to be Base64.
-        // We'll skip complex image proxying for now to ensure reliability of the PDF generation itself.
-      } catch (e) { }
-    }
 
     doc.setTextColor(2, 62, 58); // Emerald 900
     centerText(activeCompany.name.toUpperCase(), yPos, 14, true);
@@ -467,58 +471,35 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
       doc.text(value, rightColX, y);
     };
 
-    // Translate IDs to Names
-    // We stored IDs in 'sector' and 'role' fields in previous mock logic manually, 
-    // but in the real 'candidates' state from DB, we might want to ensure we have the names.
-    // Let's check how 'candidates' are populated. 
-    // In 'handleConfirmRegistration', we did:
-    // sector: collaborator.branchId, role: collaborator.roleId.
-    // We need to find the names from the props.
-    const branchName = branches.find(b => b.id === candidate.sector)?.name || candidate.sector; // fallback
-    const roleName = roles.find(r => r.id === candidate.role)?.name || candidate.role; // fallback
-    // Actually, candidate.sector stored branchId in the mock in handleConfirm?
-    // Let's verify: 
-    // In handleConfirmRegistration: sector: collab?.branchId || '', role: collab?.roleId || ''
-    // So yes, they are IDs. We need to lookup.
-    // Wait, 'roles' and 'branches' are available in scope? Yes, CipaModule props/state.
+    // Lookup collaborator to get proper names for Sector/Role/Function
+    // Assuming 'candidate.name' is unique enough or we iterate list.
+    // Collaborator object has nested branch and role from API fetch.
+    const collaborator = collaborators.find(c => c.name === candidate.name);
 
-    // Lookup actual function name
-    // The 'role' field in candidate might be 'roleId' or 'functionId'. 
-    // In Collaborator type: roleId, functionId.
-    // In the handleConfirm, we used role: collab.roleId.
-    // Let's try to find the Role name.
-    const roleObj = roles.find(r => r.id === candidate.role);
-    const displayRole = roleObj ? roleObj.name : candidate.role;
-
-    // What about "Setor"? Usually Branch or Department. 
-    // If candidate.sector is branchId, we use branch name.
-    const branchObj = branches.find(b => b.id === candidate.sector);
-    const displaySector = branchObj ? branchObj.name : candidate.sector;
-
+    const displaySector = collaborator?.branch?.name || candidate.sector || '';
+    const displayRole = collaborator?.role?.name || candidate.role || '';
+    const displayFunction = collaborator?.jobFunction?.name || '';
+    const displayCpf = collaborator?.cpf || '';
+    const displayRegistration = collaborator?.registration || '';
 
     addField("NOME:", candidate.name, contentY);
     contentY += 10;
-    addField("CPF:", collaborators.find(c => c.name === candidate.name)?.cpf || "Not Found", contentY); // Ideally link by ID
+    addField("CPF:", displayCpf, contentY);
     contentY += 10;
     addField("SETOR/UNIDADE:", displaySector, contentY);
     contentY += 10;
-    addField("FUNÇÃO:", displayRole, contentY);
+    addField("CARGO:", displayRole, contentY);
     contentY += 10;
+    if (displayFunction) {
+      addField("FUNÇÃO:", displayFunction, contentY);
+      contentY += 10;
+    }
     addField("DATA INSCRIÇÃO:", `${candidate.date} às ${candidate.time}`, contentY);
     contentY += 10;
-    addField("Nº REGISTRO:", candidate.id.substring(0, 8).toUpperCase(), contentY);
+    addField("Nº MATRÍCULA:", displayRegistration, contentY);
 
     // -- Signature Area --
     yPos += 110;
-
-    // Fetch full candidate data to get signature URL if not in local list fully
-    // The local list 'candidates' usually has minimal data.
-    // We need the signature URL.
-    // We'll trust if 'signatureUrl' is in candidate object.
-    // If not, we might fail to show signature.
-    // The 'setCandidates' in 'handleConfirmRegistration' did NOT add signatureUrl to local state.
-    // We should probably fetch the candidate details or ensure local state has it.
-    // For now, let's try to use the one from DB if we can, or just standard box.
 
     // IMPROVEMENT: Retrieve signature URL from backend for PDF
     try {
@@ -526,10 +507,20 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
       if (res.ok) {
         const fullData = await res.json();
         if (fullData.signatureUrl) {
-          const imgProps = doc.getImageProperties(fullData.signatureUrl);
+          // If simpler way fails, we might need proxy or base64.
+          // For now, assume public URL works or try proxy.
+          const proxyUrl = `/api/proxy-image?url=${encodeURIComponent(fullData.signatureUrl)}`;
+          const imgEl = new Image();
+          imgEl.src = proxyUrl;
+          // Wait for load via promise
+          await new Promise((resolve) => {
+            imgEl.onload = resolve;
+            imgEl.onerror = resolve;
+          });
+
           const imgWidth = 50;
-          const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
-          doc.addImage(fullData.signatureUrl, 'PNG', (pageWidth - imgWidth) / 2, yPos, imgWidth, imgHeight);
+          const imgHeight = (imgEl.height * imgWidth) / imgEl.width;
+          doc.addImage(imgEl, 'PNG', (pageWidth - imgWidth) / 2, yPos, imgWidth, imgHeight);
         }
       }
     } catch (e) { console.error("Could not fetch signature for PDF", e); }
@@ -2140,16 +2131,15 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
                               <td className="p-6 text-sm text-slate-500">{candidate.sector}</td>
                               <td className="p-6 text-sm font-bold text-emerald-600">{candidate.date} - {candidate.time}</td>
                               <td className="p-6 text-right">
-                                <td className="p-6 text-right">
-                                  <div className="flex justify-end gap-2">
-                                    <button onClick={() => generateFichaInscricaoPDF(candidate.id)} className="text-emerald-600 bg-emerald-50 hover:bg-emerald-100 p-2 rounded-lg transition-all" title="Baixar PDF">
-                                      <FileDown size={18} />
-                                    </button>
-                                    <button onClick={() => handleDeleteCandidate(candidate.id)} className="text-red-400 bg-red-50 hover:bg-red-100 p-2 rounded-lg transition-all" title="Excluir Candidatura">
-                                      <Trash2 size={18} />
-                                    </button>
-                                  </div>
-                                </td>
+                                <div className="flex justify-end gap-2">
+                                  <button onClick={() => generateFichaInscricaoPDF(candidate.id)} className="text-emerald-600 bg-emerald-50 hover:bg-emerald-100 p-2 rounded-lg transition-all" title="Baixar PDF">
+                                    <FileDown size={18} />
+                                  </button>
+                                  <button onClick={() => handleDeleteCandidate(candidate.id)} className="text-red-400 bg-red-50 hover:bg-red-100 p-2 rounded-lg transition-all" title="Excluir Candidatura">
+                                    <Trash2 size={18} />
+                                  </button>
+                                </div>
+                              </td>
                             </tr>
                           ))
                         )}
