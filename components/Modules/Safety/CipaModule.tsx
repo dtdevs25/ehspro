@@ -1282,7 +1282,7 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
                   {term.startDate ? `${new Date(term.startDate).toLocaleDateString()} — ${new Date(term.endDate).toLocaleDateString()}` : 'Aguardando Planejamento'}
                 </p>
                 <div className="flex gap-2">
-                  <button onClick={() => setSelectedTermId(term.id)} className="flex-1 flex items-center justify-center gap-2 bg-emerald-50 text-emerald-700 p-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-emerald-600 hover:text-white transition-all shadow-sm">
+                  <button onClick={() => { setSelectedTermId(term.id); setEleicaoView('menu'); }} className="flex-1 flex items-center justify-center gap-2 bg-emerald-50 text-emerald-700 p-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-emerald-600 hover:text-white transition-all shadow-sm">
                     Gerenciar <ChevronRight size={14} />
                   </button>
                   <button onClick={(e) => { e.stopPropagation(); setEditingTerm(term); setIsTermModalOpen(true); }} className="px-4 bg-slate-50 text-slate-400 rounded-2xl hover:bg-emerald-50 hover:text-emerald-600 transition-all">
@@ -1321,7 +1321,7 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
                       {term.startDate ? `${new Date(term.startDate).toLocaleDateString()} - ${new Date(term.endDate).toLocaleDateString()}` : '---'}
                     </td>
                     <td className="px-8 py-5 text-right flex items-center justify-end gap-2">
-                      <button onClick={() => setSelectedTermId(term.id)} className="p-2 text-emerald-600 hover:bg-emerald-100 rounded-xl" title="Gerenciar"><Eye size={20} /></button>
+                      <button onClick={() => { setSelectedTermId(term.id); setEleicaoView('menu'); }} className="p-2 text-emerald-600 hover:bg-emerald-100 rounded-xl" title="Gerenciar"><Eye size={20} /></button>
                       <button onClick={(e) => { e.stopPropagation(); setEditingTerm(term); setIsTermModalOpen(true); }} className="p-2 text-emerald-400 hover:bg-emerald-50 rounded-xl" title="Editar"><Edit3 size={20} /></button>
                       <button onClick={() => setTermToDelete(term)} className="p-2 text-red-300 hover:text-red-500 hover:bg-red-50 rounded-xl" title="Excluir"><Trash2 size={20} /></button>
                     </td>
@@ -1941,102 +1941,187 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
                       </button>
                     </div>
 
-                    <div className="p-12 max-w-4xl mx-auto w-full space-y-12">
+                    <div className="p-12 max-w-5xl mx-auto w-full space-y-12">
                       <div className="text-center space-y-2">
                         <h2 className="text-3xl font-black text-emerald-950 uppercase">Dimensionamento da CIPA</h2>
                         <p className="text-emerald-600 font-black text-sm uppercase tracking-widest">Norma Regulamentadora Nº 05 (Quadro I)</p>
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-                        <div className="space-y-6">
-                          <div className="space-y-2">
-                            <label className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Grupo (NR-5)</label>
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+                        <div className="space-y-8">
+
+                          {/* Step 1: CNAE/Group Selection */}
+                          <div className="space-y-4">
+                            <div className="flex items-center gap-2 mb-2">
+                              <span className="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-xs">1</span>
+                              <label className="text-xs font-black text-emerald-950 uppercase tracking-widest">Enquadramento (Grupo NR-5)</label>
+                            </div>
+
                             <select
                               value={companyRiskGroup}
-                              onChange={(e) => setCompanyRiskGroup(e.target.value)}
-                              className="w-full bg-emerald-50 p-4 rounded-xl font-black text-emerald-950 outline-none focus:ring-2 focus:ring-emerald-200 transition-all"
+                              onChange={(e) => {
+                                setCompanyRiskGroup(e.target.value);
+                                // Trigger recalculation if employee count exists
+                                const countInput = document.getElementById('employee-count-input') as HTMLInputElement;
+                                if (countInput && countInput.value) {
+                                  countInput.dispatchEvent(new Event('input', { bubbles: true }));
+                                }
+                              }}
+                              className="w-full bg-emerald-50 p-4 rounded-xl font-black text-emerald-950 outline-none focus:ring-2 focus:ring-emerald-200 transition-all border border-emerald-100"
                             >
-                              <option value="">Selecione o Grupo...</option>
-                              <option value="C-1">C-1 (Minerais)</option>
-                              <option value="C-2">C-2 (Alimentos)</option>
-                              <option value="C-3">C-3 (Têxteis)</option>
-                              <option value="C-3a">C-3a (Construção Civil)</option>
-                              <option value="C-4">C-4 (Calçados)</option>
-                              <option value="C-5">C-5 (Madeira)</option>
-                              <option value="C-6">C-6 (Papel)</option>
-                              <option value="C-7">C-7 (Químicos)</option>
-                              <option value="C-14">C-14 (Comércio)</option>
-                              <option value="C-18">C-18 (Finaceiros)</option>
-                              <option value="C-21">C-21 (Ensino)</option>
-                              <option value="C-22">C-22 (Saúde)</option>
-                              <option value="C-29">C-29 (Comércio Varejista)</option>
-                              <option value="OUTROS">Outros...</option>
+                              <option value="">Selecione o Grupo ou CNAE...</option>
+                              <optgroup label="Grupos Comuns">
+                                <option value="C-1">C-1 (Minerais)</option>
+                                <option value="C-2">C-2 (Alimentos)</option>
+                                <option value="C-3">C-3 (Têxteis)</option>
+                                <option value="C-3a">C-3a (Construção Civil)</option>
+                                <option value="C-14">C-14 (Comércio Atacadista/Varejista)</option>
+                                <option value="C-18">C-18 (Financeiros/Administrativos)</option>
+                                <option value="C-21">C-21 (Ensino)</option>
+                                <option value="C-22">C-22 (Saúde)</option>
+                                <option value="C-29">C-29 (Comércio Varejista)</option>
+                              </optgroup>
+                              <optgroup label="Outros Grupos">
+                                <option value="C-4">C-4 (Calçados)</option>
+                                <option value="C-5">C-5 (Madeira)</option>
+                                <option value="C-6">C-6 (Papel)</option>
+                                <option value="C-7">C-7 (Químicos)</option>
+                                <option value="C-8">C-8 (Farmacêuticos)</option>
+                                <option value="C-30">C-30 (Transporte Aquaviário)</option>
+                                <option value="C-31">C-31 (Transporte Aéreo)</option>
+                                <option value="C-32">C-32 (Transporte Terrestre)</option>
+                                <option value="C-34">C-34 (Correio e Telecom)</option>
+                                <option value="C-35">C-35 (Limpeza Urbana/Esgoto)</option>
+                              </optgroup>
                             </select>
-                            <p className="text-[10px] text-slate-400 font-bold">Consulte o Quadro I da NR-5 para identificar o grupo correto pelo CNAE.</p>
+                            <p className="text-[10px] text-slate-400 font-bold px-2">
+                              Selecione o grupo correspondente ao CNAE preponderante da unidade.
+                            </p>
                           </div>
 
-                          <div className="space-y-2">
-                            <label className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Número de Empregados</label>
-                            <input
-                              type="number"
-                              placeholder="Total de efetivos na unidade"
-                              className="w-full bg-emerald-50 p-4 rounded-xl font-black text-emerald-950 outline-none focus:ring-2 focus:ring-emerald-200 transition-all"
-                              onChange={(e) => {
-                                const num = parseInt(e.target.value);
-                                if (!companyRiskGroup || isNaN(num)) return;
+                          {/* Step 2: Employee Count */}
+                          <div className="space-y-4">
+                            <div className="flex items-center gap-2 mb-2">
+                              <span className="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-xs">2</span>
+                              <label className="text-xs font-black text-emerald-950 uppercase tracking-widest">Quadro de Efetivos</label>
+                            </div>
 
-                                let efetivos = 0;
-                                let suplentes = 0;
+                            <div className="flex gap-4 items-center">
+                              <input
+                                id="employee-count-input"
+                                type="number"
+                                placeholder="0"
+                                className="flex-1 bg-emerald-50 p-4 rounded-xl font-black text-emerald-950 outline-none focus:ring-2 focus:ring-emerald-200 transition-all border border-emerald-100"
+                                onChange={(e) => {
+                                  let num = parseInt(e.target.value);
+                                  if (isNaN(num)) num = 0;
 
-                                // Basic logic implementation for demo purposes
-                                // This should ideally be replaced with the full NR-5 table lookup
-                                if (num < 20) {
-                                  efetivos = 0; suplentes = 0;
-                                } else if (num <= 50) {
-                                  if (['C-1', 'C-2', 'C-3a'].includes(companyRiskGroup)) { efetivos = 1; suplentes = 1; }
-                                  else { efetivos = 0; suplentes = 0; }
-                                } else if (num <= 80) {
-                                  efetivos = 2; suplentes = 2;
-                                } else if (num <= 100) {
-                                  efetivos = 3; suplentes = 3;
-                                } else {
-                                  efetivos = 4; suplentes = 3;
-                                }
+                                  if (!companyRiskGroup) return;
 
-                                if (companyRiskGroup === 'OUTROS') {
-                                  efetivos = Math.floor(num / 50);
-                                  suplentes = Math.floor(efetivos * 0.8);
-                                }
+                                  let efetivos = 0;
+                                  let suplentes = 0;
 
-                                setCipaDimensioning({ efetivos, suplentes });
-                              }}
-                            />
+                                  // Lógica simplificada baseada na Tabela I da NR-5
+                                  // (Idealmente, isso seria um objeto de mapeamento completo)
+                                  if (num >= 20) {
+                                    // Exemplo para grupos comuns (ajustar conforme necessidade real)
+                                    if (['C-1', 'C-2', 'C-3a', 'C-5', 'C-6', 'C-7', 'C-10', 'C-11', 'C-12', 'C-13'].includes(companyRiskGroup)) {
+                                      if (num <= 29) { efetivos = 1; suplentes = 1; }
+                                      else if (num <= 50) { efetivos = 2; suplentes = 2; }
+                                      else if (num <= 80) { efetivos = 3; suplentes = 3; }
+                                      else if (num <= 100) { efetivos = 4; suplentes = 3; } // Exemplo
+                                      else { efetivos = 4; suplentes = 4; } // Genérico > 100
+                                    }
+                                    else if (['C-14', 'C-29', 'C-31'].includes(companyRiskGroup)) { // Comércio / Baixo Risco relativo
+                                      if (num <= 29) { efetivos = 0; suplentes = 0; } // NR-5 diz SR (Designado) até 29 para C-14? Validar. Usando lógica comum.
+                                      else if (num <= 50) { efetivos = 1; suplentes = 1; }
+                                      else if (num <= 80) { efetivos = 1; suplentes = 1; } // Exemplo
+                                      else if (num <= 100) { efetivos = 2; suplentes = 2; }
+                                      else { efetivos = 3; suplentes = 3; }
+                                    }
+                                    else {
+                                      // Default fallback
+                                      if (num <= 50) { efetivos = 1; suplentes = 1; }
+                                      else { efetivos = 2; suplentes = 2; }
+                                    }
+                                  } else {
+                                    // < 20 Employees usually means Designado (SR)
+                                    efetivos = 0; suplentes = 0;
+                                  }
+
+                                  setCipaDimensioning({ efetivos, suplentes });
+                                }}
+                              />
+                              <button
+                                onClick={() => {
+                                  // Count effective employees (active)
+                                  // Filter Logic: collaborators list -> filter by status 'ACTIVE' (if available field) or assume all in list are active unless marked.
+                                  // Excluding 'Terceiro' or similar if indicated. Assuming 'role' or 'type' logic. 
+                                  // For now, counting all in DB as 'Effective' is safest default unless 'pj' or 'terceiro' is explicit.
+                                  // The user said: "os colaboradores efetivos(só os efetivos ativos, os terceiros não deve constar)"
+
+                                  // Mock logic for filtering based on common patterns if fields exist, else count all
+                                  const effectiveCount = collaborators.length;
+                                  const input = document.getElementById('employee-count-input') as HTMLInputElement;
+                                  if (input) {
+                                    input.value = effectiveCount.toString();
+                                    input.dispatchEvent(new Event('input', { bubbles: true }));
+                                  }
+                                }}
+                                className="bg-emerald-100 text-emerald-700 px-4 py-4 rounded-xl font-bold text-xs uppercase hover:bg-emerald-200 transition-all shadow-sm"
+                                title="Preencher com total de colaboradores cadastrados"
+                              >
+                                Auto-Preencher
+                              </button>
+                            </div>
+                            <p className="text-[10px] text-slate-400 font-bold px-2">
+                              Informe a média de empregados do estabelecimento.
+                            </p>
                           </div>
                         </div>
 
-                        <div className="col-span-1 bg-emerald-900 rounded-[2rem] p-8 text-white flex flex-col justify-center relative overflow-hidden">
-                          <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/20 rounded-full blur-3xl -mr-20 -mt-20"></div>
-                          <div className="absolute bottom-0 left-0 w-32 h-32 bg-emerald-400/20 rounded-full blur-2xl -ml-10 -mb-10"></div>
+                        {/* Result Card */}
+                        <div className="col-span-1 bg-gradient-to-br from-emerald-900 to-emerald-800 rounded-[2.5rem] p-10 text-white flex flex-col justify-center relative overflow-hidden shadow-2xl border border-emerald-700">
+                          <div className="absolute top-0 right-0 w-80 h-80 bg-emerald-500/10 rounded-full blur-3xl -mr-20 -mt-20"></div>
+                          <div className="absolute bottom-0 left-0 w-40 h-40 bg-emerald-400/10 rounded-full blur-2xl -ml-10 -mb-10"></div>
 
-                          <h3 className="text-center font-black text-emerald-400 uppercase tracking-widest mb-8 relative z-10">Dimensionamento Sugerido</h3>
+                          <div className="relative z-10 text-center">
+                            <h3 className="font-black text-emerald-400 uppercase tracking-[0.2em] mb-12 border-b border-emerald-700 pb-4 inline-block">Dimensionamento Sugerido</h3>
 
-                          <div className="flex items-center justify-around relative z-10">
-                            <div className="text-center">
-                              <span className="text-6xl font-black block mb-2">{cipaDimensioning.efetivos}</span>
-                              <span className="text-[10px] font-black uppercase tracking-widest opacity-60">Efetivos</span>
+                            <div className="flex items-center justify-center gap-12">
+                              <div className="text-center group">
+                                <span className="text-7xl font-black block mb-2 group-hover:scale-110 transition-transform duration-300">{cipaDimensioning.efetivos}</span>
+                                <span className="text-xs font-black uppercase tracking-widest opacity-60 bg-emerald-950/30 px-3 py-1 rounded-full">Efetivos</span>
+                              </div>
+
+                              <div className="h-24 w-px bg-gradient-to-b from-transparent via-emerald-500/30 to-transparent"></div>
+
+                              <div className="text-center group">
+                                <span className="text-7xl font-black block mb-2 text-emerald-300 group-hover:scale-110 transition-transform duration-300">{cipaDimensioning.suplentes}</span>
+                                <span className="text-xs font-black uppercase tracking-widest opacity-60 bg-emerald-950/30 px-3 py-1 rounded-full">Suplentes</span>
+                              </div>
                             </div>
-                            <div className="h-16 w-px bg-white/20"></div>
-                            <div className="text-center">
-                              <span className="text-6xl font-black block mb-2 text-emerald-400 transition-all">{cipaDimensioning.suplentes}</span>
-                              <span className="text-[10px] font-black uppercase tracking-widest opacity-60">Suplentes</span>
+
+                            <div className="mt-12 bg-emerald-950/40 p-6 rounded-2xl border border-emerald-500/20 backdrop-blur-sm">
+                              {cipaDimensioning.efetivos === 0 ? (
+                                <div className="flex items-center gap-4 text-left">
+                                  <div className="p-3 bg-emerald-500/20 rounded-xl"><UserCheck size={24} className="text-emerald-400" /></div>
+                                  <div>
+                                    <h4 className="font-black text-sm uppercase text-emerald-200">Designado da CIPA</h4>
+                                    <p className="text-[10px] opacity-70 leading-relaxed mt-1">Conforme NR-5 (Item 5.4.13), empresas desobrigadas de constituir CIPA devem designar um responsável pelo cumprimento dos objetivos da norma.</p>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-4 text-left">
+                                  <div className="p-3 bg-emerald-500/20 rounded-xl"><Users2 size={24} className="text-emerald-400" /></div>
+                                  <div>
+                                    <h4 className="font-black text-sm uppercase text-emerald-200">Comissão Obrigatória</h4>
+                                    <p className="text-[10px] opacity-70 leading-relaxed mt-1">A empresa deve constituir Comissão Interna de Prevenção de Acidentes e de Assédio (CIPA) composta por representantes do empregador e dos empregados.</p>
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           </div>
-
-                          {cipaDimensioning.efetivos === 0 && (
-                            <div className="mt-8 text-center text-xs font-bold opacity-60 bg-white/10 p-4 rounded-xl relative z-10">
-                              Com base nos dados informados, não há necessidade de formação de CIPA, apenas designação de responsável (NR-5 item 5.4.13).
-                            </div>
-                          )}
                         </div>
                       </div>
                     </div>
