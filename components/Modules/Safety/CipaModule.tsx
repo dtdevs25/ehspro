@@ -33,7 +33,10 @@ import {
   Award,
   Download,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  MessageSquare,
+  Send,
+  Bot
 } from 'lucide-react';
 import * as docx from 'docx';
 import { Collaborator, CipaTerm, Branch, Company, Cipeiro, CipaMeeting, CipaActionPlan, CipaRole, CipaOrigin } from '../../../types';
@@ -160,12 +163,47 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
     id: string;
     name: string;
     nickname: string;
-    sector: string;
-    role: string;
-    date: string;
-    time: string;
+
   }[]>([]);
   const [selectedCandidateCollaborator, setSelectedCandidateCollaborator] = useState('');
+
+  // AI Chat States
+  const [isAiChatOpen, setIsAiChatOpen] = useState(false);
+  const [aiChatMessages, setAiChatMessages] = useState<{ role: 'user' | 'assistant', content: string }[]>([
+    { role: 'assistant', content: 'Olá! Sou seu assistente especialista em NR-5 (CIPA). Posso tirar dúvidas sobre dimensionamento, processo eleitoral, estabilidade (garantia de emprego) e mais. Como posso ajudar?' }
+  ]);
+  const [aiChatInput, setAiChatInput] = useState('');
+  const [isAiLoading, setIsAiLoading] = useState(false);
+
+  const handleAskAi = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!aiChatInput.trim() || isAiLoading) return;
+
+    const question = aiChatInput;
+    setAiChatInput('');
+    setAiChatMessages(prev => [...prev, { role: 'user', content: question }]);
+    setIsAiLoading(true);
+
+    try {
+      const res = await fetch('/api/ai/cipa-chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question })
+      });
+
+      const data = await res.json();
+      if (data.text) {
+        setAiChatMessages(prev => [...prev, { role: 'assistant', content: data.text }]);
+      } else {
+        setAiChatMessages(prev => [...prev, { role: 'assistant', content: 'Desculpe, não consegui processar sua pergunta no momento.' }]);
+      }
+    } catch (error) {
+      setAiChatMessages(prev => [...prev, { role: 'assistant', content: 'Ocorreu um erro ao conectar com o especialista. Tente novamente.' }]);
+    } finally {
+      setIsAiLoading(false);
+    }
+  };
+
 
   const getImageArrayBuffer = async (url: string): Promise<ArrayBuffer | null> => {
     try {
@@ -1457,6 +1495,99 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
             </div>
           )
         }
+
+
+        {/* AI CHAT FLOATING BUTTON */}
+        <div className="fixed bottom-6 right-6 z-50 print:hidden">
+          <button
+            onClick={() => setIsAiChatOpen(true)}
+            className="bg-emerald-600 text-white p-4 rounded-full shadow-2xl hover:bg-emerald-500 hover:scale-110 transition-all flex items-center justify-center relative group"
+          >
+            <Bot size={32} />
+            <span className="absolute right-full mr-4 bg-white text-emerald-900 px-3 py-1 rounded-lg text-xs font-bold whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity shadow-md pointer-events-none">
+              Dúvidas NR-5?
+            </span>
+            {/* Notification dot approach or just generic icon */}
+            <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full border-2 border-emerald-600"></span>
+          </button>
+        </div>
+
+        {/* AI CHAT MODAL */}
+        {isAiChatOpen && (
+          <div className="fixed inset-0 z-[600] flex items-end sm:items-center justify-center sm:justify-end p-0 sm:p-6 print:hidden pointer-events-none">
+            {/* Backdrop - lighter/invisible to feel like an overlay */}
+            <div className="absolute inset-0 bg-black/20 backdrop-blur-[2px] pointer-events-auto" onClick={() => setIsAiChatOpen(false)}></div>
+
+            <div className="bg-white w-full sm:w-[400px] h-[80vh] sm:h-[600px] rounded-t-3xl sm:rounded-3xl shadow-2xl flex flex-col pointer-events-auto relative animate-in slide-in-from-bottom-10 border border-emerald-100 overflow-hidden">
+              {/* Header */}
+              <div className="bg-emerald-600 p-4 flex items-center justify-between text-white shrink-0">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
+                    <Bot size={24} />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-sm">Especialista NR-5</h3>
+                    <p className="text-[10px] opacity-80 flex items-center gap-1"><span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span> Online</p>
+                  </div>
+                </div>
+                <button onClick={() => setIsAiChatOpen(false)} className="p-2 hover:bg-white/10 rounded-full transition-colors"><X size={20} /></button>
+              </div>
+
+              {/* Chat Area */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50 relative">
+                {/* Watermark */}
+                <div className="absolute inset-0 flex items-center justify-center opacity-[0.03] pointer-events-none">
+                  <ShieldCheck size={120} />
+                </div>
+
+                {aiChatMessages.map((msg, idx) => (
+                  <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                    <div className={`max-w-[85%] p-4 rounded-2xl text-sm leading-relaxed shadow-sm ${msg.role === 'user'
+                      ? 'bg-emerald-600 text-white rounded-tr-none'
+                      : 'bg-white text-slate-700 rounded-tl-none border border-slate-100'
+                      }`}>
+                      {/* Simple markdown parsing for bold */}
+                      {msg.content.split('**').map((part, i) =>
+                        i % 2 === 1 ? <strong key={i}>{part}</strong> : part
+                      )}
+                    </div>
+                  </div>
+                ))}
+
+                {isAiLoading && (
+                  <div className="flex justify-start">
+                    <div className="bg-white p-4 rounded-2xl rounded-tl-none border border-slate-100 shadow-sm flex items-center gap-2">
+                      <span className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce"></span>
+                      <span className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
+                      <span className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
+                    </div>
+                  </div>
+                )}
+                {/* Auto-scroll anchor */}
+                <div ref={(el) => el?.scrollIntoView({ behavior: 'smooth' })}></div>
+              </div>
+
+              {/* Input Area */}
+              <form onSubmit={handleAskAi} className="p-4 bg-white border-t border-slate-100 shrink-0 flex gap-2">
+                <input
+                  type="text"
+                  value={aiChatInput}
+                  onChange={(e) => setAiChatInput(e.target.value)}
+                  placeholder="Ex: Qual a estabilidade do cipeiro?"
+                  className="flex-1 bg-slate-100 border-none rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-200 outline-none transition-all placeholder:text-slate-400"
+                />
+                <button
+                  type="submit"
+                  disabled={!aiChatInput.trim() || isAiLoading}
+                  className="bg-emerald-600 text-white p-3 rounded-xl hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md active:scale-95"
+                >
+                  <Send size={20} />
+                </button>
+              </form>
+            </div>
+          </div>
+        )}
+
       </div >
     );
   }
@@ -2497,6 +2628,92 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
           </div>
         )
       }
+
+      {/* AI CHAT FLOATING BUTTON (DETAIL VIEW) */}
+      <div className="fixed bottom-6 right-6 z-50 print:hidden">
+        <button
+          onClick={() => setIsAiChatOpen(true)}
+          className="bg-emerald-600 text-white p-4 rounded-full shadow-2xl hover:bg-emerald-500 hover:scale-110 transition-all flex items-center justify-center relative group"
+        >
+          <Bot size={32} />
+          <span className="absolute right-full mr-4 bg-white text-emerald-900 px-3 py-1 rounded-lg text-xs font-bold whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity shadow-md pointer-events-none">
+            Dúvidas NR-5?
+          </span>
+          <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full border-2 border-emerald-600"></span>
+        </button>
+      </div>
+
+      {/* AI CHAT MODAL (DETAIL VIEW) */}
+      {isAiChatOpen && (
+        <div className="fixed inset-0 z-[600] flex items-end sm:items-center justify-center sm:justify-end p-0 sm:p-6 print:hidden pointer-events-none">
+          <div className="absolute inset-0 bg-black/20 backdrop-blur-[2px] pointer-events-auto" onClick={() => setIsAiChatOpen(false)}></div>
+
+          <div className="bg-white w-full sm:w-[400px] h-[80vh] sm:h-[600px] rounded-t-3xl sm:rounded-3xl shadow-2xl flex flex-col pointer-events-auto relative animate-in slide-in-from-bottom-10 border border-emerald-100 overflow-hidden">
+            {/* Header */}
+            <div className="bg-emerald-600 p-4 flex items-center justify-between text-white shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
+                  <Bot size={24} />
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm">Especialista NR-5</h3>
+                  <p className="text-[10px] opacity-80 flex items-center gap-1"><span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span> Online</p>
+                </div>
+              </div>
+              <button onClick={() => setIsAiChatOpen(false)} className="p-2 hover:bg-white/10 rounded-full transition-colors"><X size={20} /></button>
+            </div>
+
+            {/* Chat Area */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50 relative">
+              <div className="absolute inset-0 flex items-center justify-center opacity-[0.03] pointer-events-none">
+                <ShieldCheck size={120} />
+              </div>
+
+              {aiChatMessages.map((msg, idx) => (
+                <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  <div className={`max-w-[85%] p-4 rounded-2xl text-sm leading-relaxed shadow-sm ${msg.role === 'user'
+                      ? 'bg-emerald-600 text-white rounded-tr-none'
+                      : 'bg-white text-slate-700 rounded-tl-none border border-slate-100'
+                    }`}>
+                    {msg.content.split('**').map((part, i) =>
+                      i % 2 === 1 ? <strong key={i}>{part}</strong> : part
+                    )}
+                  </div>
+                </div>
+              ))}
+
+              {isAiLoading && (
+                <div className="flex justify-start">
+                  <div className="bg-white p-4 rounded-2xl rounded-tl-none border border-slate-100 shadow-sm flex items-center gap-2">
+                    <span className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce"></span>
+                    <span className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
+                    <span className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
+                  </div>
+                </div>
+              )}
+              <div ref={(el) => el?.scrollIntoView({ behavior: 'smooth' })}></div>
+            </div>
+
+            {/* Input Area */}
+            <form onSubmit={handleAskAi} className="p-4 bg-white border-t border-slate-100 shrink-0 flex gap-2">
+              <input
+                type="text"
+                value={aiChatInput}
+                onChange={(e) => setAiChatInput(e.target.value)}
+                placeholder="Ex: Qual a estabilidade do cipeiro?"
+                className="flex-1 bg-slate-100 border-none rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-200 outline-none transition-all placeholder:text-slate-400"
+              />
+              <button
+                type="submit"
+                disabled={!aiChatInput.trim() || isAiLoading}
+                className="bg-emerald-600 text-white p-3 rounded-xl hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md active:scale-95"
+              >
+                <Send size={20} />
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div >
   );
 };

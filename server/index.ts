@@ -370,6 +370,18 @@ app.post('/api/ai/suggest', async (req, res) => {
   res.json(result);
 });
 
+import { answerCipaQuestion } from './aiController.js';
+app.post('/api/ai/cipa-chat', async (req, res) => {
+  const { question } = req.body;
+  try {
+    const text = await answerCipaQuestion(question);
+    res.json({ text });
+  } catch (error) {
+    console.error("CIPA Chat Error:", error);
+    res.status(500).json({ error: 'Erro ao processar pergunta da CIPA.' });
+  }
+});
+
 // Upload Route
 import { uploadMiddleware, uploadFileToMinio } from './uploadController.js';
 app.post('/api/upload', uploadMiddleware.single('file'), uploadFileToMinio);
