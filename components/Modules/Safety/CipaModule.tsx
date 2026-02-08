@@ -37,6 +37,7 @@ import {
 } from 'lucide-react';
 import * as docx from 'docx';
 import { Collaborator, CipaTerm, Branch, Company, Cipeiro, CipaMeeting, CipaActionPlan, CipaRole, CipaOrigin } from '../../../types';
+import { getNr5Group } from './nr5_cnae_mapping';
 
 interface CipaModuleProps {
   collaborators: Collaborator[];
@@ -64,6 +65,67 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
   const [companyRiskGroup, setCompanyRiskGroup] = useState('');
   const [companySector, setCompanySector] = useState('');
   const [cipaDimensioning, setCipaDimensioning] = useState<{ efetivos: number, suplentes: number }>({ efetivos: 0, suplentes: 0 });
+  const [employeeCount, setEmployeeCount] = useState<number>(0);
+
+  // Auto-fill Dimensioning Data
+  useEffect(() => {
+    if (eleicaoView === 'dimensionamento') {
+      // 1. Get Group from CNAE
+      if (activeBranch.cnae) {
+        setCompanyCnae(activeBranch.cnae);
+        const group = getNr5Group(activeBranch.cnae);
+        if (group) setCompanyRiskGroup(group);
+      }
+
+      // 2. Count Active Effective Collaborators
+      // Assuming 'ACTIVE' status and 'EFFECTIVE' work regime based on common patterns or user instruction
+      // If workRegime is not strictly 'EFFECTIVE' in DB yet, filtering by ACTIVE is a good start. 
+      // User said: "só os efetivos ativos".
+      const effectiveCount = collaborators.filter(c =>
+        (c.status === 'ACTIVE') &&
+        (c.workRegime === 'EFFECTIVE')
+      ).length;
+
+      setEmployeeCount(effectiveCount);
+    }
+  }, [eleicaoView, activeBranch, collaborators]);
+
+  // Recalculate when Group or Count changes
+  useEffect(() => {
+    if (eleicaoView !== 'dimensionamento' || !companyRiskGroup) return;
+
+    let efetivos = 0;
+    let suplentes = 0;
+    const num = employeeCount;
+
+    // Lógica simplificada baseada na Tabela I da NR-5
+    if (num >= 20) {
+      if (['C-1', 'C-2', 'C-3a', 'C-5', 'C-6', 'C-7', 'C-10', 'C-11', 'C-12', 'C-13'].includes(companyRiskGroup)) {
+        if (num <= 29) { efetivos = 1; suplentes = 1; }
+        else if (num <= 50) { efetivos = 2; suplentes = 2; }
+        else if (num <= 80) { efetivos = 3; suplentes = 3; }
+        else if (num <= 100) { efetivos = 4; suplentes = 3; }
+        else { efetivos = 4; suplentes = 4; }
+      }
+      else if (['C-14', 'C-29', 'C-31', 'C-35'].includes(companyRiskGroup)) {
+        if (num <= 29) { efetivos = 0; suplentes = 0; } // NR-5: Designado
+        else if (num <= 50) { efetivos = 1; suplentes = 1; } // Typically starts here for these groups
+        else if (num <= 80) { efetivos = 1; suplentes = 1; }
+        else if (num <= 100) { efetivos = 2; suplentes = 2; }
+        else { efetivos = 3; suplentes = 3; }
+      }
+      else {
+        // Default fallback
+        if (num <= 50) { efetivos = 1; suplentes = 1; }
+        else { efetivos = 2; suplentes = 2; }
+      }
+    } else {
+      efetivos = 0; suplentes = 0;
+    }
+
+    setCipaDimensioning({ efetivos, suplentes });
+
+  }, [companyRiskGroup, employeeCount, eleicaoView]);
 
 
   // Data States for the selected term
@@ -2010,46 +2072,13 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
                               <input
                                 id="employee-count-input"
                                 type="number"
+                                value={employeeCount}
                                 placeholder="0"
                                 className="flex-1 bg-emerald-50 p-4 rounded-xl font-black text-emerald-950 outline-none focus:ring-2 focus:ring-emerald-200 transition-all border border-emerald-100"
                                 onChange={(e) => {
                                   let num = parseInt(e.target.value);
                                   if (isNaN(num)) num = 0;
-
-                                  if (!companyRiskGroup) return;
-
-                                  let efetivos = 0;
-                                  let suplentes = 0;
-
-                                  // Lógica simplificada baseada na Tabela I da NR-5
-                                  // (Idealmente, isso seria um objeto de mapeamento completo)
-                                  if (num >= 20) {
-                                    // Exemplo para grupos comuns (ajustar conforme necessidade real)
-                                    if (['C-1', 'C-2', 'C-3a', 'C-5', 'C-6', 'C-7', 'C-10', 'C-11', 'C-12', 'C-13'].includes(companyRiskGroup)) {
-                                      if (num <= 29) { efetivos = 1; suplentes = 1; }
-                                      else if (num <= 50) { efetivos = 2; suplentes = 2; }
-                                      else if (num <= 80) { efetivos = 3; suplentes = 3; }
-                                      else if (num <= 100) { efetivos = 4; suplentes = 3; } // Exemplo
-                                      else { efetivos = 4; suplentes = 4; } // Genérico > 100
-                                    }
-                                    else if (['C-14', 'C-29', 'C-31'].includes(companyRiskGroup)) { // Comércio / Baixo Risco relativo
-                                      if (num <= 29) { efetivos = 0; suplentes = 0; } // NR-5 diz SR (Designado) até 29 para C-14? Validar. Usando lógica comum.
-                                      else if (num <= 50) { efetivos = 1; suplentes = 1; }
-                                      else if (num <= 80) { efetivos = 1; suplentes = 1; } // Exemplo
-                                      else if (num <= 100) { efetivos = 2; suplentes = 2; }
-                                      else { efetivos = 3; suplentes = 3; }
-                                    }
-                                    else {
-                                      // Default fallback
-                                      if (num <= 50) { efetivos = 1; suplentes = 1; }
-                                      else { efetivos = 2; suplentes = 2; }
-                                    }
-                                  } else {
-                                    // < 20 Employees usually means Designado (SR)
-                                    efetivos = 0; suplentes = 0;
-                                  }
-
-                                  setCipaDimensioning({ efetivos, suplentes });
+                                  setEmployeeCount(num);
                                 }}
                               />
                               <button
@@ -2061,12 +2090,11 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
                                   // The user said: "os colaboradores efetivos(só os efetivos ativos, os terceiros não deve constar)"
 
                                   // Mock logic for filtering based on common patterns if fields exist, else count all
-                                  const effectiveCount = collaborators.length;
-                                  const input = document.getElementById('employee-count-input') as HTMLInputElement;
-                                  if (input) {
-                                    input.value = effectiveCount.toString();
-                                    input.dispatchEvent(new Event('input', { bubbles: true }));
-                                  }
+                                  const effectiveCount = collaborators.filter(c =>
+                                    (c.status === 'ACTIVE') &&
+                                    (c.workRegime === 'EFFECTIVE')
+                                  ).length;
+                                  setEmployeeCount(effectiveCount);
                                 }}
                                 className="bg-emerald-100 text-emerald-700 px-4 py-4 rounded-xl font-bold text-xs uppercase hover:bg-emerald-200 transition-all shadow-sm"
                                 title="Preencher com total de colaboradores cadastrados"
@@ -2075,7 +2103,7 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
                               </button>
                             </div>
                             <p className="text-[10px] text-slate-400 font-bold px-2">
-                              Informe a média de empregados do estabelecimento.
+                              Total de colaboradores efetivos e ativos carregado automaticamente do cadastro.
                             </p>
                           </div>
                         </div>
