@@ -921,6 +921,16 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
 
     if (!ev2Data || !ev7Data || !ev4Data || !ev5Data) return;
 
+    // Signature Buffers
+    const repCollab = collaborators.find(c => c.id === (selectedTerm as any).companyRepId);
+    const presCollab = collaborators.find(c => c.id === (selectedTerm as any).cipaPresidentId);
+
+    let repSigBuffer = null;
+    if (repCollab?.signatureUrl) repSigBuffer = await getImageArrayBuffer(repCollab.signatureUrl);
+
+    let presSigBuffer = null;
+    if (presCollab?.signatureUrl) presSigBuffer = await getImageArrayBuffer(presCollab.signatureUrl);
+
     if (!electionTimeRange || !electionLocation) {
       alert("Por favor, preencha o horário e o local da eleição antes de gerar o documento.");
       return;
@@ -1027,7 +1037,11 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
                     width: { size: 50, type: docx.WidthType.PERCENTAGE },
                     children: [
                       new docx.Paragraph({
-                        children: [new docx.TextRun({ text: "____________________", size: 24 })],
+                        children: [
+                          repSigBuffer
+                            ? new docx.ImageRun({ data: repSigBuffer, transformation: { width: 100, height: 50 } })
+                            : new docx.TextRun({ text: "____________________", size: 24 })
+                        ],
                         alignment: docx.AlignmentType.CENTER,
                       }),
                       new docx.Paragraph({
@@ -1045,7 +1059,11 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
                     width: { size: 50, type: docx.WidthType.PERCENTAGE },
                     children: [
                       new docx.Paragraph({
-                        children: [new docx.TextRun({ text: "____________________", size: 24 })],
+                        children: [
+                          presSigBuffer
+                            ? new docx.ImageRun({ data: presSigBuffer, transformation: { width: 100, height: 50 } })
+                            : new docx.TextRun({ text: "____________________", size: 24 })
+                        ],
                         alignment: docx.AlignmentType.CENTER,
                       }),
                       new docx.Paragraph({
@@ -1080,6 +1098,16 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
   const generateStep3Word = async () => {
     const ev3Data = calendarItems.find(i => i.id === 'ev3'); // Formação Comissão
     if (!ev3Data) return;
+
+    // Signature Buffers
+    const repCollab = collaborators.find(c => c.id === (selectedTerm as any).companyRepId);
+    const presCollab = collaborators.find(c => c.id === (selectedTerm as any).cipaPresidentId);
+
+    let repSigBuffer = null;
+    if (repCollab?.signatureUrl) repSigBuffer = await getImageArrayBuffer(repCollab.signatureUrl);
+
+    let presSigBuffer = null;
+    if (presCollab?.signatureUrl) presSigBuffer = await getImageArrayBuffer(presCollab.signatureUrl);
 
     if (!vicePresidenteName || !secretarioName || !reuniaoTime) {
       alert("Por favor, preencha os dados da reunião (Vice-Presidente, Secretário, Horário) antes de gerar.");
@@ -1170,7 +1198,11 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
                     width: { size: 50, type: docx.WidthType.PERCENTAGE },
                     children: [
                       new docx.Paragraph({
-                        children: [new docx.TextRun({ text: "____________________", size: 24 })],
+                        children: [
+                          repSigBuffer
+                            ? new docx.ImageRun({ data: repSigBuffer, transformation: { width: 100, height: 50 } })
+                            : new docx.TextRun({ text: "____________________", size: 24 })
+                        ],
                         alignment: docx.AlignmentType.CENTER,
                       }),
                       new docx.Paragraph({
@@ -1188,7 +1220,11 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
                     width: { size: 50, type: docx.WidthType.PERCENTAGE },
                     children: [
                       new docx.Paragraph({
-                        children: [new docx.TextRun({ text: "____________________", size: 24 })],
+                        children: [
+                          presSigBuffer
+                            ? new docx.ImageRun({ data: presSigBuffer, transformation: { width: 100, height: 50 } })
+                            : new docx.TextRun({ text: "____________________", size: 24 })
+                        ],
                         alignment: docx.AlignmentType.CENTER,
                       }),
                       new docx.Paragraph({
@@ -1227,6 +1263,16 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
       alert("Não há candidatos inscritos para gerar o edital.");
       return;
     }
+
+    // Signature Buffers
+    const repCollab = collaborators.find(c => c.id === (selectedTerm as any).companyRepId);
+    const presCollab = collaborators.find(c => c.id === (selectedTerm as any).cipaPresidentId);
+
+    let repSigBuffer = null;
+    if (repCollab?.signatureUrl) repSigBuffer = await getImageArrayBuffer(repCollab.signatureUrl);
+
+    let presSigBuffer = null;
+    if (presCollab?.signatureUrl) presSigBuffer = await getImageArrayBuffer(presCollab.signatureUrl);
 
     const logoUrl = activeBranch.logoUrl || activeCompany.logoUrl;
     let logoImageParagraph = null;
@@ -1296,7 +1342,11 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
 
           new docx.Paragraph({
             children: [
-              new docx.TextRun({ text: "__________________________________          __________________________________" })
+              new docx.TextRun({ text: repSigBuffer ? "" : "__________________________________          " }),
+              repSigBuffer ? new docx.ImageRun({ data: repSigBuffer, transformation: { width: 100, height: 50 } }) : new docx.TextRun({ text: "" }),
+              new docx.TextRun({ text: (repSigBuffer && presSigBuffer) ? "          " : "" }),
+              presSigBuffer ? new docx.ImageRun({ data: presSigBuffer, transformation: { width: 100, height: 50 } }) : new docx.TextRun({ text: "" }),
+              new docx.TextRun({ text: presSigBuffer ? "" : "__________________________________" }),
             ],
             alignment: docx.AlignmentType.CENTER,
           }),

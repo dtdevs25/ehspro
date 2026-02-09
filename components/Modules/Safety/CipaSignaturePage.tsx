@@ -1,5 +1,5 @@
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { PenTool, Upload, CheckCircle2, AlertCircle } from 'lucide-react';
 
 interface CipaSignaturePageProps {
@@ -15,13 +15,34 @@ export const CipaSignaturePage: React.FC<CipaSignaturePageProps> = ({ candidateI
     const [hasSignature, setHasSignature] = useState(false);
     const historyRef = useRef<ImageData | null>(null);
 
-    // Restore signature on re-renders (e.g. scroll causing viewport resize/repaint)
-    React.useLayoutEffect(() => {
+    // Function to restore canvas data
+    const restoreCanvas = () => {
         if (historyRef.current && signatureRef.current) {
             const ctx = signatureRef.current.getContext('2d');
-            ctx?.putImageData(historyRef.current, 0, 0);
+            if (ctx) {
+                try {
+                    ctx.putImageData(historyRef.current, 0, 0);
+                } catch (e) {
+                    console.error("Failed to restore signature", e);
+                }
+            }
         }
+    };
+
+    // Restore on every render
+    React.useLayoutEffect(() => {
+        restoreCanvas();
     });
+
+    // Also listen to resize events explicitly to handle orientation changes robustly
+    useEffect(() => {
+        window.addEventListener('resize', restoreCanvas);
+        window.addEventListener('orientationchange', restoreCanvas);
+        return () => {
+            window.removeEventListener('resize', restoreCanvas);
+            window.removeEventListener('orientationchange', restoreCanvas);
+        };
+    }, []);
 
     const getCanvasCoordinates = (e: any) => {
         const canvas = signatureRef.current;
@@ -149,9 +170,10 @@ export const CipaSignaturePage: React.FC<CipaSignaturePageProps> = ({ candidateI
                         <div className="w-full h-64 bg-slate-50 border-2 border-dashed border-emerald-200 rounded-2xl touch-none cursor-crosshair overflow-hidden relative">
                             <canvas
                                 ref={signatureRef}
-                                width={600} // Increased resolution
-                                height={400} // Increased resolution
+                                width={600}
+                                height={400}
                                 className="w-full h-full object-contain"
+                                style={{ touchAction: 'none' }}
                                 onTouchStart={startDrawing}
                                 onTouchMove={draw}
                                 onTouchEnd={stopDrawing}
