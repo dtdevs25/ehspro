@@ -420,61 +420,79 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
 
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
 
     // -- Helper: Centered Text --
-    const centerText = (text: string, y: number, fontSize: number = 10, isBold: boolean = false) => {
+    const centerText = (text: string, y: number, fontSize: number = 10, isBold: boolean = false, color: [number, number, number] = [0, 0, 0]) => {
       doc.setFontSize(fontSize);
       doc.setFont("helvetica", isBold ? "bold" : "normal");
+      doc.setTextColor(color[0], color[1], color[2]);
       const textWidth = doc.getTextWidth(text);
       doc.text(text, (pageWidth - textWidth) / 2, y);
     };
 
-    // -- Header --
-    const logoUrl = activeBranch.logoUrl || activeCompany.logoUrl;
-    let yPos = 20;
+    // -- Modern Header --
+    // Green Top Strip
+    doc.setFillColor(5, 150, 105); // Emerald 600
+    doc.rect(0, 0, pageWidth, 40, 'F');
 
-    doc.setTextColor(2, 62, 58); // Emerald 900
-    centerText(activeCompany.name.toUpperCase(), yPos, 14, true);
-    yPos += 8;
+    // Logo Logic
+    const logoUrl = activeBranch?.logoUrl || activeCompany?.logoUrl;
+    if (logoUrl) {
+      try {
+        // Using a proxy or direct fetch if CORS allows. 
+        // Since we are same-origin or assume proxy:
+        const imgData = await getImageArrayBuffer(logoUrl);
+        if (imgData) {
+          // Add white box for logo
+          doc.setFillColor(255, 255, 255);
+          doc.roundedRect(10, 5, 50, 30, 2, 2, 'F');
+          // Fit image nicely
+          const imgProps = doc.getImageProperties(new Uint8Array(imgData));
+          const ratio = imgProps.width / imgProps.height;
+          let w = 40;
+          let h = w / ratio;
+          if (h > 25) { h = 25; w = h * ratio; }
+          const x = 10 + (50 - w) / 2;
+          const y = 5 + (30 - h) / 2;
+          doc.addImage(new Uint8Array(imgData), 'PNG', x, y, w, h);
+        }
+      } catch (e) { console.error("Logo add failed", e); }
+    }
+
+    // Header Text (White on Green)
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(22);
+    doc.setFont("helvetica", "bold");
+    doc.text("FICHA DE INSCRIÇÃO", 70, 20); // Title offset to right of logo
+
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text(`CIPA - GESTÃO ${selectedTerm?.year}`, 70, 28);
+    doc.text(activeCompany?.name.toUpperCase() || "", 70, 34);
+
+    let yPos = 60;
+
+    // -- Main Content Section --
+    doc.setDrawColor(209, 213, 219); // Grey 300
+    doc.setFillColor(249, 250, 251); // Gray 50
+    doc.roundedRect(20, yPos, pageWidth - 40, 110, 3, 3, 'FD');
+
     doc.setTextColor(5, 150, 105); // Emerald 600
-    centerText(`CIPA - GESTÃO ${selectedTerm?.year}`, yPos, 12, true);
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.text("Dados do Candidato", 30, yPos + 15);
 
-    yPos += 20;
-    doc.setDrawColor(5, 150, 105);
-    doc.setLineWidth(0.5);
-    doc.line(20, yPos, pageWidth - 20, yPos);
+    // Line separator
+    doc.setDrawColor(229, 231, 235);
+    doc.line(30, yPos + 20, pageWidth - 30, yPos + 20);
 
-    yPos += 15;
-    doc.setTextColor(0, 0, 0);
-    centerText("FICHA DE INSCRIÇÃO DE CANDIDATO", yPos, 16, true);
-
-    yPos += 20;
-
-    // -- Content Box --
-    doc.setFillColor(240, 253, 244); // Emerald 50
-    doc.roundedRect(20, yPos, pageWidth - 40, 90, 3, 3, 'F');
-    doc.setDrawColor(167, 243, 208); // Emerald 200
-    doc.roundedRect(20, yPos, pageWidth - 40, 90, 3, 3, 'S');
-
-    let contentY = yPos + 15;
+    let contentY = yPos + 35;
     const leftColX = 30;
-    const rightColX = 80;
+    const rightColX = 90;
 
-    doc.setFontSize(11);
-
-    const addField = (label: string, value: string, y: number) => {
-      doc.setFont("helvetica", "bold");
-      doc.setTextColor(2, 62, 58);
-      doc.text(label, leftColX, y);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(0, 0, 0);
-      doc.text(value, rightColX, y);
-    };
-
-    // Lookup collaborator to get proper names for Sector/Role/Function
-    // Assuming 'candidate.name' is unique enough or we iterate list.
-    // Collaborator object has nested branch and role from API fetch.
-    const collaborator = collaborators.find(c => c.name === candidate.name);
+    // Lookup collaborator
+    const collaborator = collaborators.find(c => c.name === candidate.name); // Fallback lookup
 
     const displaySector = collaborator?.branch?.name || candidate.sector || '';
     const displayRole = collaborator?.role?.name || candidate.role || '';
@@ -482,73 +500,100 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
     const displayCpf = collaborator?.cpf || '';
     const displayRegistration = collaborator?.registration || '';
 
-    addField("NOME:", candidate.name, contentY);
-    contentY += 10;
-    addField("CPF:", displayCpf, contentY);
-    contentY += 10;
-    addField("SETOR/UNIDADE:", displaySector, contentY);
-    contentY += 10;
-    addField("CARGO:", displayRole, contentY);
-    contentY += 10;
-    if (displayFunction) {
-      addField("FUNÇÃO:", displayFunction, contentY);
-      contentY += 10;
-    }
-    addField("DATA INSCRIÇÃO:", `${candidate.date} às ${candidate.time}`, contentY);
-    contentY += 10;
-    addField("Nº MATRÍCULA:", displayRegistration, contentY);
+    const addField = (label: string, value: string, y: number) => {
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(107, 114, 128); // Gray 500
+      doc.text(label.toUpperCase(), leftColX, y);
+
+      doc.setFont("helvetica", "bold"); // Value bold
+      doc.setTextColor(17, 24, 39); // Gray 900
+      doc.setFontSize(11);
+      doc.text(value, rightColX, y);
+    };
+
+    addField("Nome Completo:", candidate.name, contentY); contentY += 12;
+    addField("Matrícula:", displayRegistration, contentY); contentY += 12;
+    addField("CPF:", displayCpf, contentY); contentY += 12;
+    addField("Setor / Unidade:", displaySector, contentY); contentY += 12;
+    addField("Cargo:", displayRole, contentY); contentY += 12;
+    if (displayFunction) { addField("Função:", displayFunction, contentY); contentY += 12; }
+    addField("Data da Inscrição:", `${candidate.date} às ${candidate.time}`, contentY);
+
+    // -- Declaration Text --
+    yPos += 130;
+    doc.setFontSize(9);
+    doc.setTextColor(75, 85, 99); // Gray 600
+    doc.setFont("helvetica", "normal");
+    const declaration = "Declaro para os devidos fins que, de livre e espontânea vontade, me inscrevo como candidato à eleição da CIPA (Comissão Interna de Prevenção de Acidentes) desta empresa, para o mandato referente acima, estando ciente das responsabilidades e normas que regem o processo eleitoral.";
+    const splitText = doc.splitTextToSize(declaration, pageWidth - 40);
+    doc.text(splitText, 20, yPos);
 
     // -- Signature Area --
-    yPos += 110;
+    let sigY = yPos + 40;
 
-    // IMPROVEMENT: Retrieve signature URL from backend for PDF
+    // Signature Box
+    doc.setDrawColor(0, 0, 0);
+    doc.setLineWidth(0.5);
+    doc.line(60, sigY + 30, pageWidth - 60, sigY + 30);
+
+    centerText(candidate.name.toUpperCase(), sigY + 38, 10, true);
+    centerText("Assinatura do Candidato", sigY + 44, 8, false, [107, 114, 128]);
+
+    // Fetch Signature Image
     try {
       const res = await fetch(`/api/cipa/candidates/${candidate.id}/check-status`);
       if (res.ok) {
         const fullData = await res.json();
         if (fullData.signatureUrl) {
-          // If simpler way fails, we might need proxy or base64.
-          // For now, assume public URL works or try proxy.
-          const proxyUrl = `/api/proxy-image?url=${encodeURIComponent(fullData.signatureUrl)}`;
-          const imgEl = new Image();
-          imgEl.src = proxyUrl;
-          // Wait for load via promise
-          await new Promise((resolve) => {
-            imgEl.onload = resolve;
-            imgEl.onerror = resolve;
-          });
-
-          const imgWidth = 50;
-          const imgHeight = (imgEl.height * imgWidth) / imgEl.width;
-          doc.addImage(imgEl, 'PNG', (pageWidth - imgWidth) / 2, yPos, imgWidth, imgHeight);
+          // Fetch signature image blob/arraybuffer
+          // Since signatureUrl might be a relative path or full URL, handle both.
+          // But actually PDF generation runs on client, and signatureUrl from Minio is likely http://minio... which might be blocked by CORS if not proxied.
+          // Let's try direct fetch if relative, or proxy if full.
+          // However, in dev/local environment, if minio is on localhost:9000 and app on localhost:5173, CORS issues might arise unless Minio is configured.
+          // Let's assume standard fetch works or fallback.
+          const sigBuffer = await getImageArrayBuffer(fullData.signatureUrl);
+          if (sigBuffer) {
+            const imgProps = doc.getImageProperties(new Uint8Array(sigBuffer));
+            const ratio = imgProps.width / imgProps.height;
+            let h = 25;
+            let w = h * ratio;
+            // Center signature over the line
+            const x = (pageWidth - w) / 2;
+            const y = sigY; // a bit above the line
+            doc.addImage(new Uint8Array(sigBuffer), 'PNG', x, y, w, h);
+          }
         }
       }
-    } catch (e) { console.error("Could not fetch signature for PDF", e); }
-
-
-    yPos += 20; // Space for image
-    doc.setDrawColor(0, 0, 0);
-    doc.line(60, yPos + 20, pageWidth - 60, yPos + 20); // Line
-    centerText(candidate.name, yPos + 28, 10, true);
-    centerText("Assinatura do Candidato", yPos + 34, 8);
+    } catch (e) {
+      console.error("Signature fetch failed", e);
+    }
 
     // -- Footer --
-    yPos += 40;
+    doc.setFillColor(5, 150, 105);
+    doc.rect(0, pageHeight - 15, pageWidth, 15, 'F');
+    doc.setTextColor(255, 255, 255);
     doc.setFontSize(8);
-    doc.setTextColor(150);
-    centerText("Documento gerado eletronicamente pelo sistema EHS PRO", yPos);
+    doc.text("EHS PRO - Sistema de Gestão de Segurança do Trabalho", 20, pageHeight - 6);
+    doc.text(`Gerado em ${new Date().toLocaleDateString()} às ${new Date().toLocaleTimeString()}`, pageWidth - 20, pageHeight - 6, { align: 'right' });
 
-    doc.save(`Ficha_Inscricao_${candidate.name}.pdf`);
+    doc.save(`Ficha_Inscricao_${candidate.name.replace(/\s+/g, '_')}.pdf`);
   };
 
-  const handleDeleteCandidate = async (candidateId: string) => {
-    if (!confirm("Tem certeza que deseja cancelar a inscrição deste candidato?")) return;
+  const [candidateToDelete, setCandidateToDelete] = useState<string | null>(null);
+
+  const handleDeleteCandidate = (candidateId: string) => {
+    setCandidateToDelete(candidateId);
+  };
+
+  const confirmDeleteCandidate = async () => {
+    if (!candidateToDelete) return;
 
     try {
-      const res = await fetch(`/api/cipa/candidates/${candidateId}`, { method: 'DELETE' });
+      const res = await fetch(`/api/cipa/candidates/${candidateToDelete}`, { method: 'DELETE' });
       if (res.ok) {
-        setCandidates(prev => prev.filter(c => c.id !== candidateId));
-        alert("Candidatura cancelada com sucesso.");
+        setCandidates(prev => prev.filter(c => c.id !== candidateToDelete));
+        setCandidateToDelete(null);
       } else {
         alert("Erro ao excluir candidatura.");
       }
@@ -2117,9 +2162,11 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
                       className="w-full bg-emerald-50 border-b-2 border-emerald-200 p-4 rounded-xl font-black text-emerald-950 outline-none focus:border-emerald-500 transition-all"
                     >
                       <option value="">Selecione um Colaborador...</option>
-                      {collaborators.map(c => (
-                        <option key={c.id} value={c.id}>{c.name}</option>
-                      ))}
+                      {collaborators
+                        .filter(c => c.status === 'ACTIVE') // Only show active collaborators
+                        .map(c => (
+                          <option key={c.id} value={c.id}>{c.name}</option>
+                        ))}
                     </select>
                   </div>
                   <button
@@ -2772,6 +2819,23 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
                     alert("Erro ao excluir");
                   }
                 }} className="flex-1 bg-red-600 text-white py-3 rounded-xl font-black text-[10px] uppercase shadow-lg tracking-widest">Sim, Excluir</button>
+              </div>
+            </div>
+          </div>
+        )
+      }
+
+      {
+        candidateToDelete && (
+          <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 print:hidden">
+            <div className="absolute inset-0 bg-red-950/40 backdrop-blur-sm" onClick={() => setCandidateToDelete(null)}></div>
+            <div className="bg-white w-full max-w-sm rounded-[2.5rem] p-10 text-center space-y-4 relative z-10 border border-red-50 shadow-2xl animate-in zoom-in">
+              <div className="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center mx-auto text-red-500 mb-2 shadow-inner"><AlertTriangle size={32} /></div>
+              <h3 className="text-xl font-black text-red-950">Excluir Candidatura?</h3>
+              <p className="text-xs text-red-900/60 font-medium leading-relaxed">Isso removerá a inscrição deste colaborador do processo eleitoral. <strong>Esta ação não poderá ser desfeita.</strong></p>
+              <div className="flex gap-2 pt-4">
+                <button onClick={() => setCandidateToDelete(null)} className="flex-1 py-3 font-black text-[10px] text-red-600 uppercase tracking-widest">Cancelar</button>
+                <button onClick={confirmDeleteCandidate} className="flex-1 bg-red-600 text-white py-3 rounded-xl font-black text-[10px] uppercase shadow-lg tracking-widest">Sim, Excluir</button>
               </div>
             </div>
           </div>

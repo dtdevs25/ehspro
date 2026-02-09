@@ -12,23 +12,36 @@ export const CipaSignaturePage: React.FC<CipaSignaturePageProps> = ({ candidateI
     const signatureRef = useRef<HTMLCanvasElement>(null);
     const [error, setError] = useState('');
 
+    const [hasSignature, setHasSignature] = useState(false);
+
     const getCanvasCoordinates = (e: any) => {
         const canvas = signatureRef.current;
         if (!canvas) return { x: 0, y: 0 };
         const rect = canvas.getBoundingClientRect();
-        const x = (e.type.includes('touch') ? e.touches[0].clientX : e.clientX) - rect.left;
-        const y = (e.type.includes('touch') ? e.touches[0].clientY : e.clientY) - rect.top;
-        return { x, y };
+
+        // Handle touch vs mouse
+        const clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
+        const clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
+
+        // Scale coordinates in case canvas CSS size differs from internal size
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+
+        return {
+            x: (clientX - rect.left) * scaleX,
+            y: (clientY - rect.top) * scaleY
+        };
     };
 
     const startDrawing = (e: any) => {
-        e.preventDefault(); // Prevent scrolling on mobile
+        if (e.cancelable) e.preventDefault();
         setIsDrawing(true);
         const { x, y } = getCanvasCoordinates(e);
         const ctx = signatureRef.current?.getContext('2d');
         if (ctx) {
-            ctx.lineWidth = 2;
+            ctx.lineWidth = 3;
             ctx.lineCap = 'round';
+            ctx.strokeStyle = '#000000';
             ctx.beginPath();
             ctx.moveTo(x, y);
         }
@@ -36,12 +49,13 @@ export const CipaSignaturePage: React.FC<CipaSignaturePageProps> = ({ candidateI
 
     const draw = (e: any) => {
         if (!isDrawing) return;
-        e.preventDefault();
+        if (e.cancelable) e.preventDefault();
         const { x, y } = getCanvasCoordinates(e);
         const ctx = signatureRef.current?.getContext('2d');
         if (ctx) {
             ctx.lineTo(x, y);
             ctx.stroke();
+            if (!hasSignature) setHasSignature(true);
         }
     };
 
@@ -55,6 +69,7 @@ export const CipaSignaturePage: React.FC<CipaSignaturePageProps> = ({ candidateI
         const canvas = signatureRef.current;
         const ctx = canvas?.getContext('2d');
         ctx?.clearRect(0, 0, canvas?.width || 0, canvas?.height || 0);
+        setHasSignature(false);
     };
 
     const handleSubmit = async () => {
@@ -115,14 +130,13 @@ export const CipaSignaturePage: React.FC<CipaSignaturePageProps> = ({ candidateI
                     <div className="space-y-4">
                         <div className="flex items-center justify-between">
                             <label className="text-xs font-black text-emerald-900 uppercase">Assine Abaixo:</label>
-                            <button type="button" onClick={clearSignature} className="text-[10px] font-bold text-red-400 uppercase">Limpar</button>
                         </div>
-                        <div className="w-full h-64 bg-slate-50 border-2 border-dashed border-emerald-200 rounded-2xl touch-none cursor-crosshair overflow-hidden">
+                        <div className="w-full h-64 bg-slate-50 border-2 border-dashed border-emerald-200 rounded-2xl touch-none cursor-crosshair overflow-hidden relative">
                             <canvas
                                 ref={signatureRef}
-                                width={350} // Fixed width for mobile view approximation
-                                height={256}
-                                className="w-full h-full"
+                                width={600} // Increased resolution
+                                height={400} // Increased resolution
+                                className="w-full h-full object-contain"
                                 onTouchStart={startDrawing}
                                 onTouchMove={draw}
                                 onTouchEnd={stopDrawing}
@@ -131,6 +145,11 @@ export const CipaSignaturePage: React.FC<CipaSignaturePageProps> = ({ candidateI
                                 onMouseUp={stopDrawing}
                                 onMouseLeave={stopDrawing}
                             />
+                            {!hasSignature && (
+                                <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-30 select-none">
+                                    <span className="text-2xl font-black text-slate-300 uppercase rotate-[-12deg]">Assine Aqui</span>
+                                </div>
+                            )}
                         </div>
                         <p className="text-[10px] text-center text-slate-400">Desenhe sua assinatura com o dedo (celular) ou mouse.</p>
                     </div>
@@ -141,12 +160,21 @@ export const CipaSignaturePage: React.FC<CipaSignaturePageProps> = ({ candidateI
                         </div>
                     )}
 
-                    <button
-                        onClick={handleSubmit}
-                        className="w-full bg-emerald-600 text-white py-4 rounded-xl font-black uppercase shadow-lg active:scale-95 transition-all text-sm"
-                    >
-                        Enviar Assinatura
-                    </button>
+                    <div className="flex gap-4 pt-2">
+                        <button
+                            onClick={clearSignature}
+                            className="flex-1 bg-slate-100 text-slate-500 py-4 rounded-xl font-bold uppercase hover:bg-slate-200 transition-all text-xs"
+                        >
+                            Limpar
+                        </button>
+                        <button
+                            onClick={handleSubmit}
+                            disabled={!hasSignature}
+                            className={`flex-1 py-4 rounded-xl font-black uppercase shadow-lg transition-all text-xs flex items-center justify-center gap-2 ${hasSignature ? 'bg-emerald-600 text-white active:scale-95' : 'bg-slate-200 text-slate-400 cursor-not-allowed'}`}
+                        >
+                            <Upload size={18} /> Enviar
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
