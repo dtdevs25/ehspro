@@ -177,6 +177,7 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
   const [signatureMethod, setSignatureMethod] = useState<'DRAW' | 'QR'>('DRAW');
   const [qrCodeData, setQrCodeData] = useState<{ id: string, url: string } | null>(null);
   const [isPolling, setIsPolling] = useState(false);
+  const [registrationSuccess, setRegistrationSuccess] = useState(false);
 
   // Setup canvas drawing context settings once modal opens or via effect
   useEffect(() => {
@@ -337,16 +338,18 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
         sector: collab?.branchId || '',
         role: collab?.roleId || '',
         date: new Date().toLocaleDateString(),
-        time: new Date().toLocaleTimeString()
+        time: new Date().toLocaleTimeString(),
+        signatureUrl: newCand.signatureUrl || null,
+        status: newCand.status || 'APPROVED'
       }]);
 
-      setIsRegistrationModalOpen(false);
-      setSelectedCandidateId('');
-      setQrCodeData(null);
       setSignatureMethod('DRAW');
       setIsPolling(false);
+      setQrCodeData(null);
       if (signatureRef.current) clearSignature();
-      alert("Inscrição Confirmada! O comprovante foi enviado por e-mail.");
+
+      // Show Success View
+      setRegistrationSuccess(true);
 
     } catch (e) {
       alert("Erro de conexão ao registrar");
@@ -2908,178 +2911,201 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
                 <h2 className="text-xl font-black uppercase text-emerald-950">Ficha de Inscrição</h2>
                 <p className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest">CIPA Gestão {selectedTerm?.year}</p>
               </div>
-              <button onClick={() => { setIsRegistrationModalOpen(false); setIsPolling(false); }} className="p-2 hover:bg-slate-100 rounded-full text-slate-400"><X size={24} /></button>
+              <button onClick={() => { setIsRegistrationModalOpen(false); setIsPolling(false); setRegistrationSuccess(false); }} className="p-2 hover:bg-slate-100 rounded-full text-slate-400"><X size={24} /></button>
             </div>
 
-            <div className="flex-1 overflow-y-auto space-y-6">
-              <div className="bg-emerald-50 p-6 rounded-2xl border border-emerald-100/50">
-                <p className="text-xs font-bold text-slate-500 uppercase mb-1">Candidato</p>
-                <h3 className="text-lg font-black text-emerald-900">{collaborators.find(c => c.id === selectedCandidateId)?.name}</h3>
-                <div className="flex gap-4 mt-2">
-                  <span className="px-2 py-1 bg-white rounded-md text-[10px] font-bold text-emerald-600 uppercase border border-emerald-100">CPF: {collaborators.find(c => c.id === selectedCandidateId)?.cpf}</span>
-                </div>
-              </div>
-
-              <div className="flex bg-slate-100 p-1 rounded-xl">
-                <button
-                  onClick={() => setSignatureMethod('DRAW')}
-                  className={`flex-1 py-2 rounded-lg text-xs font-black uppercase transition-all ${signatureMethod === 'DRAW' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
-                >
-                  Assinar na Tela (PC)
-                </button>
-                <button
-                  onClick={() => {
-                    setSignatureMethod('QR');
-                    if (!qrCodeData) initQrSession();
-                  }}
-                  className={`flex-1 py-2 rounded-lg text-xs font-black uppercase transition-all ${signatureMethod === 'QR' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
-                >
-                  Assinar pelo Celular
-                </button>
-              </div>
-
-              {signatureMethod === 'DRAW' ? (
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <label className="text-[10px] font-black text-emerald-600 uppercase tracking-widest flex items-center gap-2"><PenTool size={14} /> Assinatura Digital</label>
-                    <button onClick={clearSignature} className="text-[10px] font-bold text-red-400 hover:text-red-600 uppercase">Limpar</button>
-                  </div>
-                  <div className="w-full h-48 bg-white border-2 border-dashed border-emerald-200 rounded-2xl relative touch-none hover:border-emerald-400 transition-colors cursor-crosshair overflow-hidden shadow-inner">
-                    <canvas
-                      ref={signatureRef}
-                      width={500}
-                      height={200}
-                      className="w-full h-full object-contain"
-                      onMouseDown={startDrawing}
-                      onMouseMove={draw}
-                      onMouseUp={stopDrawing}
-                      onMouseLeave={stopDrawing}
-                      onTouchStart={startDrawing}
-                      onTouchMove={draw}
-                      onTouchEnd={stopDrawing}
-                    />
-                    {!isDrawing && (
-                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-20">
-                        <p className="text-xs font-black uppercase text-emerald-900">Assine aqui</p>
-                      </div>
-                    )}
-                  </div>
-                  <p className="text-[10px] text-slate-400 font-medium text-center">Use o mouse para assinar no quadro acima.</p>
-                </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center space-y-6 py-4">
-                  {qrCodeData ? (
-                    <>
-                      <div className="bg-white p-4 rounded-xl shadow-lg border-2 border-emerald-100">
-                        <img src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrCodeData.url)}`} alt="QR Code" className="w-48 h-48" />
-                      </div>
-                      <div className="text-center space-y-2">
-                        <p className="text-sm font-bold text-emerald-900">Aponte a câmera do celular</p>
-                        <p className="text-xs text-slate-500 max-w-xs mx-auto">Leia o QR Code acima para abrir a tela de assinatura no seu dispositivo móvel.</p>
-                        <div className="flex items-center justify-center gap-2 text-emerald-600 text-[10px] font-black uppercase animate-pulse">
-                          <span className="w-2 h-2 rounded-full bg-emerald-500"></span> Aguardando assinatura...
-                        </div>
-                      </div>
-                    </>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center py-10 text-slate-400 animate-pulse">
-                      <p>Gerando código seguro...</p>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              <div className="bg-blue-50 p-4 rounded-xl flex gap-3 items-start">
-                <AlertCircle size={18} className="text-blue-500 shrink-0 mt-0.5" />
-                <p className="text-[10px] text-blue-800 leading-relaxed">
-                  Ao assinar, confirmo minha candidatura voluntária para a CIPA. Um comprovante será enviado automaticamente para o e-mail: <strong>{collaborators.find(c => c.id === selectedCandidateId)?.email}</strong>.
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-8 pt-6 border-t border-slate-100 flex gap-4">
-              <button onClick={() => { setIsRegistrationModalOpen(false); setIsPolling(false); }} className="flex-1 py-4 rounded-xl font-bold text-xs uppercase text-slate-500 hover:bg-slate-50 transition-all">Cancelar</button>
-              {signatureMethod === 'DRAW' && (
-                <button onClick={() => handleConfirmRegistration()} className="flex-1 bg-emerald-600 text-white py-4 rounded-xl font-black text-xs uppercase shadow-xl hover:bg-emerald-500 transition-all">
-                  Confirmar e Enviar
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* AI CHAT MODAL (DETAIL VIEW) */}
-      {isAiChatOpen && (
-        <div className="fixed inset-0 z-[600] flex items-end sm:items-center justify-center sm:justify-end p-0 sm:p-6 print:hidden pointer-events-none">
-          <div className="absolute inset-0 bg-black/20 backdrop-blur-[2px] pointer-events-auto" onClick={() => setIsAiChatOpen(false)}></div>
-
-          <div className="bg-white w-full sm:w-[400px] h-[80vh] sm:h-[600px] rounded-t-3xl sm:rounded-3xl shadow-2xl flex flex-col pointer-events-auto relative animate-in slide-in-from-bottom-10 border border-emerald-100 overflow-hidden">
-            {/* Header */}
-            <div className="bg-emerald-600 p-4 flex items-center justify-between text-white shrink-0">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
-                  <Bot size={24} />
+            {registrationSuccess ? (
+              <div className="flex-1 flex flex-col items-center justify-center p-8 space-y-6 animate-in zoom-in text-center">
+                <div className="w-24 h-24 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600 mb-2">
+                  <CheckCircle2 size={48} />
                 </div>
                 <div>
-                  <h3 className="font-bold text-sm">Especialista NR-5</h3>
-                  <p className="text-[10px] opacity-80 flex items-center gap-1"><span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span> Online</p>
+                  <h3 className="text-2xl font-black text-emerald-950 uppercase">Inscrição Confirmada!</h3>
+                  <p className="text-emerald-700 font-medium mt-2">O comprovante foi enviado por e-mail.</p>
                 </div>
+                <button
+                  onClick={() => { setIsRegistrationModalOpen(false); setIsPolling(false); setRegistrationSuccess(false); }}
+                  className="bg-emerald-600 text-white px-8 py-3 rounded-xl font-black uppercase shadow-lg hover:bg-emerald-500 transition-all w-full mt-4"
+                >
+                  Fechar
+                </button>
               </div>
-              <button onClick={() => setIsAiChatOpen(false)} className="p-2 hover:bg-white/10 rounded-full transition-colors"><X size={20} /></button>
-            </div>
+            ) : (
+              <>
+                <div className="flex-1 overflow-y-auto space-y-6">
+                  <div className="bg-emerald-50 p-6 rounded-2xl border border-emerald-100/50">
+                    <p className="text-xs font-bold text-slate-500 uppercase mb-1">Candidato</p>
+                    <h3 className="text-lg font-black text-emerald-900">{collaborators.find(c => c.id === selectedCandidateId)?.name}</h3>
+                    <div className="flex gap-4 mt-2">
+                      <span className="px-2 py-1 bg-white rounded-md text-[10px] font-bold text-emerald-600 uppercase border border-emerald-100">CPF: {collaborators.find(c => c.id === selectedCandidateId)?.cpf}</span>
+                    </div>
+                  </div>
 
-            {/* Chat Area */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50 relative">
-              <div className="absolute inset-0 flex items-center justify-center opacity-[0.03] pointer-events-none">
-                <ShieldCheck size={120} />
-              </div>
+                  <div className="flex bg-slate-100 p-1 rounded-xl">
+                    <button
+                      onClick={() => setSignatureMethod('DRAW')}
+                      className={`flex-1 py-2 rounded-lg text-xs font-black uppercase transition-all ${signatureMethod === 'DRAW' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                    >
+                      Assinar na Tela (PC)
+                    </button>
+                    <button
+                      onClick={() => {
+                        setSignatureMethod('QR');
+                        if (!qrCodeData) initQrSession();
+                      }}
+                      className={`flex-1 py-2 rounded-lg text-xs font-black uppercase transition-all ${signatureMethod === 'QR' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                    >
+                      Assinar pelo Celular
+                    </button>
+                  </div>
 
-              {aiChatMessages.map((msg, idx) => (
-                <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-[85%] p-4 rounded-2xl text-sm leading-relaxed shadow-sm ${msg.role === 'user'
-                    ? 'bg-emerald-600 text-white rounded-tr-none'
-                    : 'bg-white text-slate-700 rounded-tl-none border border-slate-100'
-                    }`}>
-                    {msg.content.split('**').map((part, i) =>
-                      i % 2 === 1 ? <strong key={i}>{part}</strong> : part
-                    )}
+                  {signatureMethod === 'DRAW' ? (
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <label className="text-[10px] font-black text-emerald-600 uppercase tracking-widest flex items-center gap-2"><PenTool size={14} /> Assinatura Digital</label>
+                        <button onClick={clearSignature} className="text-[10px] font-bold text-red-400 hover:text-red-600 uppercase">Limpar</button>
+                      </div>
+                      <div className="w-full h-48 bg-white border-2 border-dashed border-emerald-200 rounded-2xl relative touch-none hover:border-emerald-400 transition-colors cursor-crosshair overflow-hidden shadow-inner">
+                        <canvas
+                          ref={signatureRef}
+                          width={500}
+                          height={200}
+                          className="w-full h-full object-contain"
+                          onMouseDown={startDrawing}
+                          onMouseMove={draw}
+                          onMouseUp={stopDrawing}
+                          onMouseLeave={stopDrawing}
+                          onTouchStart={startDrawing}
+                          onTouchMove={draw}
+                          onTouchEnd={stopDrawing}
+                        />
+                        {!isDrawing && (
+                          <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-20">
+                            <p className="text-xs font-black uppercase text-emerald-900">Assine aqui</p>
+                          </div>
+                        )}
+                      </div>
+                      <p className="text-[10px] text-slate-400 font-medium text-center">Use o mouse para assinar no quadro acima.</p>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center space-y-6 py-4">
+                      {qrCodeData ? (
+                        <>
+                          <div className="bg-white p-4 rounded-xl shadow-lg border-2 border-emerald-100">
+                            <img src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrCodeData.url)}`} alt="QR Code" className="w-48 h-48" />
+                          </div>
+                          <div className="text-center space-y-2">
+                            <p className="text-sm font-bold text-emerald-900">Aponte a câmera do celular</p>
+                            <p className="text-xs text-slate-500 max-w-xs mx-auto">Leia o QR Code acima para abrir a tela de assinatura no seu dispositivo móvel.</p>
+                            <div className="flex items-center justify-center gap-2 text-emerald-600 text-[10px] font-black uppercase animate-pulse">
+                              <span className="w-2 h-2 rounded-full bg-emerald-500"></span> Aguardando assinatura...
+                            </div>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="flex flex-col items-center justify-center py-10 text-slate-400 animate-pulse">
+                          <p>Gerando código seguro...</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="bg-blue-50 p-4 rounded-xl flex gap-3 items-start">
+                    <AlertCircle size={18} className="text-blue-500 shrink-0 mt-0.5" />
+                    <p className="text-[10px] text-blue-800 leading-relaxed">
+                      Ao assinar, confirmo minha candidatura voluntária para a CIPA. Um comprovante será enviado automaticamente para o e-mail: <strong>{collaborators.find(c => c.id === selectedCandidateId)?.email}</strong>.
+                    </p>
                   </div>
                 </div>
-              ))}
 
-              {isAiLoading && (
-                <div className="flex justify-start">
-                  <div className="bg-white p-4 rounded-2xl rounded-tl-none border border-slate-100 shadow-sm flex items-center gap-2">
-                    <span className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce"></span>
-                    <span className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
-                    <span className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
-                  </div>
+                <div className="mt-8 pt-6 border-t border-slate-100 flex gap-4">
+                  <button onClick={() => { setIsRegistrationModalOpen(false); setIsPolling(false); setRegistrationSuccess(false); }} className="flex-1 py-4 rounded-xl font-bold text-xs uppercase text-slate-500 hover:bg-slate-50 transition-all">Cancelar</button>
+                  {signatureMethod === 'DRAW' && (
+                    <button onClick={() => handleConfirmRegistration()} className="flex-1 bg-emerald-600 text-white py-4 rounded-xl font-black text-xs uppercase shadow-xl hover:bg-emerald-500 transition-all">
+                      Confirmar e Enviar
+                    </button>
+                  )}
                 </div>
-              )}
-              <div ref={(el) => el?.scrollIntoView({ behavior: 'smooth' })}></div>
-            </div>
-
-            {/* Input Area */}
-            <form onSubmit={handleAskAi} className="p-4 bg-white border-t border-slate-100 shrink-0 flex gap-2">
-              <input
-                type="text"
-                value={aiChatInput}
-                onChange={(e) => setAiChatInput(e.target.value)}
-                placeholder="Ex: Qual a estabilidade do cipeiro?"
-                className="flex-1 bg-slate-100 border-none rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-200 outline-none transition-all placeholder:text-slate-400"
-              />
-              <button
-                type="submit"
-                disabled={!aiChatInput.trim() || isAiLoading}
-                className="bg-emerald-600 text-white p-3 rounded-xl hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md active:scale-95"
-              >
-                <Send size={20} />
-              </button>
-            </form>
+              </>
+            )}
           </div>
-        </div>
-      )}
+        </div >
+      )
+      }
+
+      {/* AI CHAT MODAL (DETAIL VIEW) */}
+      {
+        isAiChatOpen && (
+          <div className="fixed inset-0 z-[600] flex items-end sm:items-center justify-center sm:justify-end p-0 sm:p-6 print:hidden pointer-events-none">
+            <div className="absolute inset-0 bg-black/20 backdrop-blur-[2px] pointer-events-auto" onClick={() => setIsAiChatOpen(false)}></div>
+
+            <div className="bg-white w-full sm:w-[400px] h-[80vh] sm:h-[600px] rounded-t-3xl sm:rounded-3xl shadow-2xl flex flex-col pointer-events-auto relative animate-in slide-in-from-bottom-10 border border-emerald-100 overflow-hidden">
+              {/* Header */}
+              <div className="bg-emerald-600 p-4 flex items-center justify-between text-white shrink-0">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
+                    <Bot size={24} />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-sm">Especialista NR-5</h3>
+                    <p className="text-[10px] opacity-80 flex items-center gap-1"><span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span> Online</p>
+                  </div>
+                </div>
+                <button onClick={() => setIsAiChatOpen(false)} className="p-2 hover:bg-white/10 rounded-full transition-colors"><X size={20} /></button>
+              </div>
+
+              {/* Chat Area */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50 relative">
+                <div className="absolute inset-0 flex items-center justify-center opacity-[0.03] pointer-events-none">
+                  <ShieldCheck size={120} />
+                </div>
+
+                {aiChatMessages.map((msg, idx) => (
+                  <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                    <div className={`max-w-[85%] p-4 rounded-2xl text-sm leading-relaxed shadow-sm ${msg.role === 'user'
+                      ? 'bg-emerald-600 text-white rounded-tr-none'
+                      : 'bg-white text-slate-700 rounded-tl-none border border-slate-100'
+                      }`}>
+                      {msg.content.split('**').map((part, i) =>
+                        i % 2 === 1 ? <strong key={i}>{part}</strong> : part
+                      )}
+                    </div>
+                  </div>
+                ))}
+
+                {isAiLoading && (
+                  <div className="flex justify-start">
+                    <div className="bg-white p-4 rounded-2xl rounded-tl-none border border-slate-100 shadow-sm flex items-center gap-2">
+                      <span className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce"></span>
+                      <span className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
+                      <span className="w-2 h-2 bg-emerald-400 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
+                    </div>
+                  </div>
+                )}
+                <div ref={(el) => el?.scrollIntoView({ behavior: 'smooth' })}></div>
+              </div>
+
+              {/* Input Area */}
+              <form onSubmit={handleAskAi} className="p-4 bg-white border-t border-slate-100 shrink-0 flex gap-2">
+                <input
+                  type="text"
+                  value={aiChatInput}
+                  onChange={(e) => setAiChatInput(e.target.value)}
+                  placeholder="Ex: Qual a estabilidade do cipeiro?"
+                  className="flex-1 bg-slate-100 border-none rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-emerald-200 outline-none transition-all placeholder:text-slate-400"
+                />
+                <button
+                  type="submit"
+                  disabled={!aiChatInput.trim() || isAiLoading}
+                  className="bg-emerald-600 text-white p-3 rounded-xl hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md active:scale-95"
+                >
+                  <Send size={20} />
+                </button>
+              </form>
+            </div>
+          </div>
+        )
+      }
     </div >
   );
 };

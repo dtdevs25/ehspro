@@ -13,6 +13,15 @@ export const CipaSignaturePage: React.FC<CipaSignaturePageProps> = ({ candidateI
     const [error, setError] = useState('');
 
     const [hasSignature, setHasSignature] = useState(false);
+    const historyRef = useRef<ImageData | null>(null);
+
+    // Restore signature on re-renders (e.g. scroll causing viewport resize/repaint)
+    React.useLayoutEffect(() => {
+        if (historyRef.current && signatureRef.current) {
+            const ctx = signatureRef.current.getContext('2d');
+            ctx?.putImageData(historyRef.current, 0, 0);
+        }
+    });
 
     const getCanvasCoordinates = (e: any) => {
         const canvas = signatureRef.current;
@@ -63,6 +72,11 @@ export const CipaSignaturePage: React.FC<CipaSignaturePageProps> = ({ candidateI
         setIsDrawing(false);
         const ctx = signatureRef.current?.getContext('2d');
         ctx?.closePath();
+
+        // Save state history
+        if (signatureRef.current && ctx) {
+            historyRef.current = ctx.getImageData(0, 0, signatureRef.current.width, signatureRef.current.height);
+        }
     };
 
     const clearSignature = () => {
@@ -70,6 +84,7 @@ export const CipaSignaturePage: React.FC<CipaSignaturePageProps> = ({ candidateI
         const ctx = canvas?.getContext('2d');
         ctx?.clearRect(0, 0, canvas?.width || 0, canvas?.height || 0);
         setHasSignature(false);
+        historyRef.current = null;
     };
 
     const handleSubmit = async () => {
