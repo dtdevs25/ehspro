@@ -216,6 +216,7 @@ model Collaborator {
   thirdPartyCompanyName String? @map("empresa_terceira")
   eSocialCode   String?  @map("codigo_esocial")
   photoUrl      String?  @map("foto_url")
+  signatureUrl  String?  @map("assinatura_url")
 
   role          Role     @relation(fields: [roleId], references: [id])
   jobFunction   JobFunction @relation(fields: [functionId], references: [id])

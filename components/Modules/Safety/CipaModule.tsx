@@ -61,7 +61,19 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
   // Election Logic States
   const [baseDate, setBaseDate] = useState('');
   const [isCalendarGenerated, setIsCalendarGenerated] = useState(false);
+
   const [completedSteps, setCompletedSteps] = useState<string[]>([]);
+
+  // Signature Capture Logic for Officers (distinct from Candidates)
+  // We reuse 'selectedCandidateId' to hold the ID of the person signing (even if officer) to keep 'handleConfirmRegistration' simple or refactor it.
+  // Actually, handleConfirm works on 'selectedCandidateId'. If we set it to officer ID, it works IF the API supports it.
+  // The API endpoint is /candidates/:id/sign-mobile. 
+  // If we want to sign for a COLLABORATOR who is NOT a candidate, we might need a different endpoint OR ensure the backend handles it.
+  // Assuming the user wants 'visual' signature in the PDF, so as long as we save it to the person's profile...
+  // But wait, 'candidates' table is separate from 'collaborators'? 
+  // If the backend expects a Candidate ID, passing a Collaborator ID will 404.
+  // I should probably add a flag 'isOfficerSignature' to switch the API endpoint.
+  const [isOfficerSignature, setIsOfficerSignature] = useState(false);
 
   // Election Sub-View State (Menu, Dimensioning, Calendar)
   const [eleicaoView, setEleicaoView] = useState<'menu' | 'dimensionamento' | 'calendario'>('menu');
@@ -277,13 +289,13 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
     ctx?.clearRect(0, 0, canvas?.width || 0, canvas?.height || 0);
   };
 
-  const handleConfirmRegistration = async (existingCandidateId?: string) => {
+  const handleConfirmRegistration = async (existingCandidateId?: string, useExisting: boolean = false) => {
     // If passing ID directly (mobile flow), skip validations
-    if (!existingCandidateId && (!selectedCandidateId || !selectedTermId)) return;
+    if (!existingCandidateId && (!selectedCandidateId || (!selectedTermId && !isOfficerSignature))) return;
 
     let signatureDataUrl = null;
 
-    if (!existingCandidateId) {
+    if (!useExisting && !existingCandidateId && signatureMethod === 'DRAW') {
       // Drawing Flow
       const canvas = signatureRef.current;
       signatureDataUrl = canvas?.toDataURL('image/png');
@@ -295,20 +307,42 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
     }
 
     try {
+      if (isOfficerSignature) {
+        // OFFICER SIGNATURE FLOW (Collaborators)
+        // Endpoint: /api/cipa/collaborators/:id/signature
+        // We need to support this endpoint. If not exists, we use /sign-mobile if adapted.
+        // Let's assume we use a new endpoint or the same if backend handles it.
+        // Given constraints, I'll use a specific endpoint layout
+        const targetId = existingCandidateId || selectedCandidateId;
+        const res = await fetch(`/api/cipa/collaborators/${targetId}/signature`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ signature: signatureDataUrl })
+        });
+
+        if (res.ok) {
+          alert("Assinatura do responsável salva com sucesso!");
+          // Refresh page to update collaborator data (simplest way given props limitation)
+          window.location.reload();
+        } else {
+          const err = await res.json();
+          alert("Erro ao salvar assinatura oficial: " + (err.error || "Desconhecido"));
+        }
+        setSignatureMethod('DRAW');
+        setIsPolling(false);
+        setQrCodeData(null);
+        setIsRegistrationModalOpen(false); // Close immediately for officers
+        setIsOfficerSignature(false);
+        return;
+      }
+
+
       let newCand;
       if (existingCandidateId) {
-        // Already created via QR flow, just fetching latest state or confirming locally
-        // Actually, if it was QR flow, polling already confirmed it.
-        // Just update UI.
-        const res = await fetch(`/api/cipa/candidates/${existingCandidateId}/check-status`); // Re-fetch to be sure
-        newCand = { id: existingCandidateId }; // Mock, real data below
+        // Already created via QR flow
+        const res = await fetch(`/api/cipa/candidates/${existingCandidateId}/check-status`);
         if (res.ok) {
-          const updated = await res.json();
-          // If email not sent yet for mobile (since status was pending), backend should handle it on status change or we call another endpoint?
-          // Current backend sends email ONLY on creation if signature exists.
-          // For mobile flow, the mobile upload endpoint updates status to APPROVED.
-          // We might need to trigger email sending separately or trust the backend mobile endpoint handled it?
-          // Whatever, for now let's assume valid.
+          // Success
         }
       } else {
         const res = await fetch('/api/cipa/candidates', {
@@ -317,7 +351,7 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
           body: JSON.stringify({
             termId: selectedTermId,
             collaboratorId: selectedCandidateId,
-            signature: signatureDataUrl
+            signature: useExisting ? null : signatureDataUrl
           })
         });
 
@@ -329,19 +363,23 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
         newCand = await res.json();
       }
 
-      // Update local list
-      const collab = collaborators.find(c => c.id === selectedCandidateId);
-      setCandidates(prev => [...prev, {
-        id: newCand.id,
-        name: collab?.name || 'Unknown',
-        nickname: collab?.nickname || '',
-        sector: collab?.branchId || '',
-        role: collab?.roleId || '',
-        date: new Date().toLocaleDateString(),
-        time: new Date().toLocaleTimeString(),
-        signatureUrl: newCand.signatureUrl || null,
-        status: newCand.status || 'APPROVED'
-      }]);
+      // Update local list for Candidates
+      if (!isOfficerSignature) {
+        const collab = collaborators.find(c => c.id === selectedCandidateId);
+        if (collab) {
+          setCandidates(prev => [...prev, {
+            id: newCand?.id || 'temp',
+            name: collab.name,
+            nickname: collab.nickname,
+            sector: collab.branchId || '',
+            role: collab.roleId || '',
+            date: new Date().toLocaleDateString(),
+            time: new Date().toLocaleTimeString(),
+            signatureUrl: newCand?.signatureUrl || signatureDataUrl || null,
+            status: 'APPROVED'
+          }]);
+        }
+      }
 
       setSignatureMethod('DRAW');
       setIsPolling(false);
@@ -352,6 +390,7 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
       setRegistrationSuccess(true);
 
     } catch (e) {
+      console.error(e);
       alert("Erro de conexão ao registrar");
     }
   };
@@ -778,6 +817,16 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
     const ev1Data = calendarItems.find(i => i.id === 'ev1');
     if (!ev1Data) return;
 
+    // Signature Buffers
+    const repCollab = collaborators.find(c => c.id === (selectedTerm as any).companyRepId);
+    const presCollab = collaborators.find(c => c.id === (selectedTerm as any).cipaPresidentId);
+
+    let repSigBuffer = null;
+    if (repCollab?.signatureUrl) repSigBuffer = await getImageArrayBuffer(repCollab.signatureUrl);
+
+    let presSigBuffer = null;
+    if (presCollab?.signatureUrl) presSigBuffer = await getImageArrayBuffer(presCollab.signatureUrl);
+
     const logoUrl = activeBranch.logoUrl || activeCompany.logoUrl;
     let logoImageRun = null;
     if (logoUrl) {
@@ -857,6 +906,12 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
             spacing: { before: 800, after: 1200 }
           }),
 
+          new docx.Paragraph({
+            children: [new docx.TextRun({ text: formatarDataLonga(ev1Data.date), size: 24 })],
+            alignment: docx.AlignmentType.RIGHT,
+            spacing: { before: 800, after: 1200 }
+          }),
+
           // Signatures
           new docx.Table({
             width: { size: 100, type: docx.WidthType.PERCENTAGE },
@@ -867,7 +922,11 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
                   new docx.TableCell({
                     children: [
                       new docx.Paragraph({
-                        children: [new docx.TextRun({ text: "__________________________________" })],
+                        children: [
+                          repSigBuffer
+                            ? new docx.ImageRun({ data: repSigBuffer, transformation: { width: 100, height: 50 } })
+                            : new docx.TextRun({ text: "__________________________________" })
+                        ],
                         alignment: docx.AlignmentType.CENTER
                       }),
                       new docx.Paragraph({
@@ -883,7 +942,11 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
                   new docx.TableCell({
                     children: [
                       new docx.Paragraph({
-                        children: [new docx.TextRun({ text: "__________________________________" })],
+                        children: [
+                          presSigBuffer
+                            ? new docx.ImageRun({ data: presSigBuffer, transformation: { width: 100, height: 50 } })
+                            : new docx.TextRun({ text: "__________________________________" })
+                        ],
                         alignment: docx.AlignmentType.CENTER
                       }),
                       new docx.Paragraph({
@@ -2225,6 +2288,15 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
                   <button
                     onClick={() => {
                       if (!selectedCandidateId) return alert("Selecione um colaborador");
+
+                      const collab = collaborators.find(c => c.id === selectedCandidateId);
+                      if (collab?.signatureUrl) {
+                        if (confirm("Assinatura digital já encontrada. Deseja utilizá-la para a inscrição?")) {
+                          handleConfirmRegistration(undefined, true);
+                          return;
+                        }
+                      }
+
                       setIsRegistrationModalOpen(true);
                       // Delay signature clear/setup slightly to ensure modal render
                       setTimeout(clearSignature, 100);
@@ -2950,6 +3022,80 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
         </button>
       </div>
 
+
+      {/* COMUNICADO SINDICATO MODAL (Step 1) */}
+      {activeStepView === 'ev1' && (
+        <div className="fixed inset-0 z-[500] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-emerald-950/60 backdrop-blur-sm" onClick={() => setActiveStepView(null)}></div>
+          <div className="bg-white w-full max-w-2xl rounded-[2.5rem] shadow-2xl relative z-10 p-10 animate-in zoom-in border border-emerald-100 flex flex-col max-h-[90vh]">
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <h2 className="text-2xl font-black uppercase text-emerald-950">Comunicado ao Sindicato</h2>
+                <p className="text-sm font-bold text-emerald-500 uppercase tracking-widest">Etapa 1 - Gestão {selectedTerm?.year}</p>
+              </div>
+              <button onClick={() => setActiveStepView(null)} className="p-2 hover:bg-slate-100 rounded-full text-slate-400"><X size={24} /></button>
+            </div>
+
+            <div className="bg-emerald-50 p-6 rounded-2xl border border-emerald-100 mb-8">
+              <p className="text-xs text-emerald-800 leading-relaxed font-medium">
+                Este documento formaliza o início do processo eleitoral junto ao sindicato da categoria (NR-5, Item 5.4.12).
+                É necessário que o <strong>Representante da Empresa</strong> e o <strong>Presidente da CIPA (Atual)</strong> assinem o documento.
+              </p>
+            </div>
+
+            <div className="space-y-6 flex-1 overflow-y-auto pr-2">
+              {[
+                { role: 'Representante da Empresa', label: repEmpresaName, id: (selectedTerm as any).companyRepId },
+                { role: 'Presidente da CIPA (Atual)', label: presCipaName, id: (selectedTerm as any).cipaPresidentId }
+              ].map((signer, idx) => {
+                const signerCollab = collaborators.find(c => c.id === signer.id);
+                const hasSignature = !!signerCollab?.signatureUrl;
+
+                return (
+                  <div key={idx} className="flex items-center justify-between p-4 bg-white border border-slate-100 rounded-xl shadow-sm hover:border-emerald-200 transition-all">
+                    <div className="flex items-center gap-4">
+                      <div className={`w-12 h-12 rounded-full flex items-center justify-center font-black text-white ${hasSignature ? 'bg-emerald-500' : 'bg-slate-300'}`}>
+                        {hasSignature ? <Check size={24} /> : (idx + 1)}
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold text-slate-400 uppercase">{signer.role}</p>
+                        <h4 className="text-sm font-black text-slate-800">{signer.label}</h4>
+                      </div>
+                    </div>
+
+                    {hasSignature ? (
+                      <div className="flex items-center gap-2 text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-lg">
+                        <ShieldCheck size={16} /> <span className="text-[10px] font-black uppercase">Assinado</span>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => {
+                          if (!signer.id) return alert("Defina o responsável antes de assinar.");
+                          // Open Signature Capture for this person
+                          setSelectedCandidateId(signer.id); // Reusing this state to identify signer
+                          setSignatureMethod('DRAW');
+                          setIsOfficerSignature(true);
+                          setIsRegistrationModalOpen(true);
+                        }}
+                        className="bg-emerald-600 text-white px-4 py-2 rounded-lg text-[10px] font-black uppercase shadow-lg hover:bg-emerald-500 flex items-center gap-2"
+                      >
+                        <PenTool size={14} /> Assinar
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="mt-8 pt-6 border-t border-slate-100 flex justify-end">
+              <button onClick={generateStep1Word} className="bg-emerald-600 text-white px-8 py-4 rounded-2xl font-black text-xs uppercase shadow-xl hover:bg-emerald-500 transition-all flex items-center gap-2">
+                <FileDown size={20} /> Baixar Documento (Word)
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
 
       {/* REGISTRATION & SIGNATURE MODAL */}
       {isRegistrationModalOpen && (

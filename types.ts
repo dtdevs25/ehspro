@@ -107,6 +107,7 @@ export interface Collaborator {
   thirdPartyCompanyName?: string;
   eSocialCode?: string;
   photoUrl?: string;
+  signatureUrl?: string;
 }
 
 export interface MedicalCertificate {
