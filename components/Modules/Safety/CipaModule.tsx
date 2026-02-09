@@ -930,7 +930,7 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
                         alignment: docx.AlignmentType.CENTER
                       }),
                       new docx.Paragraph({
-                        children: [new docx.TextRun({ text: repEmpresaName || "Representante da Empresa", bold: true, size: 20 })],
+                        children: [new docx.TextRun({ text: repCollab?.name || "Representante da Empresa", bold: true, size: 20 })],
                         alignment: docx.AlignmentType.CENTER
                       }),
                       new docx.Paragraph({
@@ -950,7 +950,7 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
                         alignment: docx.AlignmentType.CENTER
                       }),
                       new docx.Paragraph({
-                        children: [new docx.TextRun({ text: presCipaName || "Presidente da CIPA", bold: true, size: 20 })],
+                        children: [new docx.TextRun({ text: presCollab?.name || "Presidente da CIPA", bold: true, size: 20 })],
                         alignment: docx.AlignmentType.CENTER
                       }),
                       new docx.Paragraph({
@@ -1983,78 +1983,295 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
                   <p className="text-right font-black text-slate-900">{formatarDataLonga(calendarItems.find(i => i.id === 'ev1')?.date || '')}</p>
                   <div className="flex justify-between items-start gap-12">
                     <div className="flex-1 space-y-4 text-center">
-                      <select
-                        value={selectedTerm?.companyRepId || ''}
-                        onChange={async (e) => {
-                          const newId = e.target.value;
-                          const collab = collaborators.find(c => c.id === newId);
-                          if (collab) setRepEmpresaName(collab.name);
+                      {((): any => {
+                        const repId = (selectedTerm as any).companyRepId;
+                        const repCollab = collaborators.find(c => c.id === repId);
+                        const hasSignature = !!repCollab?.signatureUrl;
 
-                          // Update Local State immediately for responsiveness
-                          if (selectedTerm) {
-                            const updatedTerm = { ...selectedTerm, companyRepId: newId };
-                            // @ts-ignore
-                            const newTerms = terms.map(t => t.id === selectedTerm.id ? updatedTerm : t);
-                            // @ts-ignore
-                            setTerms(newTerms);
-                          }
+                        return (
+                          <div className="flex flex-col items-center gap-2">
+                            {hasSignature ? (
+                              <img src={repCollab.signatureUrl!} className="h-16 object-contain" alt="Assinatura" />
+                            ) : (
+                              <div className="h-16 flex items-end justify-center text-slate-300 text-xs italic">Aguardando assinatura...</div>
+                            )}
+                            <select
+                              value={selectedTerm?.companyRepId || ''}
+                              onChange={async (e) => {
+                                const newId = e.target.value;
+                                const collab = collaborators.find(c => c.id === newId);
+                                if (collab) setRepEmpresaName(collab.name);
 
-                          // Save to API
-                          try {
-                            await fetch(`/api/cipa/terms/${selectedTermId}`, {
-                              method: 'PUT',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({ companyRepId: newId })
-                            });
-                          } catch (err) {
-                            console.error("Failed to save company rep", err);
-                          }
-                        }}
-                        className="w-full border-b border-slate-900 bg-transparent text-center font-black outline-none print:border-none appearance-none cursor-pointer hover:bg-slate-50"
-                      >
-                        <option value="">Selecione...</option>
-                        {collaborators.map(c => (
-                          <option key={c.id} value={c.id}>{c.name}</option>
-                        ))}
-                      </select>
-                      <p className="text-[10px] font-black text-slate-500 uppercase">Representante Empresa</p>
+                                if (selectedTerm) {
+                                  const updatedTerm = { ...selectedTerm, companyRepId: newId };
+                                  // @ts-ignore
+                                  setTerms(terms.map(t => t.id === selectedTerm.id ? updatedTerm : t));
+                                }
+
+                                try {
+                                  await fetch(`/api/cipa/terms/${selectedTermId}`, {
+                                    method: 'PUT',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ companyRepId: newId })
+                                  });
+                                } catch (err) { }
+                              }}
+                              className="w-full border-b border-slate-900 bg-transparent text-center font-black outline-none print:border-none appearance-none cursor-pointer hover:bg-slate-50"
+                            >
+                              <option value="">Selecione...</option>
+                              {collaborators.map(c => (
+                                <option key={c.id} value={c.id}>{c.name}</option>
+                              ))}
+                            </select>
+                            <p className="text-[10px] font-black text-slate-500 uppercase">Representante Empresa</p>
+                            {!hasSignature && (selectedTerm as any).companyRepId && (
+                              <button
+                                onClick={() => {
+                                  setSelectedCandidateId((selectedTerm as any).companyRepId);
+                                  setSignatureMethod('DRAW');
+                                  setIsOfficerSignature(true);
+                                  setIsRegistrationModalOpen(true);
+                                }}
+                                className="text-[10px] text-emerald-600 font-bold uppercase hover:bg-emerald-50 px-2 py-1 rounded print:hidden"
+                              >
+                                <PenTool size={10} className="inline mr-1" /> Assinar
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </div>
                     <div className="flex-1 space-y-4 text-center">
-                      <select
-                        value={selectedTerm?.cipaPresidentId || ''}
-                        onChange={async (e) => {
-                          const newId = e.target.value;
-                          const collab = collaborators.find(c => c.id === newId);
-                          if (collab) setPresCipaName(collab.name);
+                      {((): any => {
+                        const presId = (selectedTerm as any).cipaPresidentId;
+                        const presCollab = collaborators.find(c => c.id === presId);
+                        const hasSignature = !!presCollab?.signatureUrl;
 
-                          // Update Local State
-                          if (selectedTerm) {
-                            const updatedTerm = { ...selectedTerm, cipaPresidentId: newId };
-                            // @ts-ignore
-                            const newTerms = terms.map(t => t.id === selectedTerm.id ? updatedTerm : t);
-                            // @ts-ignore
-                            setTerms(newTerms);
-                          }
+                        return (
+                          <div className="flex flex-col items-center gap-2">
+                            {hasSignature ? (
+                              <img src={presCollab.signatureUrl!} className="h-16 object-contain" alt="Assinatura" />
+                            ) : (
+                              <div className="h-16 flex items-end justify-center text-slate-300 text-xs italic">Aguardando assinatura...</div>
+                            )}
+                            <select
+                              value={selectedTerm?.cipaPresidentId || ''}
+                              onChange={async (e) => {
+                                const newId = e.target.value;
+                                const collab = collaborators.find(c => c.id === newId);
+                                if (collab) setPresCipaName(collab.name);
 
-                          // Save to API
-                          try {
-                            await fetch(`/api/cipa/terms/${selectedTermId}`, {
-                              method: 'PUT',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({ cipaPresidentId: newId })
-                            });
-                          } catch (err) {
-                            console.error("Failed to save cipa president", err);
-                          }
-                        }}
-                        className="w-full border-b border-slate-900 bg-transparent text-center font-black outline-none print:border-none appearance-none cursor-pointer hover:bg-slate-50"
-                      >
-                        <option value="">Selecione...</option>
-                        {collaborators.map(c => (
-                          <option key={c.id} value={c.id}>{c.name}</option>
-                        ))}
-                      </select>
-                      <p className="text-[10px] font-black text-slate-500 uppercase">Presidente CIPA Atual</p>
+                                if (selectedTerm) {
+                                  const updatedTerm = { ...selectedTerm, cipaPresidentId: newId };
+                                  // @ts-ignore
+                                  setTerms(terms.map(t => t.id === selectedTerm.id ? updatedTerm : t));
+                                }
+
+                                try {
+                                  await fetch(`/api/cipa/terms/${selectedTermId}`, {
+                                    method: 'PUT',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ cipaPresidentId: newId })
+                                  });
+                                } catch (err) { }
+                              }}
+                              className="w-full border-b border-slate-900 bg-transparent text-center font-black outline-none print:border-none appearance-none cursor-pointer hover:bg-slate-50"
+                            >
+                              <option value="">Selecione...</option>
+                              {collaborators.map(c => (
+                                <option key={c.id} value={c.id}>{c.name}</option>
+                              ))}
+                            </select>
+                            <p className="text-[10px] font-black text-slate-500 uppercase">Presidente CIPA Atual</p>
+                            {!hasSignature && (selectedTerm as any).cipaPresidentId && (
+                              <button
+                                onClick={() => {
+                                  setSelectedCandidateId((selectedTerm as any).cipaPresidentId);
+                                  setSignatureMethod('DRAW');
+                                  setIsOfficerSignature(true);
+                                  setIsRegistrationModalOpen(true);
+                                }}
+                                className="text-[10px] text-emerald-600 font-bold uppercase hover:bg-emerald-50 px-2 py-1 rounded print:hidden"
+                              >
+                                <PenTool size={10} className="inline mr-1" /> Assinar
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : false ? (
+        <div className="animate-in slide-in-from-right-12 duration-500">
+          <div className="bg-white rounded-[3rem] border border-emerald-100 shadow-2xl overflow-hidden flex flex-col min-h-[85vh]">
+            <div className="p-8 border-b border-emerald-50 bg-emerald-50/30 flex items-center justify-between print:hidden">
+              <button onClick={() => setActiveStepView(null)} className="flex items-center gap-2 text-emerald-600 font-black text-xs uppercase hover:text-emerald-800 transition-all">
+                <ArrowLeft size={18} /> Voltar ao Calendário
+              </button>
+              <button onClick={generateStep1Word} className="bg-emerald-600 text-white px-8 py-3 rounded-xl font-black text-xs uppercase flex items-center gap-3 shadow-lg hover:bg-emerald-500 transition-all">
+                <FileDown size={18} /> Gerar Word (.docx)
+              </button>
+            </div>
+
+            <div className="flex-1 p-10 md:p-20 overflow-y-auto bg-slate-50/50 print:bg-white print:p-0">
+              <div className="max-w-4xl mx-auto bg-white border border-slate-200 shadow-2xl p-16 space-y-12 min-h-[1100px] relative text-slate-800 print:shadow-none print:border-none print:p-0">
+                <div className="flex items-center gap-10 border-b border-slate-100 pb-10">
+                  <div className="w-32 h-32 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-300 font-bold border border-slate-100 shrink-0 uppercase italic overflow-hidden">
+                    {(activeBranch?.logoUrl || activeCompany?.logoUrl) ? (
+                      <img src={activeBranch?.logoUrl || activeCompany?.logoUrl} alt="Logo" className="w-full h-full object-contain" />
+                    ) : (
+                      "Logo"
+                    )}
+                  </div>
+                  <div className="text-center flex-1 pr-32">
+                    <h2 className="text-3xl font-black text-emerald-700 uppercase">Comunicado ao Sindicato</h2>
+                    <p className="text-base font-bold text-slate-400 uppercase tracking-widest mt-1">CIPA Gestão {selectedTerm?.year}</p>
+                  </div>
+                </div>
+
+                <div className="space-y-8 leading-[1.8] text-base">
+                  <p className="text-justify">
+                    À <span className="font-black">ENTIDADE SINDICAL - {activeBranch.name}</span>
+                  </p>
+                  <p className="text-justify">
+                    Nesta data, comunicamos a V.Sas., que em cumprimento a Norma Regulamentadora nº 5 – NR-5, da Portaria 3214/78, estaremos iniciando o processo eleitoral para a escolha dos representantes dos empregados na CIPA – Comissão Interna de Prevenção de Acidentes e de Assédio, desta Empresa, gestão {selectedTerm?.year}.
+                  </p>
+                  <p className="text-justify">
+                    Local da Votação: {electionLocation || 'A definir'}
+                  </p>
+                  <p className="text-justify">
+                    Data da Votação: {calendarItems.find(i => i.id === 'ev7') ? formatarDataLonga(calendarItems.find(i => i.id === 'ev7')!.date) : '...'}
+                  </p>
+                  <p className="text-justify">
+                    Horário: {electionTimeRange || 'A definir'}
+                  </p>
+                </div>
+
+                <div className="pt-20 space-y-24">
+                  <p className="text-right font-black text-slate-900">{formatarDataLonga(calendarItems.find(i => i.id === 'ev1')?.date || '')}</p>
+                  <div className="flex justify-between items-start gap-12">
+                    <div className="flex-1 space-y-4 text-center">
+                      {((): any => {
+                        const repId = (selectedTerm as any).companyRepId;
+                        const repCollab = collaborators.find(c => c.id === repId);
+                        const hasSignature = !!repCollab?.signatureUrl;
+
+                        return (
+                          <div className="flex flex-col items-center gap-2">
+                            {hasSignature ? (
+                              <img src={repCollab.signatureUrl!} className="h-16 object-contain" alt="Assinatura" />
+                            ) : (
+                              <div className="h-16 flex items-end justify-center text-slate-300 text-xs italic">Aguardando assinatura...</div>
+                            )}
+                            <select
+                              value={selectedTerm?.companyRepId || ''}
+                              onChange={async (e) => {
+                                const newId = e.target.value;
+                                const collab = collaborators.find(c => c.id === newId);
+                                if (collab) setRepEmpresaName(collab.name);
+
+                                if (selectedTerm) {
+                                  const updatedTerm = { ...selectedTerm, companyRepId: newId };
+                                  // @ts-ignore
+                                  setTerms(terms.map(t => t.id === selectedTerm.id ? updatedTerm : t));
+                                }
+
+                                try {
+                                  await fetch(`/api/cipa/terms/${selectedTermId}`, {
+                                    method: 'PUT',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ companyRepId: newId })
+                                  });
+                                } catch (err) { }
+                              }}
+                              className="w-full border-b border-slate-900 bg-transparent text-center font-black outline-none print:border-none appearance-none cursor-pointer hover:bg-slate-50"
+                            >
+                              <option value="">Selecione...</option>
+                              {collaborators.map(c => (
+                                <option key={c.id} value={c.id}>{c.name}</option>
+                              ))}
+                            </select>
+                            <p className="text-[10px] font-black text-slate-500 uppercase">Representante Empresa</p>
+                            {!hasSignature && (selectedTerm as any).companyRepId && (
+                              <button
+                                onClick={() => {
+                                  setSelectedCandidateId((selectedTerm as any).companyRepId);
+                                  setSignatureMethod('DRAW');
+                                  setIsOfficerSignature(true);
+                                  setIsRegistrationModalOpen(true);
+                                }}
+                                className="text-[10px] text-emerald-600 font-bold uppercase hover:bg-emerald-50 px-2 py-1 rounded print:hidden"
+                              >
+                                <PenTool size={10} className="inline mr-1" /> Assinar
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })()}
+                    </div>
+                    <div className="flex-1 space-y-4 text-center">
+                      {((): any => {
+                        const presId = (selectedTerm as any).cipaPresidentId;
+                        const presCollab = collaborators.find(c => c.id === presId);
+                        const hasSignature = !!presCollab?.signatureUrl;
+
+                        return (
+                          <div className="flex flex-col items-center gap-2">
+                            {hasSignature ? (
+                              <img src={presCollab.signatureUrl!} className="h-16 object-contain" alt="Assinatura" />
+                            ) : (
+                              <div className="h-16 flex items-end justify-center text-slate-300 text-xs italic">Aguardando assinatura...</div>
+                            )}
+                            <select
+                              value={selectedTerm?.cipaPresidentId || ''}
+                              onChange={async (e) => {
+                                const newId = e.target.value;
+                                const collab = collaborators.find(c => c.id === newId);
+                                if (collab) setPresCipaName(collab.name);
+
+                                if (selectedTerm) {
+                                  const updatedTerm = { ...selectedTerm, cipaPresidentId: newId };
+                                  // @ts-ignore
+                                  setTerms(terms.map(t => t.id === selectedTerm.id ? updatedTerm : t));
+                                }
+
+                                try {
+                                  await fetch(`/api/cipa/terms/${selectedTermId}`, {
+                                    method: 'PUT',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ cipaPresidentId: newId })
+                                  });
+                                } catch (err) { }
+                              }}
+                              className="w-full border-b border-slate-900 bg-transparent text-center font-black outline-none print:border-none appearance-none cursor-pointer hover:bg-slate-50"
+                            >
+                              <option value="">Selecione...</option>
+                              {collaborators.map(c => (
+                                <option key={c.id} value={c.id}>{c.name}</option>
+                              ))}
+                            </select>
+                            <p className="text-[10px] font-black text-slate-500 uppercase">Presidente CIPA Atual</p>
+                            {!hasSignature && (selectedTerm as any).cipaPresidentId && (
+                              <button
+                                onClick={() => {
+                                  setSelectedCandidateId((selectedTerm as any).cipaPresidentId);
+                                  setSignatureMethod('DRAW');
+                                  setIsOfficerSignature(true);
+                                  setIsRegistrationModalOpen(true);
+                                }}
+                                className="text-[10px] text-emerald-600 font-bold uppercase hover:bg-emerald-50 px-2 py-1 rounded print:hidden"
+                              >
+                                <PenTool size={10} className="inline mr-1" /> Assinar
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </div>
                   </div>
                 </div>
@@ -3024,78 +3241,7 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
 
 
       {/* COMUNICADO SINDICATO MODAL (Step 1) */}
-      {activeStepView === 'ev1' && (
-        <div className="fixed inset-0 z-[500] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-emerald-950/60 backdrop-blur-sm" onClick={() => setActiveStepView(null)}></div>
-          <div className="bg-white w-full max-w-2xl rounded-[2.5rem] shadow-2xl relative z-10 p-10 animate-in zoom-in border border-emerald-100 flex flex-col max-h-[90vh]">
-            <div className="flex items-center justify-between mb-8">
-              <div>
-                <h2 className="text-2xl font-black uppercase text-emerald-950">Comunicado ao Sindicato</h2>
-                <p className="text-sm font-bold text-emerald-500 uppercase tracking-widest">Etapa 1 - Gestão {selectedTerm?.year}</p>
-              </div>
-              <button onClick={() => setActiveStepView(null)} className="p-2 hover:bg-slate-100 rounded-full text-slate-400"><X size={24} /></button>
-            </div>
 
-            <div className="bg-emerald-50 p-6 rounded-2xl border border-emerald-100 mb-8">
-              <p className="text-xs text-emerald-800 leading-relaxed font-medium">
-                Este documento formaliza o início do processo eleitoral junto ao sindicato da categoria (NR-5, Item 5.4.12).
-                É necessário que o <strong>Representante da Empresa</strong> e o <strong>Presidente da CIPA (Atual)</strong> assinem o documento.
-              </p>
-            </div>
-
-            <div className="space-y-6 flex-1 overflow-y-auto pr-2">
-              {[
-                { role: 'Representante da Empresa', label: repEmpresaName, id: (selectedTerm as any).companyRepId },
-                { role: 'Presidente da CIPA (Atual)', label: presCipaName, id: (selectedTerm as any).cipaPresidentId }
-              ].map((signer, idx) => {
-                const signerCollab = collaborators.find(c => c.id === signer.id);
-                const hasSignature = !!signerCollab?.signatureUrl;
-
-                return (
-                  <div key={idx} className="flex items-center justify-between p-4 bg-white border border-slate-100 rounded-xl shadow-sm hover:border-emerald-200 transition-all">
-                    <div className="flex items-center gap-4">
-                      <div className={`w-12 h-12 rounded-full flex items-center justify-center font-black text-white ${hasSignature ? 'bg-emerald-500' : 'bg-slate-300'}`}>
-                        {hasSignature ? <Check size={24} /> : (idx + 1)}
-                      </div>
-                      <div>
-                        <p className="text-xs font-bold text-slate-400 uppercase">{signer.role}</p>
-                        <h4 className="text-sm font-black text-slate-800">{signer.label}</h4>
-                      </div>
-                    </div>
-
-                    {hasSignature ? (
-                      <div className="flex items-center gap-2 text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-lg">
-                        <ShieldCheck size={16} /> <span className="text-[10px] font-black uppercase">Assinado</span>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => {
-                          if (!signer.id) return alert("Defina o responsável antes de assinar.");
-                          // Open Signature Capture for this person
-                          setSelectedCandidateId(signer.id); // Reusing this state to identify signer
-                          setSignatureMethod('DRAW');
-                          setIsOfficerSignature(true);
-                          setIsRegistrationModalOpen(true);
-                        }}
-                        className="bg-emerald-600 text-white px-4 py-2 rounded-lg text-[10px] font-black uppercase shadow-lg hover:bg-emerald-500 flex items-center gap-2"
-                      >
-                        <PenTool size={14} /> Assinar
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-
-            <div className="mt-8 pt-6 border-t border-slate-100 flex justify-end">
-              <button onClick={generateStep1Word} className="bg-emerald-600 text-white px-8 py-4 rounded-2xl font-black text-xs uppercase shadow-xl hover:bg-emerald-500 transition-all flex items-center gap-2">
-                <FileDown size={20} /> Baixar Documento (Word)
-              </button>
-            </div>
-
-          </div>
-        </div>
-      )}
 
       {/* REGISTRATION & SIGNATURE MODAL */}
       {isRegistrationModalOpen && (
