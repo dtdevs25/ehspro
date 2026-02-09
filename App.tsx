@@ -52,6 +52,8 @@ import {
 import { TrainingIntegration } from './components/Modules/Training/TrainingIntegration';
 import { CollaboratorDetailsModal } from './components/Modules/RH/CollaboratorDetailsModal';
 import { ConfirmationModal } from './components/Layout/ConfirmationModal';
+import { CipaSignaturePage } from './components/Modules/Safety/CipaSignaturePage';
+
 
 // Cadastros de Demonstração (Enriquecidos com Unidades Diferentes)
 const DEMO_COLLABORATORS: Collaborator[] = [
@@ -528,6 +530,16 @@ const App: React.FC = () => {
       window.history.replaceState({}, document.title, "/");
       window.location.reload();
     }} />;
+  }
+
+  // Handle Public Mobile Signature Route
+  // Checks if current path starts with /public/cipa-sign/
+  const path = window.location.pathname;
+  if (path.startsWith('/public/cipa-sign/')) {
+    const candidateId = path.split('/').pop();
+    if (candidateId) {
+      return <CipaSignaturePage candidateId={candidateId} />;
+    }
   }
 
   if (!currentUser) return <Login onLogin={handleLogin} />;

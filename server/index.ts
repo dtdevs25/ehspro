@@ -8,9 +8,27 @@ import nodemailer from 'nodemailer';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { generateProfessionalSummary, generateRoleDescription, getCidDescription, suggestRolesAndFunctions } from './aiController.js';
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import multer from 'multer';
+import fs from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// S3 / MinIO Configuration
+const s3Client = new S3Client({
+  endpoint: process.env.MINIO_ENDPOINT || 'http://localhost:9000',
+  region: 'us-east-1',
+  credentials: {
+    accessKeyId: process.env.MINIO_ACCESS_KEY || 'minioadmin',
+    secretAccessKey: process.env.MINIO_SECRET_KEY || 'minioadmin'
+  },
+  forcePathStyle: true // Needed for MinIO
+});
+
+const upload = multer({ dest: 'uploads/' });
+const BUCKET_NAME = process.env.MINIO_BUCKET_NAME || 'ehs-pro-files';
+const MINIO_ENDPOINT = process.env.MINIO_ENDPOINT || 'http://localhost:9000';
 
 const app = express();
 const prisma = new PrismaClient();
@@ -1309,6 +1327,122 @@ app.delete('/api/cipa/plans/:id', async (req, res) => {
     res.status(500).json({ error: 'Erro ao excluir plano de ação' });
   }
 });
+
+
+// 5. CIPA Candidates (Candidatos)
+app.get('/api/cipa/candidates', async (req, res) => {
+  try {
+    const { termId } = req.query;
+    const where: any = {};
+    if (termId) where.termId = String(termId);
+
+    const candidates = await prisma.cipaCandidate.findMany({
+      where,
+      orderBy: { registrationDate: 'asc' },
+      include: { collaborator: true }
+    });
+    res.json(candidates);
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao buscar candidatos' });
+  }
+});
+
+app.post('/api/cipa/candidates', async (req, res) => {
+  try {
+    const { termId, collaboratorId, signature } = req.body;
+
+    // Check if already registered
+    const existing = await prisma.cipaCandidate.findFirst({
+      where: { termId, collaboratorId }
+    });
+
+    if (existing) {
+      if (existing.status !== 'APPROVED') {
+        return res.json(existing);
+      }
+      return res.status(400).json({ error: 'Colaborador já inscrito neste mandato.' });
+    }
+
+    const newCandidate = await prisma.cipaCandidate.create({
+      data: {
+        termId,
+        collaboratorId,
+        signatureUrl: signature || null,
+        status: signature ? 'APPROVED' : 'PENDING_SIGNATURE'
+      }
+    });
+
+    // Send confirmation email (Mock implementation)
+    // In a real app, integrate with SES/SendGrid here using collaborator email
+
+    res.json(newCandidate);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Erro ao registrar candidato' });
+  }
+});
+
+app.delete('/api/cipa/candidates/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    await prisma.cipaCandidate.delete({ where: { id } });
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao excluir candidato' });
+  }
+});
+
+app.get('/api/cipa/candidates/:id/check-status', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const candidate = await prisma.cipaCandidate.findUnique({
+      where: { id }
+    });
+    if (!candidate) return res.status(404).json({ error: 'Candidato não encontrado' });
+    res.json(candidate);
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao verificar status' });
+  }
+});
+
+// Mobile Signature Upload (Public/Auth-less for simplicity on same network, or use temporary token)
+app.post('/api/cipa/candidates/:id/sign-mobile', upload.single('signature'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!req.file) return res.status(400).json({ error: 'Nenhuma imagem enviada' });
+
+    // Upload to S3/MinIO
+    const fileContent = fs.readFileSync(req.file.path);
+    const fileName = `cipa_signatures/${Date.now()}-${req.file.originalname}`;
+
+    await s3Client.send(new PutObjectCommand({
+      Bucket: BUCKET_NAME,
+      Key: fileName,
+      Body: fileContent,
+      ContentType: req.file.mimetype,
+      ACL: 'public-read'
+    }));
+
+    // Full URL
+    const fileUrl = `${MINIO_ENDPOINT}/${BUCKET_NAME}/${fileName}`; // Adjust based on your MinIO setup
+
+    // Update Candidate
+    const updated = await prisma.cipaCandidate.update({
+      where: { id },
+      data: { signatureUrl: fileUrl, status: 'APPROVED' }
+    });
+
+    // Cleanup local file
+    fs.unlinkSync(req.file.path);
+
+    res.json(updated);
+  } catch (error) {
+    console.error("Mobile sign error:", error);
+    res.status(500).json({ error: 'Erro ao salvar assinatura móvel' });
+  }
+});
+
+
 
 const distPath = path.join(__dirname, '..', '..', 'dist'); // Go up to /app/dist
 

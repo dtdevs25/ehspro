@@ -585,6 +585,33 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
       fetch(`/api/cipa/meetings?termId=${selectedTermId}`).then(r => r.json()).then(setMeetings);
       // Plans
       fetch(`/api/cipa/plans?termId=${selectedTermId}`).then(r => r.json()).then(setActionPlans);
+
+      // Candidates
+      fetch(`/api/cipa/candidates?termId=${selectedTermId}`)
+        .then(r => r.json())
+        .then((data: any[]) => {
+          const mapped = data.map(c => {
+            const collab = collaborators.find(col => col.id === c.collaboratorId);
+            // Try to get friendly names from collaborator list if available, otherwise use IDs or fallbacks
+            const sectorName = collab?.branch?.name || collab?.branchId || c.collaborator?.branchId || '-';
+            const roleName = collab?.role?.name || collab?.roleId || c.collaborator?.roleId || '-';
+            const regDate = new Date(c.registrationDate);
+
+            return {
+              id: c.id,
+              name: c.collaborator?.name || collab?.name || 'Desconhecido',
+              nickname: c.collaborator?.nickname || collab?.nickname || '',
+              sector: sectorName,
+              role: roleName,
+              date: regDate.toLocaleDateString(),
+              time: regDate.toLocaleTimeString(),
+              signatureUrl: c.signatureUrl,
+              status: c.status
+            };
+          });
+          setCandidates(mapped);
+        });
+
     } catch (error) {
       console.error("Failed to load details", error);
     }
