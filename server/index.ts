@@ -1067,439 +1067,440 @@ app.delete('/api/collaborators/:id', async (req, res) => {
     console.error("Error deleting collaborator:", error);
     res.status(500).json({ error: 'Erro ao excluir colaborador' });
   }
-  // --- COLLABORATOR SIGNATURE ---
-  app.post('/api/cipa/collaborators/:id/signature', async (req, res) => {
-    try {
-      const { id } = req.params;
-      const { signature } = req.body; // base64
+});
+// --- COLLABORATOR SIGNATURE ---
+app.post('/api/cipa/collaborators/:id/signature', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { signature } = req.body; // base64
 
-      if (!signature) {
-        return res.status(400).json({ error: 'Assinatura não fornecida.' });
+    if (!signature) {
+      return res.status(400).json({ error: 'Assinatura não fornecida.' });
+    }
+
+    const collaborator = await prisma.collaborator.findUnique({ where: { id } });
+    if (!collaborator) {
+      return res.status(404).json({ error: 'Colaborador não encontrado.' });
+    }
+
+    // Upload signature to MinIO
+    const signatureUrl = await uploadBase64ToMinio(signature, 'signatures');
+
+    // Update Collaborator
+    const updated = await prisma.collaborator.update({
+      where: { id },
+      data: { signatureUrl }
+    });
+
+    res.json(updated);
+  } catch (error) {
+    console.error("Error saving collaborator signature:", error);
+    res.status(500).json({ error: 'Erro ao salvar assinatura do colaborador.' });
+  }
+});
+
+// Serve static files from the React app (after build)
+// In production (Docker), we serve files from 'dist'
+// --- CIPA ROUTES ---
+
+// 1. CIPA Terms (Mandatos)
+app.get('/api/cipa/terms', async (req, res) => {
+  try {
+    const { branchId } = req.query;
+    const where: any = {};
+    if (branchId) where.branchId = String(branchId);
+
+    const terms = await prisma.cipaTerm.findMany({
+      where,
+      orderBy: { startDate: 'desc' },
+      include: {
+        meetings: true,
+        cipeiros: true
       }
+    });
+    res.json(terms);
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao buscar mandatos CIPA' });
+  }
+});
 
-      const collaborator = await prisma.collaborator.findUnique({ where: { id } });
-      if (!collaborator) {
-        return res.status(404).json({ error: 'Colaborador não encontrado.' });
+app.post('/api/cipa/terms', async (req, res) => {
+  try {
+    const { year, startDate, endDate, branchId, status } = req.body;
+    const newTerm = await prisma.cipaTerm.create({
+      data: {
+        year,
+        startDate: new Date(startDate),
+        endDate: new Date(endDate),
+        branchId,
+        status: status || 'ELECTION'
       }
+    });
+    res.json(newTerm);
+  } catch (error) {
+    console.error("Error creating term:", error);
+    res.status(500).json({ error: 'Erro ao criar mandato CIPA' });
+  }
+});
 
-      // Upload signature to MinIO
-      const signatureUrl = await uploadBase64ToMinio(signature, 'signatures');
-
-      // Update Collaborator
-      const updated = await prisma.collaborator.update({
-        where: { id },
-        data: { signatureUrl }
-      });
-
-      res.json(updated);
-    } catch (error) {
-      console.error("Error saving collaborator signature:", error);
-      res.status(500).json({ error: 'Erro ao salvar assinatura do colaborador.' });
-    }
-  });
-
-  // Serve static files from the React app (after build)
-  // In production (Docker), we serve files from 'dist'
-  // --- CIPA ROUTES ---
-
-  // 1. CIPA Terms (Mandatos)
-  app.get('/api/cipa/terms', async (req, res) => {
-    try {
-      const { branchId } = req.query;
-      const where: any = {};
-      if (branchId) where.branchId = String(branchId);
-
-      const terms = await prisma.cipaTerm.findMany({
-        where,
-        orderBy: { startDate: 'desc' },
-        include: {
-          meetings: true,
-          cipeiros: true
-        }
-      });
-      res.json(terms);
-    } catch (error) {
-      res.status(500).json({ error: 'Erro ao buscar mandatos CIPA' });
-    }
-  });
-
-  app.post('/api/cipa/terms', async (req, res) => {
-    try {
-      const { year, startDate, endDate, branchId, status } = req.body;
-      const newTerm = await prisma.cipaTerm.create({
-        data: {
-          year,
-          startDate: new Date(startDate),
-          endDate: new Date(endDate),
-          branchId,
-          status: status || 'ELECTION'
-        }
-      });
-      res.json(newTerm);
-    } catch (error) {
-      console.error("Error creating term:", error);
-      res.status(500).json({ error: 'Erro ao criar mandato CIPA' });
-    }
-  });
-
-  app.put('/api/cipa/terms/:id', async (req, res) => {
-    try {
-      const { id } = req.params;
-      const { year, startDate, endDate, status, companyRepId, cipaPresidentId } = req.body;
-      const updated = await prisma.cipaTerm.update({
-        where: { id },
-        data: {
-          year,
-          startDate: startDate ? new Date(startDate) : undefined,
-          endDate: endDate ? new Date(endDate) : undefined,
-          status,
-          companyRepId,
-          cipaPresidentId
-        }
-      });
-      res.json(updated);
-    } catch (error) {
-      res.status(500).json({ error: 'Erro ao atualizar mandato' });
-    }
-  });
-
-  app.delete('/api/cipa/terms/:id', async (req, res) => {
-    try {
-      const { id } = req.params;
-      await prisma.cipaTerm.delete({ where: { id } });
-      res.json({ success: true });
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: 'Erro ao excluir mandato. Verifique dependências.' });
-    }
-  });
-
-  // 2. CIPA Members (Membros/Cipeiros)
-  app.get('/api/cipa/members', async (req, res) => {
-    try {
-      const { termId } = req.query;
-      const where: any = {};
-      if (termId) where.termId = String(termId);
-
-      const members = await prisma.cipeiro.findMany({
-        where,
-        include: { collaborator: true }
-      });
-      res.json(members);
-    } catch (error) {
-      res.status(500).json({ error: 'Erro ao buscar membros' });
-    }
-  });
-
-  app.post('/api/cipa/members', async (req, res) => {
-    try {
-      const { termId, collaboratorId, cipaRole, origin, votes } = req.body;
-      const newMember = await prisma.cipeiro.create({
-        data: {
-          termId,
-          collaboratorId,
-          cipaRole,
-          origin,
-          votes: Number(votes) || 0
-        }
-      });
-      res.json(newMember);
-    } catch (error) {
-      res.status(500).json({ error: 'Erro ao adicionar membro' });
-    }
-  });
-
-  app.put('/api/cipa/members/:id', async (req, res) => {
-    try {
-      const { id } = req.params;
-      const { cipaRole, origin, votes } = req.body;
-      const updated = await prisma.cipeiro.update({
-        where: { id },
-        data: { cipaRole, origin, votes: Number(votes) }
-      });
-      res.json(updated);
-    } catch (error) {
-      res.status(500).json({ error: 'Erro ao atualizar membro' });
-    }
-  });
-
-  app.delete('/api/cipa/members/:id', async (req, res) => {
-    try {
-      const { id } = req.params;
-      await prisma.cipeiro.delete({ where: { id } });
-      res.json({ success: true });
-    } catch (error) {
-      res.status(500).json({ error: 'Erro ao remover membro' });
-    }
-  });
-
-  // 3. CIPA Meetings (Reuniões)
-  app.get('/api/cipa/meetings', async (req, res) => {
-    try {
-      const { termId } = req.query;
-      const where: any = {};
-      if (termId) where.termId = String(termId);
-
-      const meetings = await prisma.cipaMeeting.findMany({
-        where,
-        orderBy: { date: 'desc' }
-      });
-      res.json(meetings);
-    } catch (error) {
-      res.status(500).json({ error: 'Erro ao buscar reuniões' });
-    }
-  });
-
-  app.post('/api/cipa/meetings', async (req, res) => {
-    try {
-      const { termId, date, title, description, type } = req.body;
-      const newMeeting = await prisma.cipaMeeting.create({
-        data: {
-          termId,
-          date: new Date(date),
-          title,
-          description,
-          type
-        }
-      });
-      res.json(newMeeting);
-    } catch (error) {
-      res.status(500).json({ error: 'Erro ao criar reunião' });
-    }
-  });
-
-  app.put('/api/cipa/meetings/:id', async (req, res) => {
-    try {
-      const { id } = req.params;
-      const { date, title, description, type } = req.body;
-      const updated = await prisma.cipaMeeting.update({
-        where: { id },
-        data: {
-          date: date ? new Date(date) : undefined,
-          title,
-          description,
-          type
-        }
-      });
-      res.json(updated);
-    } catch (error) {
-      res.status(500).json({ error: 'Erro ao atualizar reunião' });
-    }
-  });
-
-  app.delete('/api/cipa/meetings/:id', async (req, res) => {
-    try {
-      const { id } = req.params;
-      await prisma.cipaMeeting.delete({ where: { id } });
-      res.json({ success: true });
-    } catch (error) {
-      res.status(500).json({ error: 'Erro ao excluir reunião' });
-    }
-  });
-
-  // 4. Action Plans (Planos de Ação)
-  app.get('/api/cipa/plans', async (req, res) => {
-    try {
-      const { meetingId, termId } = req.query;
-
-      let where: any = {};
-      if (meetingId) {
-        where.meetingId = String(meetingId);
-      } else if (termId) {
-        const meetings = await prisma.cipaMeeting.findMany({ where: { termId: String(termId) }, select: { id: true } });
-        const meetingIds = meetings.map(m => m.id);
-        where.meetingId = { in: meetingIds };
+app.put('/api/cipa/terms/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { year, startDate, endDate, status, companyRepId, cipaPresidentId } = req.body;
+    const updated = await prisma.cipaTerm.update({
+      where: { id },
+      data: {
+        year,
+        startDate: startDate ? new Date(startDate) : undefined,
+        endDate: endDate ? new Date(endDate) : undefined,
+        status,
+        companyRepId,
+        cipaPresidentId
       }
+    });
+    res.json(updated);
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao atualizar mandato' });
+  }
+});
 
-      const plans = await prisma.cipaActionPlan.findMany({
-        where,
-        orderBy: { deadline: 'asc' }
-      });
-      res.json(plans);
-    } catch (error) {
-      res.status(500).json({ error: 'Erro ao buscar planos de ação' });
-    }
-  });
+app.delete('/api/cipa/terms/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    await prisma.cipaTerm.delete({ where: { id } });
+    res.json({ success: true });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Erro ao excluir mandato. Verifique dependências.' });
+  }
+});
 
-  app.post('/api/cipa/plans', async (req, res) => {
-    try {
-      const { meetingId, description, deadline, responsibleId, status } = req.body;
-      const newPlan = await prisma.cipaActionPlan.create({
-        data: {
-          meetingId,
-          description,
-          deadline: new Date(deadline),
-          responsibleId,
-          status: status || 'PENDING'
-        }
-      });
-      res.json(newPlan);
-    } catch (error) {
-      res.status(500).json({ error: 'Erro ao criar plano de ação' });
-    }
-  });
+// 2. CIPA Members (Membros/Cipeiros)
+app.get('/api/cipa/members', async (req, res) => {
+  try {
+    const { termId } = req.query;
+    const where: any = {};
+    if (termId) where.termId = String(termId);
 
-  app.put('/api/cipa/plans/:id', async (req, res) => {
-    try {
-      const { id } = req.params;
-      const { description, deadline, responsibleId, status } = req.body;
-      const updated = await prisma.cipaActionPlan.update({
-        where: { id },
-        data: {
-          description,
-          deadline: deadline ? new Date(deadline) : undefined,
-          responsibleId,
-          status
-        }
-      });
-      res.json(updated);
-    } catch (error) {
-      res.status(500).json({ error: 'Erro ao atualizar plano de ação' });
-    }
-  });
+    const members = await prisma.cipeiro.findMany({
+      where,
+      include: { collaborator: true }
+    });
+    res.json(members);
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao buscar membros' });
+  }
+});
 
-  app.delete('/api/cipa/plans/:id', async (req, res) => {
-    try {
-      const { id } = req.params;
-      await prisma.cipaActionPlan.delete({ where: { id } });
-      res.json({ success: true });
-    } catch (error) {
-      res.status(500).json({ error: 'Erro ao excluir plano de ação' });
-    }
-  });
-
-
-  // 5. CIPA Candidates (Candidatos)
-  app.get('/api/cipa/candidates', async (req, res) => {
-    try {
-      const { termId } = req.query;
-      const where: any = {};
-      if (termId) where.termId = String(termId);
-
-      const candidates = await prisma.cipaCandidate.findMany({
-        where,
-        orderBy: { registrationDate: 'asc' },
-        include: { collaborator: true }
-      });
-      res.json(candidates);
-    } catch (error) {
-      res.status(500).json({ error: 'Erro ao buscar candidatos' });
-    }
-  });
-
-  app.post('/api/cipa/candidates', async (req, res) => {
-    try {
-      const { termId, collaboratorId, signature } = req.body;
-
-      // Check if already registered
-      const existing = await prisma.cipaCandidate.findFirst({
-        where: { termId, collaboratorId }
-      });
-
-      if (existing) {
-        if (existing.status !== 'APPROVED') {
-          return res.json(existing);
-        }
-        return res.status(400).json({ error: 'Colaborador já inscrito neste mandato.' });
+app.post('/api/cipa/members', async (req, res) => {
+  try {
+    const { termId, collaboratorId, cipaRole, origin, votes } = req.body;
+    const newMember = await prisma.cipeiro.create({
+      data: {
+        termId,
+        collaboratorId,
+        cipaRole,
+        origin,
+        votes: Number(votes) || 0
       }
+    });
+    res.json(newMember);
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao adicionar membro' });
+  }
+});
 
-      const newCandidate = await prisma.cipaCandidate.create({
-        data: {
-          termId,
-          collaboratorId,
-          signatureUrl: signature || null,
-          status: signature ? 'APPROVED' : 'PENDING_SIGNATURE'
-        }
-      });
+app.put('/api/cipa/members/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { cipaRole, origin, votes } = req.body;
+    const updated = await prisma.cipeiro.update({
+      where: { id },
+      data: { cipaRole, origin, votes: Number(votes) }
+    });
+    res.json(updated);
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao atualizar membro' });
+  }
+});
 
-      // Send confirmation email (Mock implementation)
-      // In a real app, integrate with SES/SendGrid here using collaborator email
+app.delete('/api/cipa/members/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    await prisma.cipeiro.delete({ where: { id } });
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao remover membro' });
+  }
+});
 
-      res.json(newCandidate);
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: 'Erro ao registrar candidato' });
+// 3. CIPA Meetings (Reuniões)
+app.get('/api/cipa/meetings', async (req, res) => {
+  try {
+    const { termId } = req.query;
+    const where: any = {};
+    if (termId) where.termId = String(termId);
+
+    const meetings = await prisma.cipaMeeting.findMany({
+      where,
+      orderBy: { date: 'desc' }
+    });
+    res.json(meetings);
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao buscar reuniões' });
+  }
+});
+
+app.post('/api/cipa/meetings', async (req, res) => {
+  try {
+    const { termId, date, title, description, type } = req.body;
+    const newMeeting = await prisma.cipaMeeting.create({
+      data: {
+        termId,
+        date: new Date(date),
+        title,
+        description,
+        type
+      }
+    });
+    res.json(newMeeting);
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao criar reunião' });
+  }
+});
+
+app.put('/api/cipa/meetings/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { date, title, description, type } = req.body;
+    const updated = await prisma.cipaMeeting.update({
+      where: { id },
+      data: {
+        date: date ? new Date(date) : undefined,
+        title,
+        description,
+        type
+      }
+    });
+    res.json(updated);
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao atualizar reunião' });
+  }
+});
+
+app.delete('/api/cipa/meetings/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    await prisma.cipaMeeting.delete({ where: { id } });
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao excluir reunião' });
+  }
+});
+
+// 4. Action Plans (Planos de Ação)
+app.get('/api/cipa/plans', async (req, res) => {
+  try {
+    const { meetingId, termId } = req.query;
+
+    let where: any = {};
+    if (meetingId) {
+      where.meetingId = String(meetingId);
+    } else if (termId) {
+      const meetings = await prisma.cipaMeeting.findMany({ where: { termId: String(termId) }, select: { id: true } });
+      const meetingIds = meetings.map(m => m.id);
+      where.meetingId = { in: meetingIds };
     }
-  });
 
-  app.delete('/api/cipa/candidates/:id', async (req, res) => {
-    try {
-      const { id } = req.params;
-      await prisma.cipaCandidate.delete({ where: { id } });
-      res.json({ success: true });
-    } catch (error) {
-      res.status(500).json({ error: 'Erro ao excluir candidato' });
+    const plans = await prisma.cipaActionPlan.findMany({
+      where,
+      orderBy: { deadline: 'asc' }
+    });
+    res.json(plans);
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao buscar planos de ação' });
+  }
+});
+
+app.post('/api/cipa/plans', async (req, res) => {
+  try {
+    const { meetingId, description, deadline, responsibleId, status } = req.body;
+    const newPlan = await prisma.cipaActionPlan.create({
+      data: {
+        meetingId,
+        description,
+        deadline: new Date(deadline),
+        responsibleId,
+        status: status || 'PENDING'
+      }
+    });
+    res.json(newPlan);
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao criar plano de ação' });
+  }
+});
+
+app.put('/api/cipa/plans/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { description, deadline, responsibleId, status } = req.body;
+    const updated = await prisma.cipaActionPlan.update({
+      where: { id },
+      data: {
+        description,
+        deadline: deadline ? new Date(deadline) : undefined,
+        responsibleId,
+        status
+      }
+    });
+    res.json(updated);
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao atualizar plano de ação' });
+  }
+});
+
+app.delete('/api/cipa/plans/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    await prisma.cipaActionPlan.delete({ where: { id } });
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao excluir plano de ação' });
+  }
+});
+
+
+// 5. CIPA Candidates (Candidatos)
+app.get('/api/cipa/candidates', async (req, res) => {
+  try {
+    const { termId } = req.query;
+    const where: any = {};
+    if (termId) where.termId = String(termId);
+
+    const candidates = await prisma.cipaCandidate.findMany({
+      where,
+      orderBy: { registrationDate: 'asc' },
+      include: { collaborator: true }
+    });
+    res.json(candidates);
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao buscar candidatos' });
+  }
+});
+
+app.post('/api/cipa/candidates', async (req, res) => {
+  try {
+    const { termId, collaboratorId, signature } = req.body;
+
+    // Check if already registered
+    const existing = await prisma.cipaCandidate.findFirst({
+      where: { termId, collaboratorId }
+    });
+
+    if (existing) {
+      if (existing.status !== 'APPROVED') {
+        return res.json(existing);
+      }
+      return res.status(400).json({ error: 'Colaborador já inscrito neste mandato.' });
     }
-  });
 
-  app.get('/api/cipa/candidates/:id/check-status', async (req, res) => {
-    try {
-      const { id } = req.params;
-      const candidate = await prisma.cipaCandidate.findUnique({
-        where: { id }
-      });
-      if (!candidate) return res.status(404).json({ error: 'Candidato não encontrado' });
-      res.json(candidate);
-    } catch (error) {
-      res.status(500).json({ error: 'Erro ao verificar status' });
-    }
-  });
+    const newCandidate = await prisma.cipaCandidate.create({
+      data: {
+        termId,
+        collaboratorId,
+        signatureUrl: signature || null,
+        status: signature ? 'APPROVED' : 'PENDING_SIGNATURE'
+      }
+    });
 
-  // Mobile Signature Upload (Public/Auth-less for simplicity on same network, or use temporary token)
-  app.post('/api/cipa/candidates/:id/sign-mobile', upload.single('signature'), async (req, res) => {
-    try {
-      const { id } = req.params;
-      if (!req.file) return res.status(400).json({ error: 'Nenhuma imagem enviada' });
+    // Send confirmation email (Mock implementation)
+    // In a real app, integrate with SES/SendGrid here using collaborator email
 
-      // Upload to S3/MinIO
-      const fileContent = fs.readFileSync(req.file.path);
-      const fileName = `cipa_signatures/${Date.now()}-${req.file.originalname}`;
+    res.json(newCandidate);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Erro ao registrar candidato' });
+  }
+});
 
-      await s3Client.send(new PutObjectCommand({
-        Bucket: BUCKET_NAME,
-        Key: fileName,
-        Body: fileContent,
-        ContentType: req.file.mimetype,
-        ACL: 'public-read'
-      }));
+app.delete('/api/cipa/candidates/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    await prisma.cipaCandidate.delete({ where: { id } });
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao excluir candidato' });
+  }
+});
 
-      // Full URL
-      const fileUrl = `${MINIO_ENDPOINT}/${BUCKET_NAME}/${fileName}`; // Adjust based on your MinIO setup
+app.get('/api/cipa/candidates/:id/check-status', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const candidate = await prisma.cipaCandidate.findUnique({
+      where: { id }
+    });
+    if (!candidate) return res.status(404).json({ error: 'Candidato não encontrado' });
+    res.json(candidate);
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao verificar status' });
+  }
+});
 
-      // Update Candidate
-      const updated = await prisma.cipaCandidate.update({
-        where: { id },
-        data: { signatureUrl: fileUrl, status: 'APPROVED' }
-      });
+// Mobile Signature Upload (Public/Auth-less for simplicity on same network, or use temporary token)
+app.post('/api/cipa/candidates/:id/sign-mobile', upload.single('signature'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!req.file) return res.status(400).json({ error: 'Nenhuma imagem enviada' });
 
-      // Cleanup local file
-      fs.unlinkSync(req.file.path);
+    // Upload to S3/MinIO
+    const fileContent = fs.readFileSync(req.file.path);
+    const fileName = `cipa_signatures/${Date.now()}-${req.file.originalname}`;
 
-      res.json(updated);
-    } catch (error) {
-      console.error("Mobile sign error:", error);
-      res.status(500).json({ error: 'Erro ao salvar assinatura móvel' });
-    }
-  });
+    await s3Client.send(new PutObjectCommand({
+      Bucket: BUCKET_NAME,
+      Key: fileName,
+      Body: fileContent,
+      ContentType: req.file.mimetype,
+      ACL: 'public-read'
+    }));
+
+    // Full URL
+    const fileUrl = `${MINIO_ENDPOINT}/${BUCKET_NAME}/${fileName}`; // Adjust based on your MinIO setup
+
+    // Update Candidate
+    const updated = await prisma.cipaCandidate.update({
+      where: { id },
+      data: { signatureUrl: fileUrl, status: 'APPROVED' }
+    });
+
+    // Cleanup local file
+    fs.unlinkSync(req.file.path);
+
+    res.json(updated);
+  } catch (error) {
+    console.error("Mobile sign error:", error);
+    res.status(500).json({ error: 'Erro ao salvar assinatura móvel' });
+  }
+});
 
 
 
-  const distPath = path.join(__dirname, '..', '..', 'dist'); // Go up to /app/dist
+const distPath = path.join(__dirname, '..', '..', 'dist'); // Go up to /app/dist
 
-  // Serve static assets
-  app.use(express.static(distPath));
+// Serve static assets
+app.use(express.static(distPath));
 
-  // Handle React routing, return all requests to React app
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(distPath, 'index.html'));
-  });
+// Handle React routing, return all requests to React app
+app.get('*', (req, res) => {
+  res.sendFile(path.join(distPath, 'index.html'));
+});
 
-  // Database Connection and Migration Check
-  const ensureCipaTableExists = async () => {
-    try {
-      console.log('Verifying CipaCandidate table...');
+// Database Connection and Migration Check
+const ensureCipaTableExists = async () => {
+  try {
+    console.log('Verifying CipaCandidate table...');
 
-      await prisma.$executeRawUnsafe(`
+    await prisma.$executeRawUnsafe(`
             CREATE TABLE IF NOT EXISTS "cipa_candidatos" (
                 "id" TEXT NOT NULL,
                 "mandato_id" TEXT NOT NULL,
@@ -1511,22 +1512,22 @@ app.delete('/api/collaborators/:id', async (req, res) => {
             );
         `);
 
-      // Check if foreign keys exist, if not, add them (graceful failure if exists)
-      try {
-        await prisma.$executeRawUnsafe(`ALTER TABLE "cipa_candidatos" ADD CONSTRAINT "cipa_candidatos_mandato_id_fkey" FOREIGN KEY ("mandato_id") REFERENCES "cipa_mandatos"("id") ON DELETE RESTRICT ON UPDATE CASCADE;`);
-      } catch (e) { /* ignore if constraint exists */ }
+    // Check if foreign keys exist, if not, add them (graceful failure if exists)
+    try {
+      await prisma.$executeRawUnsafe(`ALTER TABLE "cipa_candidatos" ADD CONSTRAINT "cipa_candidatos_mandato_id_fkey" FOREIGN KEY ("mandato_id") REFERENCES "cipa_mandatos"("id") ON DELETE RESTRICT ON UPDATE CASCADE;`);
+    } catch (e) { /* ignore if constraint exists */ }
 
-      try {
-        await prisma.$executeRawUnsafe(`ALTER TABLE "cipa_candidatos" ADD CONSTRAINT "cipa_candidatos_colaborador_id_fkey" FOREIGN KEY ("colaborador_id") REFERENCES "colaboradores"("id") ON DELETE RESTRICT ON UPDATE CASCADE;`);
-      } catch (e) { /* ignore if constraint exists */ }
+    try {
+      await prisma.$executeRawUnsafe(`ALTER TABLE "cipa_candidatos" ADD CONSTRAINT "cipa_candidatos_colaborador_id_fkey" FOREIGN KEY ("colaborador_id") REFERENCES "colaboradores"("id") ON DELETE RESTRICT ON UPDATE CASCADE;`);
+    } catch (e) { /* ignore if constraint exists */ }
 
-      console.log('CipaCandidates table verified/created.');
-    } catch (error) {
-      console.error('Error creating CipaCandidate table:', error);
-    }
-  };
+    console.log('CipaCandidates table verified/created.');
+  } catch (error) {
+    console.error('Error creating CipaCandidate table:', error);
+  }
+};
 
-  app.listen(Number(PORT), '0.0.0.0', async () => {
-    console.log(`Server is running on port ${PORT}`);
-    await ensureCipaTableExists();
-  });
+app.listen(Number(PORT), '0.0.0.0', async () => {
+  console.log(`Server is running on port ${PORT}`);
+  await ensureCipaTableExists();
+});
