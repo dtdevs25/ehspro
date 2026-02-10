@@ -2016,14 +2016,14 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
                                   });
                                 } catch (err) { }
                               }}
-                              className="w-full border-b border-slate-900 bg-transparent text-center font-black outline-none print:border-none appearance-none cursor-pointer hover:bg-slate-50"
+                              className="w-full border-b border-slate-900 bg-transparent text-center font-black outline-none print:border-none cursor-pointer hover:bg-slate-50 text-slate-900"
                             >
                               <option value="">Selecione...</option>
                               {collaborators.map(c => (
                                 <option key={c.id} value={c.id}>{c.name}</option>
                               ))}
                             </select>
-                            <p className="text-[10px] font-black text-slate-500 uppercase">Representante Empresa</p>
+                            <p className="text-[10px] font-black text-slate-500 uppercase">Representante Empresa ({collaborators.length})</p>
                             {!hasSignature && (selectedTerm as any).companyRepId && (
                               <button
                                 onClick={() => {
@@ -2075,14 +2075,14 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
                                   });
                                 } catch (err) { }
                               }}
-                              className="w-full border-b border-slate-900 bg-transparent text-center font-black outline-none print:border-none appearance-none cursor-pointer hover:bg-slate-50"
+                              className="w-full border-b border-slate-900 bg-transparent text-center font-black outline-none print:border-none cursor-pointer hover:bg-slate-50 text-slate-900"
                             >
                               <option value="">Selecione...</option>
                               {collaborators.map(c => (
                                 <option key={c.id} value={c.id}>{c.name}</option>
                               ))}
                             </select>
-                            <p className="text-[10px] font-black text-slate-500 uppercase">Presidente CIPA Atual</p>
+                            <p className="text-[10px] font-black text-slate-500 uppercase">Presidente CIPA Atual ({collaborators.length})</p>
                             {!hasSignature && (selectedTerm as any).cipaPresidentId && (
                               <button
                                 onClick={() => {
