@@ -2005,7 +2005,7 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
                                 if (selectedTerm) {
                                   const updatedTerm = { ...selectedTerm, companyRepId: newId };
                                   // @ts-ignore
-                                  setTerms(terms.map(t => t.id === selectedTerm.id ? updatedTerm : t));
+                                  setTerms(prev => prev.map(t => t.id === selectedTerm.id ? updatedTerm : t));
                                 }
 
                                 try {
@@ -2064,7 +2064,7 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
                                 if (selectedTerm) {
                                   const updatedTerm = { ...selectedTerm, cipaPresidentId: newId };
                                   // @ts-ignore
-                                  setTerms(terms.map(t => t.id === selectedTerm.id ? updatedTerm : t));
+                                  setTerms(prev => prev.map(t => t.id === selectedTerm.id ? updatedTerm : t));
                                 }
 
                                 try {
