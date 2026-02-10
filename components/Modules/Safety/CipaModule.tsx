@@ -85,6 +85,26 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
   const [cipaDimensioning, setCipaDimensioning] = useState<{ efetivos: number, suplentes: number }>({ efetivos: 0, suplentes: 0 });
   const [employeeCount, setEmployeeCount] = useState<number>(0);
 
+  // Busca independente de Colaboradores para garantir lista completa da empresa
+  const [fetchedCollaborators, setFetchedCollaborators] = useState<any[]>([]);
+
+  useEffect(() => {
+    fetch('/api/collaborators')
+      .then(r => r.json())
+      .then(data => {
+        if (Array.isArray(data)) setFetchedCollaborators(data);
+      })
+      .catch(console.error);
+  }, []);
+
+  const companyReps = fetchedCollaborators.length > 0
+    ? fetchedCollaborators.filter(c => c.companyId === activeCompany?.id && c.status === 'ACTIVE')
+    : collaborators.filter(c => c.status === 'ACTIVE');
+
+  const branchEmployees = fetchedCollaborators.length > 0
+    ? fetchedCollaborators.filter(c => c.branchId === activeBranch?.id && c.status === 'ACTIVE')
+    : collaborators.filter(c => c.status === 'ACTIVE');
+
   // Auto-fill Dimensioning Data
   useEffect(() => {
     if (eleicaoView === 'dimensionamento') {
@@ -1999,7 +2019,8 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
                               value={selectedTerm?.companyRepId || ''}
                               onChange={async (e) => {
                                 const newId = e.target.value;
-                                const collab = collaborators.find(c => c.id === newId);
+                                const searchList = fetchedCollaborators.length > 0 ? fetchedCollaborators : collaborators;
+                                const collab = searchList.find(c => c.id === newId);
                                 if (collab) setRepEmpresaName(collab.name);
 
                                 if (selectedTerm) {
@@ -2019,11 +2040,11 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
                               className="w-full border-b border-slate-900 bg-transparent text-center font-black outline-none print:border-none cursor-pointer hover:bg-slate-50 text-slate-900"
                             >
                               <option value="">Selecione...</option>
-                              {collaborators.map(c => (
+                              {companyReps.map(c => (
                                 <option key={c.id} value={c.id}>{c.name}</option>
                               ))}
                             </select>
-                            <p className="text-[10px] font-black text-slate-500 uppercase">Representante Empresa ({collaborators.length})</p>
+                            <p className="text-[10px] font-black text-slate-500 uppercase">Representante Empresa</p>
                             {!hasSignature && (selectedTerm as any).companyRepId && (
                               <button
                                 onClick={() => {
@@ -2058,7 +2079,8 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
                               value={selectedTerm?.cipaPresidentId || ''}
                               onChange={async (e) => {
                                 const newId = e.target.value;
-                                const collab = collaborators.find(c => c.id === newId);
+                                const searchList = fetchedCollaborators.length > 0 ? fetchedCollaborators : collaborators;
+                                const collab = searchList.find(c => c.id === newId);
                                 if (collab) setPresCipaName(collab.name);
 
                                 if (selectedTerm) {
@@ -2078,11 +2100,11 @@ export const CipaModule: React.FC<CipaModuleProps> = ({ collaborators, activeBra
                               className="w-full border-b border-slate-900 bg-transparent text-center font-black outline-none print:border-none cursor-pointer hover:bg-slate-50 text-slate-900"
                             >
                               <option value="">Selecione...</option>
-                              {collaborators.map(c => (
+                              {branchEmployees.map(c => (
                                 <option key={c.id} value={c.id}>{c.name}</option>
                               ))}
                             </select>
-                            <p className="text-[10px] font-black text-slate-500 uppercase">Presidente CIPA Atual ({collaborators.length})</p>
+                            <p className="text-[10px] font-black text-slate-500 uppercase">Presidente CIPA Atual</p>
                             {!hasSignature && (selectedTerm as any).cipaPresidentId && (
                               <button
                                 onClick={() => {
